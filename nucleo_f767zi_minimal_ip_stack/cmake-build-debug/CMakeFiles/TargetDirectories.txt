@@ -1,3 +1,0 @@
-C:/serg/my/github/STM32/nucleo_f767zi_minimal_ip_stack/cmake-build-debug/CMakeFiles/nucleo_f767zi_ethernet.elf.dir
-C:/serg/my/github/STM32/nucleo_f767zi_minimal_ip_stack/cmake-build-debug/CMakeFiles/edit_cache.dir
-C:/serg/my/github/STM32/nucleo_f767zi_minimal_ip_stack/cmake-build-debug/CMakeFiles/rebuild_cache.dir
