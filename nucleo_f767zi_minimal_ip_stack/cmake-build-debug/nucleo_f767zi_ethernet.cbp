@@ -1,0 +1,197 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6"/>
+	<Project>
+		<Option title="nucleo_f767zi_ethernet"/>
+		<Option makefile_is_custom="1"/>
+		<Option compiler="gcc"/>
+		<Option virtualFolders="CMake Files\;"/>
+		<Build>
+			<Target title="all">
+				<Option working_dir="C:/serg/my/github/STM32/nucleo_f767zi_minimal_ip_stack/cmake-build-debug"/>
+				<Option type="4"/>
+				<MakeCommands>
+					<Build command="C:/mingw-w64/x86_64-8.1.0-posix-seh-rt_v6-rev0/mingw64/bin/mingw32-make.exe -f &quot;C:/serg/my/github/STM32/nucleo_f767zi_minimal_ip_stack/cmake-build-debug/Makefile&quot;  VERBOSE=1 all"/>
+					<CompileFile command="C:/mingw-w64/x86_64-8.1.0-posix-seh-rt_v6-rev0/mingw64/bin/mingw32-make.exe -f &quot;C:/serg/my/github/STM32/nucleo_f767zi_minimal_ip_stack/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="C:/mingw-w64/x86_64-8.1.0-posix-seh-rt_v6-rev0/mingw64/bin/mingw32-make.exe -f &quot;C:/serg/my/github/STM32/nucleo_f767zi_minimal_ip_stack/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="C:/mingw-w64/x86_64-8.1.0-posix-seh-rt_v6-rev0/mingw64/bin/mingw32-make.exe -f &quot;C:/serg/my/github/STM32/nucleo_f767zi_minimal_ip_stack/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="nucleo_f767zi_ethernet.elf">
+				<Option output="C:/serg/my/github/STM32/nucleo_f767zi_minimal_ip_stack/cmake-build-debug/nucleo_f767zi_ethernet.elf" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="C:/serg/my/github/STM32/nucleo_f767zi_minimal_ip_stack/cmake-build-debug"/>
+				<Option object_output="./"/>
+				<Option type="1"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add option="-DARM_MATH_CM7"/>
+					<Add option="-DARM_MATH_MATRIX_CHECK"/>
+					<Add option="-DARM_MATH_ROUNDING"/>
+					<Add option="-D__FPU_PRESENT=1"/>
+					<Add option="-D__weak=__attribute__((weak))"/>
+					<Add option="-D__packed=__attribute__((__packed__))"/>
+					<Add option="-DSTM32F767xx"/>
+					<Add directory="C:/serg/my/github/STM32/nucleo_f767zi_minimal_ip_stack/src"/>
+					<Add directory="C:/serg/my/github/STM32/nucleo_f767zi_minimal_ip_stack/cmsis"/>
+					<Add directory="C:/serg/my/github/STM32/nucleo_f767zi_minimal_ip_stack/cmsis/device"/>
+					<Add directory="C:/serg/my/github/STM32/nucleo_f767zi_minimal_ip_stack/../stm32f7lib"/>
+					<Add directory="C:/serg/my/github/STM32/nucleo_f767zi_minimal_ip_stack/../stm32f7lib/eth"/>
+					<Add directory="C:/serg/my/github/STM32/nucleo_f767zi_minimal_ip_stack/../common_lib"/>
+					<Add directory="c:\armgcc\bin\../lib/gcc/arm-none-eabi/8.3.1/include"/>
+					<Add directory="c:\armgcc\bin\../lib/gcc/arm-none-eabi/8.3.1/include-fixed"/>
+					<Add directory="c:\armgcc\bin\../lib/gcc/arm-none-eabi/8.3.1/../../../../arm-none-eabi/include"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="C:/mingw-w64/x86_64-8.1.0-posix-seh-rt_v6-rev0/mingw64/bin/mingw32-make.exe -f &quot;C:/serg/my/github/STM32/nucleo_f767zi_minimal_ip_stack/cmake-build-debug/Makefile&quot;  VERBOSE=1 nucleo_f767zi_ethernet.elf"/>
+					<CompileFile command="C:/mingw-w64/x86_64-8.1.0-posix-seh-rt_v6-rev0/mingw64/bin/mingw32-make.exe -f &quot;C:/serg/my/github/STM32/nucleo_f767zi_minimal_ip_stack/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="C:/mingw-w64/x86_64-8.1.0-posix-seh-rt_v6-rev0/mingw64/bin/mingw32-make.exe -f &quot;C:/serg/my/github/STM32/nucleo_f767zi_minimal_ip_stack/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="C:/mingw-w64/x86_64-8.1.0-posix-seh-rt_v6-rev0/mingw64/bin/mingw32-make.exe -f &quot;C:/serg/my/github/STM32/nucleo_f767zi_minimal_ip_stack/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="nucleo_f767zi_ethernet.elf/fast">
+				<Option output="C:/serg/my/github/STM32/nucleo_f767zi_minimal_ip_stack/cmake-build-debug/nucleo_f767zi_ethernet.elf" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="C:/serg/my/github/STM32/nucleo_f767zi_minimal_ip_stack/cmake-build-debug"/>
+				<Option object_output="./"/>
+				<Option type="1"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add option="-DARM_MATH_CM7"/>
+					<Add option="-DARM_MATH_MATRIX_CHECK"/>
+					<Add option="-DARM_MATH_ROUNDING"/>
+					<Add option="-D__FPU_PRESENT=1"/>
+					<Add option="-D__weak=__attribute__((weak))"/>
+					<Add option="-D__packed=__attribute__((__packed__))"/>
+					<Add option="-DSTM32F767xx"/>
+					<Add directory="C:/serg/my/github/STM32/nucleo_f767zi_minimal_ip_stack/src"/>
+					<Add directory="C:/serg/my/github/STM32/nucleo_f767zi_minimal_ip_stack/cmsis"/>
+					<Add directory="C:/serg/my/github/STM32/nucleo_f767zi_minimal_ip_stack/cmsis/device"/>
+					<Add directory="C:/serg/my/github/STM32/nucleo_f767zi_minimal_ip_stack/../stm32f7lib"/>
+					<Add directory="C:/serg/my/github/STM32/nucleo_f767zi_minimal_ip_stack/../stm32f7lib/eth"/>
+					<Add directory="C:/serg/my/github/STM32/nucleo_f767zi_minimal_ip_stack/../common_lib"/>
+					<Add directory="c:\armgcc\bin\../lib/gcc/arm-none-eabi/8.3.1/include"/>
+					<Add directory="c:\armgcc\bin\../lib/gcc/arm-none-eabi/8.3.1/include-fixed"/>
+					<Add directory="c:\armgcc\bin\../lib/gcc/arm-none-eabi/8.3.1/../../../../arm-none-eabi/include"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="C:/mingw-w64/x86_64-8.1.0-posix-seh-rt_v6-rev0/mingw64/bin/mingw32-make.exe -f &quot;C:/serg/my/github/STM32/nucleo_f767zi_minimal_ip_stack/cmake-build-debug/Makefile&quot;  VERBOSE=1 nucleo_f767zi_ethernet.elf/fast"/>
+					<CompileFile command="C:/mingw-w64/x86_64-8.1.0-posix-seh-rt_v6-rev0/mingw64/bin/mingw32-make.exe -f &quot;C:/serg/my/github/STM32/nucleo_f767zi_minimal_ip_stack/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="C:/mingw-w64/x86_64-8.1.0-posix-seh-rt_v6-rev0/mingw64/bin/mingw32-make.exe -f &quot;C:/serg/my/github/STM32/nucleo_f767zi_minimal_ip_stack/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="C:/mingw-w64/x86_64-8.1.0-posix-seh-rt_v6-rev0/mingw64/bin/mingw32-make.exe -f &quot;C:/serg/my/github/STM32/nucleo_f767zi_minimal_ip_stack/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="edit_cache">
+				<Option working_dir="C:/serg/my/github/STM32/nucleo_f767zi_minimal_ip_stack/cmake-build-debug"/>
+				<Option type="4"/>
+				<MakeCommands>
+					<Build command="C:/mingw-w64/x86_64-8.1.0-posix-seh-rt_v6-rev0/mingw64/bin/mingw32-make.exe -f &quot;C:/serg/my/github/STM32/nucleo_f767zi_minimal_ip_stack/cmake-build-debug/Makefile&quot;  VERBOSE=1 edit_cache"/>
+					<CompileFile command="C:/mingw-w64/x86_64-8.1.0-posix-seh-rt_v6-rev0/mingw64/bin/mingw32-make.exe -f &quot;C:/serg/my/github/STM32/nucleo_f767zi_minimal_ip_stack/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="C:/mingw-w64/x86_64-8.1.0-posix-seh-rt_v6-rev0/mingw64/bin/mingw32-make.exe -f &quot;C:/serg/my/github/STM32/nucleo_f767zi_minimal_ip_stack/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="C:/mingw-w64/x86_64-8.1.0-posix-seh-rt_v6-rev0/mingw64/bin/mingw32-make.exe -f &quot;C:/serg/my/github/STM32/nucleo_f767zi_minimal_ip_stack/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="rebuild_cache">
+				<Option working_dir="C:/serg/my/github/STM32/nucleo_f767zi_minimal_ip_stack/cmake-build-debug"/>
+				<Option type="4"/>
+				<MakeCommands>
+					<Build command="C:/mingw-w64/x86_64-8.1.0-posix-seh-rt_v6-rev0/mingw64/bin/mingw32-make.exe -f &quot;C:/serg/my/github/STM32/nucleo_f767zi_minimal_ip_stack/cmake-build-debug/Makefile&quot;  VERBOSE=1 rebuild_cache"/>
+					<CompileFile command="C:/mingw-w64/x86_64-8.1.0-posix-seh-rt_v6-rev0/mingw64/bin/mingw32-make.exe -f &quot;C:/serg/my/github/STM32/nucleo_f767zi_minimal_ip_stack/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="C:/mingw-w64/x86_64-8.1.0-posix-seh-rt_v6-rev0/mingw64/bin/mingw32-make.exe -f &quot;C:/serg/my/github/STM32/nucleo_f767zi_minimal_ip_stack/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="C:/mingw-w64/x86_64-8.1.0-posix-seh-rt_v6-rev0/mingw64/bin/mingw32-make.exe -f &quot;C:/serg/my/github/STM32/nucleo_f767zi_minimal_ip_stack/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+		</Build>
+		<Unit filename="C:/serg/my/github/STM32/common_lib/queue.c">
+			<Option target="nucleo_f767zi_ethernet.elf"/>
+		</Unit>
+		<Unit filename="C:/serg/my/github/STM32/common_lib/queue.h">
+			<Option target="nucleo_f767zi_ethernet.elf"/>
+		</Unit>
+		<Unit filename="C:/serg/my/github/STM32/nucleo_f767zi_minimal_ip_stack/STM32F767ZI_FLASH.ld">
+			<Option target="nucleo_f767zi_ethernet.elf"/>
+		</Unit>
+		<Unit filename="C:/serg/my/github/STM32/nucleo_f767zi_minimal_ip_stack/src/board.h">
+			<Option target="nucleo_f767zi_ethernet.elf"/>
+		</Unit>
+		<Unit filename="C:/serg/my/github/STM32/nucleo_f767zi_minimal_ip_stack/src/eth_handler.c">
+			<Option target="nucleo_f767zi_ethernet.elf"/>
+		</Unit>
+		<Unit filename="C:/serg/my/github/STM32/nucleo_f767zi_minimal_ip_stack/src/hal.c">
+			<Option target="nucleo_f767zi_ethernet.elf"/>
+		</Unit>
+		<Unit filename="C:/serg/my/github/STM32/nucleo_f767zi_minimal_ip_stack/src/main.c">
+			<Option target="nucleo_f767zi_ethernet.elf"/>
+		</Unit>
+		<Unit filename="C:/serg/my/github/STM32/nucleo_f767zi_minimal_ip_stack/src/startup_stm32f767xx.s">
+			<Option target="nucleo_f767zi_ethernet.elf"/>
+		</Unit>
+		<Unit filename="C:/serg/my/github/STM32/nucleo_f767zi_minimal_ip_stack/src/system_init.c">
+			<Option target="nucleo_f767zi_ethernet.elf"/>
+		</Unit>
+		<Unit filename="C:/serg/my/github/STM32/stm32f7lib/eth/eth.c">
+			<Option target="nucleo_f767zi_ethernet.elf"/>
+		</Unit>
+		<Unit filename="C:/serg/my/github/STM32/stm32f7lib/eth/eth.h">
+			<Option target="nucleo_f767zi_ethernet.elf"/>
+		</Unit>
+		<Unit filename="C:/serg/my/github/STM32/stm32f7lib/eth/eth_arp.c">
+			<Option target="nucleo_f767zi_ethernet.elf"/>
+		</Unit>
+		<Unit filename="C:/serg/my/github/STM32/stm32f7lib/eth/eth_arp.h">
+			<Option target="nucleo_f767zi_ethernet.elf"/>
+		</Unit>
+		<Unit filename="C:/serg/my/github/STM32/stm32f7lib/eth/eth_callbacks.c">
+			<Option target="nucleo_f767zi_ethernet.elf"/>
+		</Unit>
+		<Unit filename="C:/serg/my/github/STM32/stm32f7lib/eth/eth_icmp.c">
+			<Option target="nucleo_f767zi_ethernet.elf"/>
+		</Unit>
+		<Unit filename="C:/serg/my/github/STM32/stm32f7lib/eth/eth_icmp.h">
+			<Option target="nucleo_f767zi_ethernet.elf"/>
+		</Unit>
+		<Unit filename="C:/serg/my/github/STM32/stm32f7lib/eth/eth_ipv4.c">
+			<Option target="nucleo_f767zi_ethernet.elf"/>
+		</Unit>
+		<Unit filename="C:/serg/my/github/STM32/stm32f7lib/eth/eth_ipv4.h">
+			<Option target="nucleo_f767zi_ethernet.elf"/>
+		</Unit>
+		<Unit filename="C:/serg/my/github/STM32/stm32f7lib/eth/eth_queue.c">
+			<Option target="nucleo_f767zi_ethernet.elf"/>
+		</Unit>
+		<Unit filename="C:/serg/my/github/STM32/stm32f7lib/eth/eth_udp.c">
+			<Option target="nucleo_f767zi_ethernet.elf"/>
+		</Unit>
+		<Unit filename="C:/serg/my/github/STM32/stm32f7lib/eth/eth_udp.h">
+			<Option target="nucleo_f767zi_ethernet.elf"/>
+		</Unit>
+		<Unit filename="C:/serg/my/github/STM32/stm32f7lib/gpio.c">
+			<Option target="nucleo_f767zi_ethernet.elf"/>
+		</Unit>
+		<Unit filename="C:/serg/my/github/STM32/stm32f7lib/gpio.h">
+			<Option target="nucleo_f767zi_ethernet.elf"/>
+		</Unit>
+		<Unit filename="C:/serg/my/github/STM32/stm32f7lib/nvic.c">
+			<Option target="nucleo_f767zi_ethernet.elf"/>
+		</Unit>
+		<Unit filename="C:/serg/my/github/STM32/stm32f7lib/nvic.h">
+			<Option target="nucleo_f767zi_ethernet.elf"/>
+		</Unit>
+		<Unit filename="C:/serg/my/github/STM32/stm32f7lib/rcc.h">
+			<Option target="nucleo_f767zi_ethernet.elf"/>
+		</Unit>
+		<Unit filename="C:/serg/my/github/STM32/stm32f7lib/systick.c">
+			<Option target="nucleo_f767zi_ethernet.elf"/>
+		</Unit>
+		<Unit filename="C:/serg/my/github/STM32/stm32f7lib/systick.h">
+			<Option target="nucleo_f767zi_ethernet.elf"/>
+		</Unit>
+		<Unit filename="C:/serg/my/github/STM32/stm32f7lib/uart.c">
+			<Option target="nucleo_f767zi_ethernet.elf"/>
+		</Unit>
+		<Unit filename="C:/serg/my/github/STM32/stm32f7lib/uart.h">
+			<Option target="nucleo_f767zi_ethernet.elf"/>
+		</Unit>
+		<Unit filename="C:/serg/my/github/STM32/nucleo_f767zi_minimal_ip_stack/CMakeLists.txt">
+			<Option virtualFolder="CMake Files\"/>
+		</Unit>
+	</Project>
+</CodeBlocks_project_file>
