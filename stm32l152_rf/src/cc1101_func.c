@@ -3,6 +3,7 @@
 #include <packet_func.h>
 
 extern volatile int packet_received;
+extern volatile int communication_counter;
 
 static const cc1101_cfg cfgDevice = {
   CC1101_RX_ATTENUATION_0DB,
@@ -107,6 +108,8 @@ void cc1101Loop(void)
     {
       cc1101_strobe(0, CC1101_STROBE_SFTX, &status);
       cc1101_strobe(0, CC1101_STROBE_SRX, &status);
+      return;
     }
+    communication_counter = 0;
   }
 }

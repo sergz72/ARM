@@ -123,8 +123,8 @@ int i2c_soft_command(int channel, unsigned int address, unsigned char *commands,
     i2c_soft_start(channel);              // send a restart sequence
     i2c_soft_tx(channel, address | 1);
     for (i = 0; i < in_data_length - 1; i++)
-      i2c_soft_rx(channel, 1);
-    i2c_soft_rx(channel, 0); //we don't acknowledge the last byte.
+      *in_data++ = i2c_soft_rx(channel, 1);
+    *in_data = i2c_soft_rx(channel, 0); //we don't acknowledge the last byte.
   }
   i2c_soft_stop(channel);               // send stop sequence
 

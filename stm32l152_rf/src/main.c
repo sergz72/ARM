@@ -19,6 +19,8 @@ void cc1101_GD0_Interrupt_Init(void);
 
 extern volatile int second_interrupt;
 
+volatile int communication_counter;
+
 int main(void)
 {
   unsigned int thRc, ccRc;
@@ -35,12 +37,17 @@ int main(void)
   if (ccRc)
     cc1101_GD0_Interrupt_Init();
 
+  communication_counter = 0;
+
   while (1)
   {
     if (ccRc)
       cc1101Loop();
     if (second_interrupt)
     {
+      communication_counter++;
+      if (ccRc && communication_counter >= COMMUNICATION_COUNTER_MAX)
+        __NVIC_SystemReset();
       second_interrupt = 0;
       /* Reload IWDG counter */
       IWDG_ReloadCounter();

@@ -1,5 +1,5 @@
 #ifndef _TH02_H
-#define _TH01_H
+#define _TH02_H
 
 #define TH02_ADDRESS 0x80
 

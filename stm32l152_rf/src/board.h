@@ -42,6 +42,8 @@
 #define VBAT_R1 150
 #define VBAT_R2 220
 
+#define COMMUNICATION_COUNTER_MAX 1800 // 30 min
+
 void ST7066_DATA_SET(unsigned int d);
 #define ST7066_DELAY st7066delay()
 #define ST7066_DELAY_MS(ms) delayms(ms)
