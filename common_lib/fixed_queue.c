@@ -9,6 +9,11 @@ void queue_init(Queue* q, int size, int item_length, char* buffer)
   q->current = q->first = 0;
 }
 
+void queue_reset(Queue* q)
+{
+  q->current = q->first = 0;
+}
+
 void *queue_peek(Queue* q)
 {
   if (q->current != q->first)

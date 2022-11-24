@@ -94,7 +94,7 @@ unsigned int bme280_readCalibrationData(void)
 
 static int compensateTemperature(int t_fine)
 {
-  return ((t_fine * 5 + 128) >> 8) / 10;
+  return (t_fine * 5 + 128) >> 8;
 }
 
 static int compensatePressure(int adc_P, int t_fine)
@@ -139,7 +139,7 @@ static int compensateHumidity(int adc_H, int t_fine)
 
   v_x1_u32r = (v_x1_u32r < 0) ? 0 : v_x1_u32r;
   v_x1_u32r = (v_x1_u32r > 419430400) ? 419430400 : v_x1_u32r;
-  return (v_x1_u32r>>12) / 1024;
+  return (v_x1_u32r>>12) / 10;
 }
 
 static unsigned int getRawData(bme280_raw_data *raw, unsigned int getPressure)
@@ -209,7 +209,7 @@ unsigned int bme280_get_data(bme280_data *data, unsigned int getPressure)
   data->temperature = compensateTemperature(t_fine); // C
   data->humidity = compensateHumidity(raw.humidity, t_fine);       // %
   if (getPressure)
-    data->pressure = compensatePressure(raw.pressure, t_fine) / 100; // hPa
+    data->pressure = compensatePressure(raw.pressure, t_fine) / 10; // hPa
 
   return rc;
 }

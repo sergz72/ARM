@@ -1,4 +1,17 @@
 #include <PrologueDecoder.h>
+#include <board.h>
+
+#ifndef PD_ONEDELTA
+#define PD_ONEDELTA 100
+#endif
+
+#ifndef PD_ZERODELTA
+#define PD_ZERODELTA 100
+#endif
+
+#ifndef PD_WAITTIME
+#define PD_WAITTIME 8900
+#endif
 
 Queue prologueDecoderQueue;
 static unsigned int lastTime;
@@ -8,6 +21,14 @@ static unsigned long long bits;
 void PrologueDecoderInit(int queue_size, char *buffer)
 {
   queue_init(&prologueDecoderQueue, queue_size, sizeof(ProloguePacket), buffer);
+  lastTime = 0;
+  bitNo = -1;
+  bits = 0;
+}
+
+void PrologueDecoderReset(void)
+{
+  queue_reset(&prologueDecoderQueue);
   lastTime = 0;
   bitNo = -1;
   bits = 0;
@@ -49,7 +70,7 @@ int PrologueDecoder(int edge, unsigned int time)
 {
   unsigned int delta = time - lastTime;
   lastTime = time;
-  if (bitNo < 0 && edge != 0 && delta >= 8900) // rising edge
+  if (bitNo < 0 && edge != 0 && delta >= PD_WAITTIME) // rising edge
   {
     bitNo = 0;
     return PDS_START;
@@ -58,7 +79,7 @@ int PrologueDecoder(int edge, unsigned int time)
   {
     if (edge == 0) // falling edge
     {
-      if (delta < 400 || delta > 600)
+      if (delta < (500 - PD_ONEDELTA) || delta > (500 + PD_ONEDELTA))
       {
         bitNo = -1;
         return PDS_BAD_LEVEL_ONE_DURATION;
@@ -67,13 +88,13 @@ int PrologueDecoder(int edge, unsigned int time)
     }
     else // next bit
     {
-      if (delta >= 1900 && delta <= 2100) // zero bit
+      if (delta >= (2000 - PD_ZERODELTA) && delta <= (2000 + PD_ZERODELTA)) // zero bit
       {
         bitNo++;
         bits <<= 1;
         return checkBits();
       }
-      if (delta >= 3900 && delta <= 4100) // one bit
+      if (delta >= (4000 - PD_ZERODELTA) && delta <= (4000 + PD_ZERODELTA)) // one bit
       {
         bitNo++;
         bits <<= 1;

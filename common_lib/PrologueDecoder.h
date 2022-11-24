@@ -21,6 +21,7 @@ typedef struct {
 
 void PrologueDecoderInit(int queue_size, char* buffer);
 int PrologueDecoder(int edge, unsigned int time);
+void PrologueDecoderReset(void);
 
 extern Queue prologueDecoderQueue;
 

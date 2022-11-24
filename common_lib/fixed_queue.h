@@ -10,5 +10,6 @@ void queue_init(Queue *q, int size, int item_length, char *buffer);
 void *queue_peek(Queue* q);
 void queue_pop(Queue* q);
 void queue_push(Queue* q, void *data);
+void queue_reset(Queue* q);
 
 #endif //MAIN_FIXED_QUEUE_H
