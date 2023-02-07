@@ -7,7 +7,7 @@
 #include <tm1638.h>
 #include <seven_seg.h>
 
-static int set_led_handler(printf_func pfunc, gets_func gfunc, int argc, char **argv);
+static int set_led_handler(printf_func pfunc, gets_func gfunc, int argc, char **argv, void *data);
 static const ShellCommandItem set_led_command_items[] = {
     {NULL, param_handler, NULL},
     {NULL, param_handler, NULL},
@@ -19,7 +19,7 @@ static const ShellCommand set_leds_command = {
     "tm1638_led pos led_state"
 };
 
-static int out_handler(printf_func pfunc, gets_func gfunc, int argc, char **argv);
+static int out_handler(printf_func pfunc, gets_func gfunc, int argc, char **argv, void *data);
 static const ShellCommandItem out_command_items[] = {
     {NULL, param_handler, NULL},
     {NULL, param_handler, NULL},
@@ -31,7 +31,7 @@ static const ShellCommand out_command = {
     "tm1638_out pos text"
 };
 
-static int in_handler(printf_func pfunc, gets_func gfunc, int argc, char **argv);
+static int in_handler(printf_func pfunc, gets_func gfunc, int argc, char **argv, void *data);
 static const ShellCommandItem in_command_items[] = {
     {NULL, param_handler, NULL},
     {NULL, NULL, in_handler}
@@ -42,7 +42,7 @@ static const ShellCommand in_command = {
     "tm1638_in num_bytes"
 };
 
-static int display_on_handler(printf_func pfunc, gets_func gfunc, int argc, char **argv);
+static int display_on_handler(printf_func pfunc, gets_func gfunc, int argc, char **argv, void *data);
 static const ShellCommandItem display_on_command_items[] = {
     {NULL, NULL, display_on_handler}
 };
@@ -52,7 +52,7 @@ static const ShellCommand display_on_command = {
     NULL
 };
 
-static int display_off_handler(printf_func pfunc, gets_func gfunc, int argc, char **argv);
+static int display_off_handler(printf_func pfunc, gets_func gfunc, int argc, char **argv, void *data);
 static const ShellCommandItem display_off_command_items[] = {
     {NULL, NULL, display_off_handler}
 };
@@ -62,7 +62,7 @@ static const ShellCommand display_off_command = {
     NULL
 };
 
-static int brightness_handler(printf_func pfunc, gets_func gfunc, int argc, char **argv);
+static int brightness_handler(printf_func pfunc, gets_func gfunc, int argc, char **argv, void *data);
 static const ShellCommandItem brightness_command_items[] = {
     {NULL, param_handler, NULL},
     {NULL, NULL, brightness_handler}
@@ -73,7 +73,7 @@ static const ShellCommand brightness_command = {
     "tm1638_brightness value"
 };
 
-static int key_state_handler(printf_func pfunc, gets_func gfunc, int argc, char **argv);
+static int key_state_handler(printf_func pfunc, gets_func gfunc, int argc, char **argv, void *data);
 static const ShellCommandItem key_state_command_items[] = {
     {NULL, NULL, key_state_handler}
 };
@@ -83,7 +83,7 @@ static const ShellCommand key_state_command = {
     NULL
 };
 
-static int set_led_handler(printf_func pfunc, gets_func gfunc, int argc, char **argv)
+static int set_led_handler(printf_func pfunc, gets_func gfunc, int argc, char **argv, void *_data)
 {
   int pos, data;
 
@@ -106,7 +106,7 @@ static int set_led_handler(printf_func pfunc, gets_func gfunc, int argc, char **
   return 0;
 }
 
-static int out_handler(printf_func pfunc, gets_func gfunc, int argc, char **argv)
+static int out_handler(printf_func pfunc, gets_func gfunc, int argc, char **argv, void *data)
 {
   int pos, i, l;
   unsigned char encoded[8];
@@ -132,7 +132,7 @@ static int out_handler(printf_func pfunc, gets_func gfunc, int argc, char **argv
   return 0;
 }
 
-static int in_handler(printf_func pfunc, gets_func gfunc, int argc, char **argv)
+static int in_handler(printf_func pfunc, gets_func gfunc, int argc, char **argv, void *data)
 {
   int num_bytes = atoi(argv[0]);
   unsigned int key_state;
@@ -149,19 +149,19 @@ static int in_handler(printf_func pfunc, gets_func gfunc, int argc, char **argv)
   return 0;
 }
 
-static int display_on_handler(printf_func pfunc, gets_func gfunc, int argc, char **argv)
+static int display_on_handler(printf_func pfunc, gets_func gfunc, int argc, char **argv, void *data)
 {
   tm1638_display_on();
   return 0;
 }
 
-static int display_off_handler(printf_func pfunc, gets_func gfunc, int argc, char **argv)
+static int display_off_handler(printf_func pfunc, gets_func gfunc, int argc, char **argv, void *data)
 {
   tm1638_display_off();
   return 0;
 }
 
-static int brightness_handler(printf_func pfunc, gets_func gfunc, int argc, char **argv)
+static int brightness_handler(printf_func pfunc, gets_func gfunc, int argc, char **argv, void *data)
 {
   int brightness = atoi(argv[0]);
 
@@ -174,7 +174,7 @@ static int brightness_handler(printf_func pfunc, gets_func gfunc, int argc, char
   return 0;
 }
 
-static int key_state_handler(printf_func pfunc, gets_func gfunc, int argc, char **argv)
+static int key_state_handler(printf_func pfunc, gets_func gfunc, int argc, char **argv, void *data)
 {
   unsigned int key_state = tm1638_key_state();
 

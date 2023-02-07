@@ -6,7 +6,7 @@
 #include <read_hex_string.h>
 #include <string.h>
 
-static int i2cwrite_handler(printf_func pfunc, gets_func gfunc, int argc, char **argv);
+static int i2cwrite_handler(printf_func pfunc, gets_func gfunc, int argc, char **argv, void *data);
 static const ShellCommandItem i2cwrite_command_items[] = {
     {NULL, param_handler, NULL},
     {NULL, param_handler, NULL},
@@ -18,7 +18,7 @@ static const ShellCommand i2cwrite_command = {
     "i2c_write address data"
 };
 
-static int i2cread_handler(printf_func pfunc, gets_func gfunc, int argc, char **argv);
+static int i2cread_handler(printf_func pfunc, gets_func gfunc, int argc, char **argv, void *data);
 static const ShellCommandItem i2cread_command_items[] = {
     {NULL, param_handler, NULL},
     {NULL, param_handler, NULL},
@@ -31,7 +31,7 @@ static const ShellCommand i2cread_command = {
     "i2c_read address send_data|NONE num_bytes_to_read"
 };
 
-static int i2cbaud_handler(printf_func pfunc, gets_func gfunc, int argc, char **argv);
+static int i2cbaud_handler(printf_func pfunc, gets_func gfunc, int argc, char **argv, void *data);
 static const ShellCommandItem i2cbaud_command_items[] = {
     {NULL, param_handler, NULL},
     {NULL, NULL, i2cbaud_handler}
@@ -42,7 +42,7 @@ static const ShellCommand i2cbaud_command = {
     "i2c_baud speed_in_khz"
 };
 
-static int i2cbaud_handler(printf_func pfunc, gets_func gfunc, int argc, char **argv)
+static int i2cbaud_handler(printf_func pfunc, gets_func gfunc, int argc, char **argv, void *data)
 {
   int baud = atoi(argv[0]);
   if (baud <= 0 || baud > 400)
@@ -55,7 +55,7 @@ static int i2cbaud_handler(printf_func pfunc, gets_func gfunc, int argc, char **
   return 0;
 }
 
-static int i2cwrite_handler(printf_func pfunc, gets_func gfunc, int argc, char **argv)
+static int i2cwrite_handler(printf_func pfunc, gets_func gfunc, int argc, char **argv, void *_data)
 {
   int i, rc;
   unsigned char data[20], address;
@@ -91,7 +91,7 @@ static int i2cwrite_handler(printf_func pfunc, gets_func gfunc, int argc, char *
   return 0;
 }
 
-static int i2cread_handler(printf_func pfunc, gets_func gfunc, int argc, char **argv)
+static int i2cread_handler(printf_func pfunc, gets_func gfunc, int argc, char **argv, void *_data)
 {
   int i, rc, num_bytes;
   unsigned char data[20], address;

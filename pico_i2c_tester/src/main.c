@@ -21,21 +21,19 @@ int getch_(void)
 
 char *gets_(void)
 {
-  getstring(command_line, sizeof(command_line), getch_, putchar, NULL);
+  getstring_next();
   return command_line;
 }
 
-char *gets_with_buffer_init(const char *buffer_init)
+void puts_(const char *s)
 {
-  getstring(command_line, sizeof(command_line), getch_, putchar, buffer_init);
-  return command_line;
+  while (*s)
+    putchar(*s++);
 }
 
 int main()
 {
   int rc;
-  char *p;
-  const char *buffer_init;
 
   SystemInit();
   stdio_init_all();
@@ -46,28 +44,29 @@ int main()
   register_i2c_commands();
   register_tm1638_commands();
 
-  buffer_init = NULL;
+  getstring_init(command_line, sizeof(command_line), getch_, puts_);
+
   while (1)
   {
-    printf("\r\33[2K$ ");
-    p = gets_with_buffer_init(buffer_init);
-    switch (p[0])
+    getstring_next();
+    switch (command_line[0])
     {
       case SHELL_UP_KEY:
-        buffer_init = shell_get_prev_from_history();
+        puts_("\r\33[2K$ ");
+        getstring_buffer_init(shell_get_prev_from_history());
         continue;
       case SHELL_DOWN_KEY:
-        buffer_init = shell_get_next_from_history();
+        puts_("\r\33[2K$ ");
+        getstring_buffer_init(shell_get_next_from_history());
         continue;
       default:
-        buffer_init = NULL;
-        rc = shell_execute(p);
+        rc = shell_execute(command_line);
         if (rc == 0)
-          puts("OK");
+          puts_("OK\r\n$ ");
         else if (rc < 0)
-          puts("Invalid command line");
+          puts_("Invalid command line\r\n$ ");
         else
-          printf("shell_execute returned %d\n", rc);
+          printf("shell_execute returned %d\n$ ", rc);
         break;
     }
   }
