@@ -3,6 +3,9 @@
 
 typedef struct {
   unsigned char adcRetention;
+  unsigned char fifoThr;
+  unsigned char sYNCH;
+  unsigned char sYNCL;
   unsigned char freqIf;
   unsigned char mode;
   unsigned char chanSpcE;
@@ -11,6 +14,8 @@ typedef struct {
   unsigned char drateM;
   unsigned char DEVIATN;
   unsigned char FOCCFG;
+  unsigned char aGCCTRL2;
+  unsigned char aGCCTRL1;
   unsigned char WORCTRL;
   unsigned char FSCAL3;
   unsigned char FSCAL2;
@@ -19,8 +24,11 @@ typedef struct {
   unsigned char TEST2;
   unsigned char TEST1;
   unsigned char TEST0;
+  unsigned char pktFormat;
 } BaudRateAndModeParameters;
 
+#define CC1101_IOCFG2  0U
+#define CC1101_AGCCTRL2 0x1BU
 #define CC1101_IOCFG0  2U
 #define CC1101_WORCTRL 0x20U
 #define CC1101_FSCAL3  0x23U
@@ -29,6 +37,7 @@ typedef struct {
 #define CC1101_PKTLEN  6U
 
 #define CC1101_PACKET_RECEIVED 7U
+#define CC1101_RX_FIFO_FULL_OR_END_OF_THE_PACKET 1U
 
 #define CC1101_APPEND_STATUS 4U
 #define CC1101_CRC_AUTOFLUSH 8U
@@ -52,14 +61,19 @@ BaudRateAndModeParameters baudRateAndModeParameters[] = {
   //GFSK 1200
   {
     0x40U,
+    7,
+    0xD3,
+    0x91,
     6,
-    0x10,
+    0x10, // GFSK
     2,
     0xF8,
     0xF5,
     0x83,
     0x15,
     0x16,
+    3,
+    0x40,
     0xFB,
     0xE9,
     0x2A,
@@ -67,7 +81,60 @@ BaudRateAndModeParameters baudRateAndModeParameters[] = {
     0x1F,
     0x81,
     0x35,
-    0x09
+    0x09,
+    0 // Normal mode, use FIFOs for RX and TX
+  },
+  // Infinite RX, RSSI 5 Khz
+  {
+      0x40U,
+      7,
+      0xD3,
+      0x91,
+      6,
+      0x10, // GFSK
+      2,
+      0xF8,
+      0xF5,
+      0x83,
+      0x15,
+      0x16,
+      3,
+      0x40,
+      0xFB,
+      0xE9,
+      0x2A,
+      0,
+      0x1F,
+      0x81,
+      0x35,
+      0x09,
+      0x30 // Asynchronous serial mode, Data in on GDO0 and data out on either of the GDOx pins
+  },
+    // LaCrosse TX29IT
+  {
+      0x40U,
+      1,
+      0x2D,
+      0xD4,
+      0x0F,
+      0, // 2-FSK
+      2,
+      0xF8,
+      0x89,
+      0x5C,
+      0x56,
+      0x16,
+      0x43,
+      0x68,
+      0xF8,
+      0xE9,
+      0x2A,
+      0,
+      0x11,
+      0x81,
+      0x35,
+      0x09,
+      0 // Normal mode, use FIFOs for RX and TX
   }
 };
 
@@ -82,19 +149,21 @@ unsigned int cc1101_Init(unsigned int device_num, const cc1101_cfg *cfg)
 
   // disable the clock output on GDO0
   txdata[0] = CC1101_IOCFG0;
-  txdata[1] = CC1101_PACKET_RECEIVED;
-  txdata[2] = p.adcRetention | cfg->rxAttenuation | 7U;
-  rc = cc1101_RW(device_num, txdata, rxdata, 2);
+  txdata[1] = cfg->crcEnabled ? CC1101_PACKET_RECEIVED : CC1101_RX_FIFO_FULL_OR_END_OF_THE_PACKET;
+  txdata[2] = p.adcRetention | cfg->rxAttenuation | p.fifoThr;
+  txdata[3] = p.sYNCH;
+  txdata[4] = p.sYNCL;
+  rc = cc1101_RW(device_num, txdata, rxdata, 5);
   if (!rc)
     return 0;
 
-  freq = (unsigned int)((uint64_t)cfg->freq * 65536 / FOSC);
+  freq = (unsigned int)((unsigned long long int)cfg->freq * 65536 / FOSC);
 
   // packet length
   txdata[0] = CC1101_PKTLEN;
   txdata[1] = cfg->packetLength;
   txdata[2] = cfg->addressCheck | cfg->pqt | (cfg->crcAutoflush ? CC1101_CRC_AUTOFLUSH : 0) | (cfg->appendStatus ? CC1101_APPEND_STATUS : 0);
-  txdata[3] = (cfg->whiteData ? CC1101_WHITE_DATA : 0) | (cfg->crcEnabled ? CC1101_CRC_EN : 0) | cfg->packetLengthConfig;
+  txdata[3] = (cfg->whiteData ? CC1101_WHITE_DATA : 0) | (cfg->crcEnabled ? CC1101_CRC_EN : 0) | cfg->packetLengthConfig | p.pktFormat;
   txdata[4] = cfg->address;
   txdata[5] = cfg->channel;
   txdata[6] = p.freqIf;
@@ -113,6 +182,13 @@ unsigned int cc1101_Init(unsigned int device_num, const cc1101_cfg *cfg)
   txdata[19] = (cfg->enablePinControl ? CC1101_PINCTRL_EN : 0) | (cfg->forceXOSCOn ? CC1101_XOSC_FORCE_ON : 0) | cfg->autocal | cfg->poTimeout;
   txdata[20] = p.FOCCFG;
   rc = cc1101_RW(device_num, txdata, rxdata, 21);
+  if (!rc)
+    return 0;
+
+  txdata[0] = CC1101_AGCCTRL2;
+  txdata[1] = p.aGCCTRL2;
+  txdata[2] = p.aGCCTRL1;
+  rc = cc1101_RW(device_num, txdata, rxdata, 3);
   if (!rc)
     return 0;
 
@@ -169,8 +245,6 @@ unsigned int cc1101_Check(unsigned int device_num)
 
 unsigned int cc1101_powerOn(unsigned int device_num)
 {
-  unsigned char status;
-
   cc1101_CSN_CLR(device_num);
   cc1101_CSN_SET(device_num);
   cc1101_CSN_CLR(device_num);

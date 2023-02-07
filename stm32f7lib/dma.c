@@ -5,7 +5,7 @@
 static unsigned int DMA_CheckFifoParam(DMA_HandleTypeDef *hdma)
 {
   int status = 0;
-  uint32_t tmp = hdma->Init.FIFOThreshold;
+  unsigned int tmp = hdma->Init.FIFOThreshold;
 
   /* Memory Data size equal to Byte */
   if(hdma->Init.MemDataAlignment == DMA_MDATAALIGN_BYTE)
@@ -97,12 +97,12 @@ static unsigned int DMA_CalcBaseAndBitshift(DMA_HandleTypeDef *hdma)
   if (stream_number > 3U)
   {
     /* return pointer to HISR and HIFCR */
-    hdma->StreamBaseAddress = (((uint32_t)hdma->Instance & (uint32_t)(~0x3FFU)) + 4U);
+    hdma->StreamBaseAddress = (((unsigned int)hdma->Instance & (unsigned int)(~0x3FFU)) + 4U);
   }
   else
   {
     /* return pointer to LISR and LIFCR */
-    hdma->StreamBaseAddress = ((uint32_t)hdma->Instance & (uint32_t)(~0x3FFU));
+    hdma->StreamBaseAddress = ((unsigned int)hdma->Instance & (unsigned int)(~0x3FFU));
   }
 
   return hdma->StreamBaseAddress;
@@ -200,12 +200,12 @@ unsigned int DMA_Init(DMA_HandleTypeDef *hdma)
   * @param  DataLength The length of data to be transferred from source to destination
   * @retval HAL status
   */
-static void DMA_SetConfig(DMA_HandleTypeDef *hdma, uint32_t SrcAddress, uint32_t DstAddress, uint32_t DstAddress2, uint32_t DataLength)
+static void DMA_SetConfig(DMA_HandleTypeDef *hdma, unsigned int SrcAddress, unsigned int DstAddress, unsigned int DstAddress2, unsigned int DataLength)
 {
   if (!DstAddress2)
   {
     /* Clear DBM bit */
-    hdma->Instance->CR &= (uint32_t) (~DMA_SxCR_DBM);
+    hdma->Instance->CR &= (unsigned int) (~DMA_SxCR_DBM);
   }
   else
   {
@@ -247,7 +247,7 @@ static void DMA_SetConfig(DMA_HandleTypeDef *hdma, uint32_t SrcAddress, uint32_t
   * @param  DataLength The length of data to be transferred from source to destination
   * @retval HAL status
   */
-void DMA_Start(DMA_HandleTypeDef *hdma, uint32_t SrcAddress, uint32_t DstAddress, uint32_t DstAddress2, uint32_t DataLength)
+void DMA_Start(DMA_HandleTypeDef *hdma, unsigned int SrcAddress, unsigned int DstAddress, unsigned int DstAddress2, unsigned int DataLength)
 {
   /* Configure the source, destination address and the data length */
   DMA_SetConfig(hdma, SrcAddress, DstAddress, DstAddress2, DataLength);
@@ -264,7 +264,7 @@ void DMA_Start(DMA_HandleTypeDef *hdma, uint32_t SrcAddress, uint32_t DstAddress
   * @param  DataLength The length of data to be transferred from source to destination
   * @retval HAL status
   */
-void DMA_Start_IT(DMA_HandleTypeDef *hdma, uint32_t SrcAddress, uint32_t DstAddress, uint32_t DstAddress2, uint32_t DataLength)
+void DMA_Start_IT(DMA_HandleTypeDef *hdma, unsigned int SrcAddress, unsigned int DstAddress, unsigned int DstAddress2, unsigned int DataLength)
 {
   /* calculate DMA base and stream number */
   DMA_Base_Registers *regs = (DMA_Base_Registers *)hdma->StreamBaseAddress;
@@ -280,4 +280,212 @@ void DMA_Start_IT(DMA_HandleTypeDef *hdma, uint32_t SrcAddress, uint32_t DstAddr
 
   /* Enable the Peripheral */
   DMA_ENABLE(hdma);
+}
+
+/**
+  * @brief  Handles DMA interrupt request.
+  * @param  hdma: pointer to a DMA_HandleTypeDef structure that contains
+  *               the configuration information for the specified DMA Stream.
+  * @retval None
+  */
+void DMA_IRQHandler(DMA_HandleTypeDef *hdma)
+{
+  unsigned int tmpisr;
+  __IO unsigned int count = 0;
+  unsigned int timeout = SYSCLK_FREQ / 9600;
+
+  /* calculate DMA base and stream number */
+  DMA_Base_Registers *regs = (DMA_Base_Registers *)hdma->StreamBaseAddress;
+
+  tmpisr = regs->ISR;
+
+  /* Transfer Error Interrupt management ***************************************/
+  if ((tmpisr & (DMA_FLAG_TEIF0_4 << hdma->StreamIndex)) != RESET)
+  {
+    if(DMA_GET_IT_SOURCE(hdma, DMA_IT_TE) != RESET)
+    {
+      /* Disable the transfer error interrupt */
+      hdma->Instance->CR  &= ~(DMA_IT_TE);
+
+      /* Clear the transfer error flag */
+      regs->IFCR = DMA_FLAG_TEIF0_4 << hdma->StreamIndex;
+
+      /* Update error code */
+      hdma->ErrorCode |= DMA_ERROR_TE;
+    }
+  }
+  /* FIFO Error Interrupt management ******************************************/
+  if ((tmpisr & (DMA_FLAG_FEIF0_4 << hdma->StreamIndex)) != RESET)
+  {
+    if(DMA_GET_IT_SOURCE(hdma, DMA_IT_FE) != RESET)
+    {
+      /* Clear the FIFO error flag */
+      regs->IFCR = DMA_FLAG_FEIF0_4 << hdma->StreamIndex;
+
+      /* Update error code */
+      hdma->ErrorCode |= DMA_ERROR_FE;
+    }
+  }
+  /* Direct Mode Error Interrupt management ***********************************/
+  if ((tmpisr & (DMA_FLAG_DMEIF0_4 << hdma->StreamIndex)) != RESET)
+  {
+    if(DMA_GET_IT_SOURCE(hdma, DMA_IT_DME) != RESET)
+    {
+      /* Clear the direct mode error flag */
+      regs->IFCR = DMA_FLAG_DMEIF0_4 << hdma->StreamIndex;
+
+      /* Update error code */
+      hdma->ErrorCode |= DMA_ERROR_DME;
+    }
+  }
+  /* Half Transfer Complete Interrupt management ******************************/
+  if ((tmpisr & (DMA_FLAG_HTIF0_4 << hdma->StreamIndex)) != RESET)
+  {
+    if(DMA_GET_IT_SOURCE(hdma, DMA_IT_HT) != RESET)
+    {
+      /* Clear the half transfer complete flag */
+      regs->IFCR = DMA_FLAG_HTIF0_4 << hdma->StreamIndex;
+
+      /* Multi_Buffering mode enabled */
+      if(((hdma->Instance->CR) & (unsigned int)(DMA_SxCR_DBM)) != RESET)
+      {
+        /* Current memory buffer used is Memory 0 */
+        if((hdma->Instance->CR & DMA_SxCR_CT) == RESET)
+        {
+          if(hdma->XferHalfCpltCallback != NULL)
+          {
+            /* Half transfer callback */
+            hdma->XferHalfCpltCallback(hdma);
+          }
+        }
+          /* Current memory buffer used is Memory 1 */
+        else
+        {
+          if(hdma->XferM1HalfCpltCallback != NULL)
+          {
+            /* Half transfer callback */
+            hdma->XferM1HalfCpltCallback(hdma);
+          }
+        }
+      }
+      else
+      {
+        /* Disable the half transfer interrupt if the DMA mode is not CIRCULAR */
+        if((hdma->Instance->CR & DMA_SxCR_CIRC) == RESET)
+        {
+          /* Disable the half transfer interrupt */
+          hdma->Instance->CR  &= ~(DMA_IT_HT);
+        }
+
+        if(hdma->XferHalfCpltCallback != NULL)
+        {
+          /* Half transfer callback */
+          hdma->XferHalfCpltCallback(hdma);
+        }
+      }
+    }
+  }
+  /* Transfer Complete Interrupt management ***********************************/
+  if ((tmpisr & (DMA_FLAG_TCIF0_4 << hdma->StreamIndex)) != RESET)
+  {
+    if(DMA_GET_IT_SOURCE(hdma, DMA_IT_TC) != RESET)
+    {
+      /* Clear the transfer complete flag */
+      regs->IFCR = DMA_FLAG_TCIF0_4 << hdma->StreamIndex;
+
+      if(DMA_STATE_ABORT == hdma->State)
+      {
+        /* Disable all the transfer interrupts */
+        hdma->Instance->CR  &= ~(DMA_IT_TC | DMA_IT_TE | DMA_IT_DME);
+        hdma->Instance->FCR &= ~(DMA_IT_FE);
+
+        if((hdma->XferHalfCpltCallback != NULL) || (hdma->XferM1HalfCpltCallback != NULL))
+        {
+          hdma->Instance->CR  &= ~(DMA_IT_HT);
+        }
+
+        /* Clear all interrupt flags at correct offset within the register */
+        regs->IFCR = 0x3FU << hdma->StreamIndex;
+
+        /* Change the DMA state */
+        hdma->State = DMA_STATE_READY;
+
+        if(hdma->XferAbortCallback != NULL)
+        {
+          hdma->XferAbortCallback(hdma);
+        }
+        return;
+      }
+
+      if(((hdma->Instance->CR) & (unsigned int)(DMA_SxCR_DBM)) != RESET)
+      {
+        /* Current memory buffer used is Memory 0 */
+        if((hdma->Instance->CR & DMA_SxCR_CT) == RESET)
+        {
+          if(hdma->XferM1CpltCallback != NULL)
+          {
+            /* Transfer complete Callback for memory1 */
+            hdma->XferM1CpltCallback(hdma);
+          }
+        }
+          /* Current memory buffer used is Memory 1 */
+        else
+        {
+          if(hdma->XferCpltCallback != NULL)
+          {
+            /* Transfer complete Callback for memory0 */
+            hdma->XferCpltCallback(hdma);
+          }
+        }
+      }
+        /* Disable the transfer complete interrupt if the DMA mode is not CIRCULAR */
+      else
+      {
+        if((hdma->Instance->CR & DMA_SxCR_CIRC) == RESET)
+        {
+          /* Disable the transfer complete interrupt */
+          hdma->Instance->CR  &= ~(DMA_IT_TC);
+
+          /* Change the DMA state */
+          hdma->State = DMA_STATE_READY;
+        }
+
+        if(hdma->XferCpltCallback != NULL)
+        {
+          /* Transfer complete callback */
+          hdma->XferCpltCallback(hdma);
+        }
+      }
+    }
+  }
+
+  /* manage error case */
+  if(hdma->ErrorCode != DMA_ERROR_NONE)
+  {
+    if((hdma->ErrorCode & DMA_ERROR_TE) != RESET)
+    {
+      hdma->State = DMA_STATE_ABORT;
+
+      /* Disable the stream */
+      DMA_DISABLE(hdma);
+
+      do
+      {
+        if (++count > timeout)
+        {
+          break;
+        }
+      }
+      while((hdma->Instance->CR & DMA_SxCR_EN) != RESET);
+
+      /* Change the DMA state */
+      hdma->State = DMA_STATE_READY;
+    }
+
+    if(hdma->XferErrorCallback != NULL)
+    {
+      /* Transfer error callback */
+      hdma->XferErrorCallback(hdma);
+    }
+  }
 }

@@ -1,5 +1,5 @@
 #include <string.h>
-#include "fixed_queue.h"
+#include <fixed_queue.h>
 
 void queue_init(Queue* q, int size, int item_length, char* buffer)
 {
@@ -42,4 +42,21 @@ void queue_push(Queue* q, void *data)
     if (q->first >= q->size)
       q->first = 0;
   }
+}
+
+int queue_size(Queue* q)
+{
+  if (q->current >= q->first)
+    return q->current - q->first;
+  return q->size - q->first + q->current;
+}
+
+void *queue_peekn(Queue* q, int offset)
+{
+  if (offset < 0 || offset > queue_size(q) - 1)
+    return NULL;
+  offset = q->current - offset - 1;
+  if (offset < 0)
+    offset += q->size;
+  return q->buffer + offset * q->item_length;
 }

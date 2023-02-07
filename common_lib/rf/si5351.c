@@ -362,7 +362,7 @@ int si5351_set_freq(int channel, unsigned int freq, int pll_freq, enum si5351_cl
 			if (si5351_write_bulk(channel, SI5351_PLLA_PARAMETERS, i + 1, params))
 				return 1;
 		}
-		else if(target_pll == SI5351_PLLB)
+		else
 		{
 			if (si5351_write_bulk(channel, SI5351_PLLB_PARAMETERS, i + 1, params))
 				return 1;

@@ -1,6 +1,17 @@
 #ifndef _EEPROM_FS_H
 #define _EEPROM_FS_H
 
+#define READ8     0
+#define READ16    1
+#define READ32    2
+#define WRITE8    3
+#define WRITE16   4
+#define WRITE32   5 
+
+void EEPROM_WritePage(unsigned int pageWrite, void* pBuf, unsigned int pSize, unsigned int Command);
+void EEPROM_ReadPage(unsigned int pageRead, void* pBuf, unsigned int pSize, unsigned int Command);
+void EEPROM_Erase(void);
+
 typedef struct {
   unsigned int file_size;
   char file_name[28];

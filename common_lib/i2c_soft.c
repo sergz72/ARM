@@ -81,6 +81,23 @@ unsigned int i2c_soft_tx(int channel, unsigned char d)
   return b;
 }
 
+int i2c_soft_read(int channel, unsigned int address, unsigned char *in_data, unsigned int in_data_length)
+{
+  unsigned int i;
+
+  i2c_soft_start(channel);                  // send start sequence
+  if (i2c_soft_tx(channel, address | 1)) // no ack
+  {
+    i2c_soft_stop(channel);
+    return 1;
+  }
+
+  for (i = 0; i < in_data_length - 1; i++)
+    *in_data++ = i2c_soft_rx(channel, 1);
+  *in_data = i2c_soft_rx(channel, 0); //we don't acknowledge the last byte.
+  i2c_soft_stop(channel);                 // send stop sequence
+}
+
 int i2c_soft_command(int channel, unsigned int address, unsigned char *commands, unsigned int commands_length,
                      unsigned char *out_data, unsigned int out_data_length,
                      unsigned char *in_data, unsigned int in_data_length)
@@ -101,7 +118,7 @@ int i2c_soft_command(int channel, unsigned int address, unsigned char *commands,
 		  if (i2c_soft_tx(channel, commands[i]))
 			{
 				i2c_soft_stop(channel);
-				return 1;
+				return 2;
 			}
 		}
   }
@@ -113,7 +130,7 @@ int i2c_soft_command(int channel, unsigned int address, unsigned char *commands,
       if (i2c_soft_tx(channel, out_data[i]))
 			{
 				i2c_soft_stop(channel);
-				return 1;
+				return 3;
 			}
 		}
   }
@@ -121,7 +138,11 @@ int i2c_soft_command(int channel, unsigned int address, unsigned char *commands,
   if (in_data_length != 0)
   {
     i2c_soft_start(channel);              // send a restart sequence
-    i2c_soft_tx(channel, address | 1);
+    if (i2c_soft_tx(channel, address | 1))
+    {
+      i2c_soft_stop(channel);
+      return 4;
+    }
     for (i = 0; i < in_data_length - 1; i++)
       *in_data++ = i2c_soft_rx(channel, 1);
     *in_data = i2c_soft_rx(channel, 0); //we don't acknowledge the last byte.

@@ -79,6 +79,8 @@ typedef struct
 #define CC1101_DRATE_E_15 15U
 
 #define CC1101_MODE_GFSK_1200 0U
+#define CC1101_MODE_INFINITE_RX_5KHZ_RSSI 1U
+#define CC1101_MODE_LA_CROSSE 2U
 
 #define CC1101_SYNC_MODE_OFF           0U
 #define CC1101_SYNC_MODE_1516          1U

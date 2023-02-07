@@ -269,7 +269,27 @@ static void USB_DevInit(void)
     USBHandle.Instance->GCCFG |= USB_OTG_GCCFG_VBUSBSEN;
   }
 #else
+#ifdef STM32F4
+  if (USBHandle.Cfg->vbus_sensing_enable == 0)
+  {
+    /*
+     * disable HW VBUS sensing. VBUS is internally considered to be always
+     * at VBUS-Valid level (5V).
+     */
+    USBx_DEVICE->DCTL |= USB_OTG_DCTL_SDIS;
+    USBHandle.Instance->GCCFG |= USB_OTG_GCCFG_NOVBUSSENS;
+    USBHandle.Instance->GCCFG &= ~USB_OTG_GCCFG_VBUSBSEN;
+    USBHandle.Instance->GCCFG &= ~USB_OTG_GCCFG_VBUSASEN;
+  }
+  else
+  {
+    /* Enable HW VBUS sensing */
+    USBHandle.Instance->GCCFG &= ~USB_OTG_GCCFG_NOVBUSSENS;
+    USBHandle.Instance->GCCFG |= USB_OTG_GCCFG_VBUSBSEN;
+  }
+#else
   #error PLEASE DEFINE CPU FAMILY
+#endif
 #endif
 #endif
 
@@ -279,6 +299,7 @@ static void USB_DevInit(void)
   /* Device mode configuration */
   USBx_DEVICE->DCFG |= DCFG_FRAME_INTERVAL_80;
 
+#ifdef USB_OTG_HS
   if (USBHandle.Instance == USB_OTG_HS)
   {
     /* Set High speed phy */
@@ -286,9 +307,12 @@ static void USB_DevInit(void)
   }
   else
   {
+#endif
     /* Set Full speed phy */
     USB_SetDevSpeed(USB_OTG_SPEED_FULL);
+#ifdef USB_OTG_HS
   }
+#endif
 
   /* Flush the FIFOs */
   USB_FlushTxFifo(0x10); /* all Tx FIFOs */

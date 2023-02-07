@@ -1,5 +1,6 @@
 #include <board.h>
 #include <eeprom_fs.h>
+#include <string.h>
 
 unsigned int EEPROM_get_psize(unsigned int size)
 {
@@ -36,12 +37,12 @@ const char *EEPROM_CreateSection(const char *section_name, int section_size, uns
         free_space_max = hdr.file_size;
     }
     else if (!strcmp(hdr.file_name, section_name))
-      return "Section already exist";
+      return "Section already exists";
     page_no += hdr.file_size;
   }
 
   if (section_psize > free_space_max)
-    return "No enough free space in the eeprom";
+    return "Not enough free space in the eeprom";
 
   // creating section
   page_no = 0;
@@ -52,7 +53,7 @@ const char *EEPROM_CreateSection(const char *section_name, int section_size, uns
     hdr.file_size = EEPROM_get_psize(hdr.file_size);
     if (!hdr.file_name[0] && hdr.file_size >= section_psize)
     {
-      strcpy_s(hdr2.file_name, sizeof(hdr2.file_name), section_name);
+      strncpy(hdr2.file_name, section_name, sizeof(hdr2.file_name));
       hdr2.file_size = section_size;
       EEPROM_WritePage(page_no, &hdr2, strlen(section_name) + 5, WRITE8);
       if (hdr.file_size > section_psize)

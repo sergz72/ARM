@@ -9,5 +9,6 @@ unsigned int i2c_soft_tx(int channel, unsigned char d);
 int i2c_soft_command(int channel, unsigned int address, unsigned char commands[],  unsigned int commands_length,
                      unsigned char out_data[], unsigned int out_data_length,
                      unsigned char in_data[], unsigned int in_data_length);
+int i2c_soft_read(int channel, unsigned int address, unsigned char *in_data, unsigned int in_data_length);
 
 #endif

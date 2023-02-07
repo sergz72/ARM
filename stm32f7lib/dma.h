@@ -101,6 +101,15 @@
 #define DMA_FLAG_HTIF3_7                         0x04000000U
 #define DMA_FLAG_TCIF3_7                         0x08000000U
 
+#define DMA_ERROR_NONE            0x00000000U    /*!< No error                               */
+#define DMA_ERROR_TE              0x00000001U    /*!< Transfer error                         */
+#define DMA_ERROR_FE              0x00000002U    /*!< FIFO error                             */
+#define DMA_ERROR_DME             0x00000004U    /*!< Direct Mode error                      */
+#define DMA_ERROR_TIMEOUT         0x00000020U    /*!< Timeout error                          */
+#define DMA_ERROR_PARAM           0x00000040U    /*!< Parameter error                        */
+#define DMA_ERROR_NO_XFER         0x00000080U    /*!< Abort requested with no Xfer ongoing   */
+#define DMA_ERROR_NOT_SUPPORTED   0x00000100U    /*!< Not supported mode                     */
+
 /**
   * @brief  Enable the specified DMA Stream.
   * @param  __HANDLE__ DMA handle
@@ -114,6 +123,35 @@
   * @retval None
   */
 #define DMA_DISABLE(__HANDLE__)     ((__HANDLE__)->Instance->CR &=  ~DMA_SxCR_EN)
+
+/**
+  * @brief  Check whether the specified DMA Stream interrupt is enabled or not.
+  * @param  __HANDLE__: DMA handle
+  * @param  __INTERRUPT__: specifies the DMA interrupt source to check.
+  *         This parameter can be one of the following values:
+  *            @arg DMA_IT_TC: Transfer complete interrupt mask.
+  *            @arg DMA_IT_HT: Half transfer complete interrupt mask.
+  *            @arg DMA_IT_TE: Transfer error interrupt mask.
+  *            @arg DMA_IT_FE: FIFO error interrupt mask.
+  *            @arg DMA_IT_DME: Direct mode error interrupt.
+  * @retval The state of DMA_IT.
+  */
+#define DMA_GET_IT_SOURCE(__HANDLE__, __INTERRUPT__)  (((__INTERRUPT__) != DMA_IT_FE)? \
+                                                        ((__HANDLE__)->Instance->CR & (__INTERRUPT__)) : \
+                                                        ((__HANDLE__)->Instance->FCR & (__INTERRUPT__)))
+
+/**
+  * @brief  HAL DMA State structures definition
+  */
+typedef enum
+{
+  DMA_STATE_RESET             = 0x00U,  /*!< DMA not yet initialized or disabled */
+  DMA_STATE_READY             = 0x01U,  /*!< DMA initialized and ready for use   */
+  DMA_STATE_BUSY              = 0x02U,  /*!< DMA process is ongoing              */
+  DMA_STATE_TIMEOUT           = 0x03U,  /*!< DMA timeout state                   */
+  DMA_STATE_ERROR             = 0x04U,  /*!< DMA error state                     */
+  DMA_STATE_ABORT             = 0x05U,  /*!< DMA Abort state                     */
+} DMA_StateTypeDef;
 
 /** 
   * @brief  DMA Configuration Structure definition
@@ -177,7 +215,22 @@ typedef struct __DMA_HandleTypeDef
   unsigned int               StreamBaseAddress;                                            /*!< DMA Stream Base Address                */
 
   unsigned int               StreamIndex;                                                  /*!< DMA Stream Index                       */
- 
+
+  __IO DMA_StateTypeDef      State;                                                        /*!< DMA transfer state                     */
+
+  void                       (* XferCpltCallback)( struct __DMA_HandleTypeDef * hdma);     /*!< DMA transfer complete callback         */
+
+  void                       (* XferHalfCpltCallback)( struct __DMA_HandleTypeDef * hdma); /*!< DMA Half transfer complete callback    */
+
+  void                       (* XferM1CpltCallback)( struct __DMA_HandleTypeDef * hdma);   /*!< DMA transfer complete Memory1 callback */
+
+  void                       (* XferM1HalfCpltCallback)( struct __DMA_HandleTypeDef * hdma);   /*!< DMA transfer Half complete Memory1 callback */
+
+  void                       (* XferErrorCallback)( struct __DMA_HandleTypeDef * hdma);    /*!< DMA transfer error callback            */
+
+  void                       (* XferAbortCallback)( struct __DMA_HandleTypeDef * hdma);    /*!< DMA transfer Abort callback            */
+
+  __IO unsigned int               ErrorCode;                                                    /*!< DMA Error code                          */
 } DMA_HandleTypeDef;
 
 typedef struct
@@ -188,7 +241,8 @@ typedef struct
 } DMA_Base_Registers;
 
 unsigned int DMA_Init(DMA_HandleTypeDef *hdma);
-void DMA_Start(DMA_HandleTypeDef *hdma, uint32_t SrcAddress, uint32_t DstAddress, uint32_t DstAddress2, uint32_t DataLength);
-void DMA_Start_IT(DMA_HandleTypeDef *hdma, uint32_t SrcAddress, uint32_t DstAddress, uint32_t DstAddress2, uint32_t DataLength);
+void DMA_Start(DMA_HandleTypeDef *hdma, unsigned int SrcAddress, unsigned int DstAddress, unsigned int DstAddress2, unsigned int DataLength);
+void DMA_Start_IT(DMA_HandleTypeDef *hdma, unsigned int SrcAddress, unsigned int DstAddress, unsigned int DstAddress2, unsigned int DataLength);
+void DMA_IRQHandler(DMA_HandleTypeDef *hdma);
 
 #endif

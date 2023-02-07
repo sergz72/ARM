@@ -50,10 +50,10 @@ typedef struct
 void I2C_Init(I2C_TypeDef *instance, I2C_InitTypeDef *init);
 unsigned int I2C_Master_Transmit(I2C_TypeDef *instance, unsigned short DevAddress, unsigned char *pData, unsigned int Size, unsigned int Timeout);
 unsigned int I2C_Master_Receive(I2C_TypeDef *instance, unsigned short DevAddress, unsigned char *pData, int Size, unsigned int Timeout);
-unsigned int I2C_Master_Receive(I2C_TypeDef *instance, unsigned short DevAddress, unsigned char *pData, int Size, unsigned int Timeout);
 unsigned int I2C_Mem_Read(I2C_TypeDef *instance, unsigned short DevAddress, unsigned short MemAddress, unsigned int MemAddSize, unsigned char *pData, int Size,
                           unsigned int Timeout);
+unsigned int I2C_Mem_Write(I2C_TypeDef *instance, unsigned short DevAddress, unsigned short MemAddress, unsigned int MemAddSize, unsigned char *pData, int Size,
+                           unsigned int Timeout);
 unsigned int I2C_Test(I2C_TypeDef *instance, unsigned short DevAddress, unsigned int Timeout);
-
 
 #endif

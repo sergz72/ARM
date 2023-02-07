@@ -11,5 +11,7 @@ void *queue_peek(Queue* q);
 void queue_pop(Queue* q);
 void queue_push(Queue* q, void *data);
 void queue_reset(Queue* q);
+int queue_size(Queue* q);
+void *queue_peekn(Queue* q, int offset);
 
 #endif //MAIN_FIXED_QUEUE_H

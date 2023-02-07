@@ -62,7 +62,7 @@ void USBInterruptHandler(void)
     USBHandle.Instance->GINTSTS = USB_OTG_GINTSTS_USBSUSP;
 	}
 
-#ifndef STM32F2
+#if !defined(STM32F2) && !defined(STM32F4)
   /* Handle LPM Interrupt */ 
 	if (status & USB_OTG_GINTSTS_LPMINT)
 	{

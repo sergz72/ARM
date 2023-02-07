@@ -1,9 +1,6 @@
 #include <board.h>
 #include <i2c.h>
 
-#define I2C_DUTYCYCLE_2                 0x00000000U
-#define I2C_DUTYCYCLE_16_9              I2C_CCR_DUTY
-
 #define I2C_CCR_CALCULATION(__PCLK__, __SPEED__, __COEFF__)     (((((__PCLK__) - 1U)/((__SPEED__) * (__COEFF__))) + 1U) & I2C_CCR_CCR)
 
 #define I2C_RISE_TIME(__FREQRANGE__, __SPEED__)            (((__SPEED__) <= 100000U) ? ((__FREQRANGE__) + 1U) : ((((__FREQRANGE__) * 300U) / 1000U) + 1U))
@@ -573,6 +570,68 @@ static unsigned int I2C_RequestMemoryRead(I2C_TypeDef *instance, unsigned short 
   return I2C_WaitOnMasterAddressFlagUntilTimeout(instance, I2C_FLAG_ADDR, Timeout);
 }
 
+static unsigned int I2C_RequestMemoryWrite(I2C_TypeDef *instance, unsigned short DevAddress, unsigned short MemAddress, unsigned int MemAddSize, unsigned int Timeout)
+{
+  /* Generate Start */
+  SET_BIT(instance->CR1, I2C_CR1_START);
+
+  /* Wait until SB flag is set */
+  if (!I2C_WaitOnSR1FlagUntilTimeout(instance, I2C_FLAG_SB, I2C_FLAG_SB, Timeout))
+  {
+    /* Generate Stop */
+    SET_BIT(instance->CR1, I2C_CR1_STOP);
+    return 0;
+  }
+
+  /* Send slave address */
+  instance->DR = I2C_7BIT_ADD_WRITE(DevAddress);
+
+  /* Wait until ADDR flag is set */
+  if (!I2C_WaitOnMasterAddressFlagUntilTimeout(instance, I2C_FLAG_ADDR, Timeout))
+  {
+    /* Generate Stop */
+    SET_BIT(instance->CR1, I2C_CR1_STOP);
+    return 0;
+  }
+
+  /* Clear ADDR flag */
+  _I2C_CLEAR_ADDRFLAG(instance);
+
+  /* Wait until TXE flag is set */
+  if (!I2C_WaitOnTXEFlagUntilTimeout(instance, Timeout))
+  {
+    /* Generate Stop */
+    SET_BIT(instance->CR1, I2C_CR1_STOP);
+    return 0;
+  }
+
+  /* If Memory address size is 8Bit */
+  if (MemAddSize == I2C_MEMADD_SIZE_8BIT)
+  {
+    /* Send Memory Address */
+    instance->DR = I2C_MEM_ADD_LSB(MemAddress);
+  }
+    /* If Memory address size is 16Bit */
+  else
+  {
+    /* Send MSB of Memory Address */
+    instance->DR = I2C_MEM_ADD_MSB(MemAddress);
+
+    /* Wait until TXE flag is set */
+    if (!I2C_WaitOnTXEFlagUntilTimeout(instance, Timeout))
+    {
+      /* Generate Stop */
+      SET_BIT(instance->CR1, I2C_CR1_STOP);
+      return 0;
+    }
+
+    /* Send LSB of Memory Address */
+    instance->DR = I2C_MEM_ADD_LSB(MemAddress);
+  }
+
+  return 1;
+}
+
 unsigned int I2C_Mem_Read(I2C_TypeDef *instance, unsigned short DevAddress, unsigned short MemAddress, unsigned int MemAddSize, unsigned char *pData, int Size,
                           unsigned int Timeout)
 {
@@ -588,6 +647,54 @@ unsigned int I2C_Mem_Read(I2C_TypeDef *instance, unsigned short DevAddress, unsi
   }
 
   return I2C_Receive_End(instance, pData, Size, Timeout);
+}
+
+unsigned int I2C_Mem_Write(I2C_TypeDef *instance, unsigned short DevAddress, unsigned short MemAddress, unsigned int MemAddSize, unsigned char *pData, int Size,
+                           unsigned int Timeout)
+{
+  if (!I2C_Receive_Start(instance, Timeout))
+  {
+    return  0;
+  }
+
+  /* Send Slave Address and Memory Address */
+  if (!I2C_RequestMemoryWrite(instance, DevAddress, MemAddress, MemAddSize, Timeout))
+  {
+    return 0;
+  }
+
+  while (Size--)
+  {
+    /* Wait until TXE flag is set */
+    if (!I2C_WaitOnTXEFlagUntilTimeout(instance, Timeout))
+    {
+      /* Generate Stop */
+      SET_BIT(instance->CR1, I2C_CR1_STOP);
+      return 0;
+    }
+
+    /* Write data to DR */
+    instance->DR = *pData++;
+
+    if ((instance->SR1 & I2C_FLAG_BTF) && Size)
+    {
+      instance->DR = *pData++;
+      Size--;
+    }
+  }
+
+  /* Wait until BTF flag is set */
+  if (!I2C_WaitOnSR1FlagUntilTimeout(instance, I2C_FLAG_BTF, I2C_FLAG_BTF, Timeout))
+  {
+    /* Generate Stop */
+    SET_BIT(instance->CR1, I2C_CR1_STOP);
+    return 0;
+  }
+
+  /* Generate Stop */
+  SET_BIT(instance->CR1, I2C_CR1_STOP);
+
+  return 1;
 }
 
 unsigned int I2C_Test(I2C_TypeDef *instance, unsigned short DevAddress, unsigned int Timeout)
