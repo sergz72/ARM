@@ -1,0 +1,31 @@
+.program counter
+; jmp pin - gate pin
+; pin 0   - input pin
+.wrap_target
+    mov  x, osr    ; load x scratch with max value (2^32-1)
+wait1:
+    jmp  pin wait0
+    jmp  wait1     ; wait till gate pin is HIGH
+wait0:
+    jmp  pin wait0 ; wait till gate pin is LOW
+loop:
+    wait 0 pin 0
+    wait 1 pin 0
+    jmp  pin output
+    jmp  x-- loop
+output:
+    mov  isr, x
+    push
+    irq  0
+.wrap
+
+% c-sdk {
+static inline void counter_program_init(PIO pio, uint sm, uint offset, uint input_pin, uint gate_pin) {
+   pio_gpio_init(pio, input_pin);
+   pio_sm_set_consecutive_pindirs(pio, sm, input_pin, 1, false);
+   pio_sm_config c = counter_program_get_default_config(offset);
+   sm_config_set_in_pins(&c, input_pin); // for WAIT
+   sm_config_set_jmp_pin(&c, gate_pin);  // for JMP
+   pio_sm_init(pio, sm, offset, &c);
+}
+%}

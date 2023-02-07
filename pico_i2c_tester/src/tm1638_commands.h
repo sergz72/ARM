@@ -1,0 +1,6 @@
+#ifndef PICO_I2C_TESTER_TM1638_COMMANDS_H
+#define PICO_I2C_TESTER_TM1638_COMMANDS_H
+
+void register_tm1638_commands(void);
+
+#endif //PICO_I2C_TESTER_TM1638_COMMANDS_H

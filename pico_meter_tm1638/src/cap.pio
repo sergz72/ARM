@@ -1,0 +1,31 @@
+.program cap
+.side_set 1 opt
+; pin 0 - rhigh pin
+.wrap_target
+    pull block             ; Pull from FIFO to OSR if available
+    mov  x, osr            ; load x scratch with max value (2^32-1)
+    set  pins, 1 side 1    ; Turn RHIGH pullup on
+
+wait1:
+    jmp  pin is1
+    jmp  x-- wait1         ; wait till input pin is HIGH
+is1:
+    set  pins, 0 side 0    ; Turn RHIGH pullup off
+    mov  isr, x
+    push
+    irq  1
+.wrap
+
+% c-sdk {
+static inline void cap_program_init(PIO pio, uint sm, uint offset, uint rhigh_pin, uint in_pin) {
+   pio_gpio_init(pio, rhigh_pin);
+   pio_gpio_init(pio, in_pin);
+   pio_sm_set_consecutive_pindirs(pio, sm, rhigh_pin, 1, true);
+   pio_sm_set_consecutive_pindirs(pio, sm, in_pin, 1, false);
+   pio_sm_config c = cap_program_get_default_config(offset);
+   sm_config_set_set_pins(&c, rhigh_pin, 1);
+   sm_config_set_jmp_pin(&c, in_pin);  // for JMP
+   sm_config_set_sideset_pins(&c, PICO_DEFAULT_LED_PIN);
+   pio_sm_init(pio, sm, offset, &c);
+}
+%}
