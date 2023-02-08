@@ -1,3 +1,4 @@
+#include "board.h"
 #include "i2c_commands.h"
 #include <shell.h>
 #include <stddef.h>
@@ -77,7 +78,7 @@ static int i2cwrite_handler(printf_func pfunc, gets_func gfunc, int argc, char *
   for (i = 0; i < rc; i++)
     pfunc("%02X", data[i]);
   pfunc("\n");
-  rc = i2c_write_timeout_us(i2c_default, address, data, rc, false, 1000);
+  rc = i2c_write_timeout_us(i2c_default, address, data, rc, false, I2C_TIMEOUT);
   if (rc == PICO_ERROR_GENERIC)
   {
     pfunc("I2C write error\n");
@@ -94,7 +95,7 @@ static int i2cwrite_handler(printf_func pfunc, gets_func gfunc, int argc, char *
 static int i2cread_handler(printf_func pfunc, gets_func gfunc, int argc, char **argv, void *_data)
 {
   int i, rc, num_bytes;
-  unsigned char data[20], address;
+  unsigned char data[50], address;
 
   rc = read_hex_string(argv[0], data, 1);
   if (rc <= 0 || data[0] > 0x7F)
@@ -126,7 +127,7 @@ static int i2cread_handler(printf_func pfunc, gets_func gfunc, int argc, char **
     for (i = 0; i < rc; i++)
       pfunc("%02X", data[i]);
     pfunc("\n");
-    rc = i2c_write_timeout_us(i2c_default, address, data, rc, true, 1000);
+    rc = i2c_write_timeout_us(i2c_default, address, data, rc, true, I2C_TIMEOUT);
     if (rc == PICO_ERROR_GENERIC) // true to keep master control of bus
     {
       pfunc("I2C write error\n");
@@ -139,7 +140,7 @@ static int i2cread_handler(printf_func pfunc, gets_func gfunc, int argc, char **
     }
   }
   pfunc("i2c read %d bytes\n", num_bytes);
-  rc = i2c_read_timeout_us(i2c_default, address, data, num_bytes, false, 1000);
+  rc = i2c_read_timeout_us(i2c_default, address, data, num_bytes, false, I2C_TIMEOUT);
   if (rc == PICO_ERROR_GENERIC)
   {
     pfunc("I2C read error\n");

@@ -5,6 +5,7 @@
 #include <getstring.h>
 #include "i2c_commands.h"
 #include "tm1638_commands.h"
+#include "dds_commands.h"
 #include <tm1638.h>
 
 static char command_line[200];
@@ -43,6 +44,7 @@ int main()
   shell_init(printf, gets_);
   register_i2c_commands();
   register_tm1638_commands();
+  register_dds_commands();
 
   getstring_init(command_line, sizeof(command_line), getch_, puts_);
 

@@ -8,7 +8,7 @@
 #define FALSE 0
 #define TRUE  1
 
-#define MAX_SHELL_COMMANDS 20
+#define MAX_SHELL_COMMANDS 100
 #define MAX_SHELL_COMMAND_PARAMETERS 10
 #define MAX_SHELL_COMMAND_PARAMETER_LENGTH 50
 #define SHELL_HISTORY_SIZE 20
@@ -29,6 +29,8 @@
 #define SPI3_CS_CLR gpio_put(SPI3_CS_PIN, 0)
 #define SPI3_CUSTOM_DELAY
 #define SPI3_LSB_FIRST
+
+#define I2C_TIMEOUT 1000000 // 1s
 
 void SystemInit(void);
 

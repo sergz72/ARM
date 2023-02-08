@@ -32,12 +32,12 @@ typedef struct {
 } dds_set_mode_command;
 
 typedef struct {
-  unsigned int frequency;
+  unsigned long frequency;
   unsigned short divider;
 } dds_set_frequency_command;
 
 typedef struct {
-  unsigned int frequency_code;
+  unsigned long frequency_code;
   unsigned short divider;
 } dds_set_frequency_code_command;
 
@@ -55,5 +55,31 @@ typedef struct {
     dds_set_attenuator_command set_attenuator_command;
   };
 } dds_cmd;
+
+typedef struct __attribute__((__packed__)) {
+  unsigned char command;
+  unsigned char channel;
+  unsigned char parameter;
+} dds_cmd3;
+
+typedef struct __attribute__((__packed__)) {
+  unsigned char command;
+  unsigned char channel;
+  unsigned short parameter;
+} dds_cmd4;
+
+typedef struct __attribute__((__packed__)) {
+  unsigned char  command;
+  unsigned char  channel;
+  unsigned long  freq;
+  unsigned short div;
+} dds_cmd8;
+
+typedef union __attribute__((__packed__)) {
+    unsigned char bytes[8];
+    dds_cmd3 c3;
+    dds_cmd4 c4;
+    dds_cmd8 c8;
+} dds_i2c_command;
 
 #endif
