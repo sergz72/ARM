@@ -6,7 +6,9 @@
 #define _24C04_page_size 16
 #define _24C256_page_size 64
 
-int _24C01_16_write(int channel, unsigned int device_address, unsigned char word_address, unsigned char *data, unsigned int data_length);
-int _24C01_16_read(int channel, unsigned int device_address, unsigned char word_address, unsigned char *buffer, unsigned int bytes_count);
+int _24C01_16_write(int channel, unsigned int device_address, unsigned char word_address, unsigned char *data,
+                    unsigned int data_length, int timeout);
+int _24C01_16_read(int channel, unsigned int device_address, unsigned char word_address, unsigned char *buffer,
+                   unsigned int bytes_count, int timeout);
 
 #endif

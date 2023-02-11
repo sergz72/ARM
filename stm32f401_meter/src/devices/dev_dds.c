@@ -154,7 +154,7 @@ void dds_ui_init_handler(int x, int y, int idx, void* config)
 
 static unsigned int calculateFrequencyCode(unsigned int frequency, unsigned int mclk_MHz, unsigned int accumulator_bits)
 {
-  return ((unsigned long long int)frequency << accumulator_bits) / mclk_MHz;
+  return ((unsigned long long int)frequency << accumulator_bits) / (mclk_MHz * 1000000);
 }
 
 static void updateFrequency(dev_dds* config, int idx)
@@ -218,6 +218,7 @@ static void set_next_mode(int x, int y, int idx, dev_dds *config)
     mode = find_next_mode(c->mode + 1, config->cfg.supported_modes);
     if (mode == 0xFF)
     {
+      c->mode = find_next_mode(0, config->cfg.supported_modes);
       command.enable_command.enable = c->enabled = 0;
       config->command(config->deviceId, DDS_COMMAND_ENABLE_OUTPUT, &command, idx);
     }

@@ -229,6 +229,8 @@ static const ShellCommandItem *BuildCommandItems(int idx, unsigned int num_param
 
 static void BuildPrintConfigCommand(const Device* d, int idx)
 {
+  if (!d->print_config)
+    return;
   get_config_command_data *data;
   ShellCommand *cmd = malloc(sizeof(ShellCommand));
   if (cmd)
@@ -254,6 +256,8 @@ static void BuildPrintConfigCommand(const Device* d, int idx)
 
 static void BuildSetConfigCommand(const Device* d, int idx)
 {
+  if (!d->set_config)
+    return;
   set_config_command_data *data;
   ShellCommand *cmd = malloc(sizeof(ShellCommand));
   if (cmd)

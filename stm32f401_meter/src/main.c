@@ -39,6 +39,8 @@ int main(void)
   cnt = keyboard_init();
   //keyboard_set_display("12345678");
 
+  delayms(1000); // time for peripheral devices to initialize
+
   BuildDeviceList(cnt == 0 ? MAX_DEVICES - 1 : -1);
 
   build_keyboard_device_list(cnt == 0);

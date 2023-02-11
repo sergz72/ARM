@@ -10,6 +10,7 @@
 #define HSI_VALUE 8000000
 #define HSE_VALUE 25000000
 
+#define HCLK_FREQ 48000000
 //#define PCLK1_FREQ 24000000
 //#define PCLK2_FREQ 24000000
 
@@ -70,6 +71,7 @@ void SCL_LOW(int);
 void SDA_HIGH(int);
 void SDA_LOW(int);
 int SDA_IN(int);
+int SCL_IN(int);
 
 #define MAX_SHELL_COMMANDS 30
 #define MAX_SHELL_COMMAND_PARAMETERS 10
@@ -79,6 +81,8 @@ int SDA_IN(int);
 
 #define PRINTF_BUFFER_LENGTH 100
 #define SERIAL_QUEUE_SIZE 100
+
+#define I2C_TIMEOUT HCLK_FREQ
 
 #include <gpio.h>
 #include <usb_func.h>
