@@ -19,16 +19,20 @@ add_executable(pico_i2c_tester
         src/main.c
         src/i2c_commands.c
         src/tm1638_commands.c
+        src/max7219_commands.c
+        src/dds_commands.c
         ../common_lib/getstring.c
         ../common_lib/shell/shell.c
         ../common_lib/read_hex_string.c
         ../common_lib/keyboard_display/tm1638.c
         ../common_lib/display/seven_seg.c
+        ../common_lib/display/max7219.c
         ../common_lib/fixed_queue.c
         ../common_lib/spi_3wire_soft.c
+        ../common_lib/spi_4bit_soft.c
 )
 
-include_directories(src ../common_lib ../common_lib/shell ../common_lib/keyboard_display ../common_lib/display)
+include_directories(src ../common_lib ../common_lib/rf ../common_lib/shell ../common_lib/keyboard_display ../common_lib/display)
 
 target_link_libraries(pico_i2c_tester pico_stdlib hardware_i2c)
 

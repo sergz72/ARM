@@ -5,8 +5,10 @@
 #include <getstring.h>
 #include "i2c_commands.h"
 #include "tm1638_commands.h"
+#include "max7219_commands.h"
 #include "dds_commands.h"
 #include <tm1638.h>
+#include <max7219.h>
 
 static char command_line[200];
 
@@ -40,11 +42,13 @@ int main()
   stdio_init_all();
 
   tm1638_init();
+  max7219_init(1);
 
   shell_init(printf, gets_);
   register_i2c_commands();
   register_tm1638_commands();
   register_dds_commands();
+  register_max7219_commands();
 
   getstring_init(command_line, sizeof(command_line), getch_, puts_);
 

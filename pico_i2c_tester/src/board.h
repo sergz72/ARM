@@ -30,7 +30,23 @@
 #define SPI3_CUSTOM_DELAY
 #define SPI3_LSB_FIRST
 
+#define SPI4_CLK_PIN  16
+#define SPI4_CS_PIN   17
+#define SPI4_DIO0_PIN 18
+#define SPI4_DIO1_PIN 19
+#define SPI4_DIO2_PIN 20
+#define SPI4_DIO3_PIN 21
+
+#define SPI_4BIT_CLK_CLR gpio_put(SPI4_CLK_PIN, 0)
+#define SPI_4BIT_CLK_SET gpio_put(SPI4_CLK_PIN, 1)
+#define SPI_4BIT_CS_CLR gpio_put(SPI4_CS_PIN, 0)
+#define SPI_4BIT_CS_SET gpio_put(SPI4_CS_PIN, 1)
+#define SPI_4BIT_DATA_SET(d) gpio_put_masked(0x0F << SPI4_DIO0_PIN, (d & 0x0F) << SPI4_DIO0_PIN)
+
 #define I2C_TIMEOUT 1000000 // 1s
+
+#define MAX7219_NUM_PARALLEL 4
+#define MAX7219_NUM_SERIES 1
 
 void SystemInit(void);
 

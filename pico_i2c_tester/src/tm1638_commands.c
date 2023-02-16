@@ -1,5 +1,4 @@
 #include "tm1638_commands.h"
-#include <read_hex_string.h>
 #include <shell.h>
 #include <stddef.h>
 #include <stdlib.h>

@@ -1,0 +1,6 @@
+#ifndef PICO_I2C_TESTER_MAX7219_COMMANDS_H
+#define PICO_I2C_TESTER_MAX7219_COMMANDS_H
+
+void register_max7219_commands(void);
+
+#endif //PICO_I2C_TESTER_MAX7219_COMMANDS_H
