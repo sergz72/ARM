@@ -13,7 +13,7 @@ is1:
     set  pins, 0 side 0    ; Turn RHIGH pullup off
     mov  isr, x
     push
-    irq  2
+    irq  0
 .wrap
 
 % c-sdk {

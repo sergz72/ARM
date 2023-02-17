@@ -6,6 +6,29 @@
 #include <pico/stdio.h>
 #include <stdio.h>
 #include <pico/time.h>
+#include <keyboard.h>
+
+const unsigned char KeyboardMap[][1] = {
+    {KEYBOARD_EVENT_F4},
+    {KEYBOARD_EVENT_LEAVE},
+    {KEYBOARD_EVENT_KEY8},
+    {KEYBOARD_EVENT_KEY4},
+
+    {KEYBOARD_EVENT_F3},
+    {KEYBOARD_EVENT_ENTER},
+    {KEYBOARD_EVENT_KEY7},
+    {KEYBOARD_EVENT_KEY3},
+
+    {KEYBOARD_EVENT_F2},
+    {KEYBOARD_EVENT_KEY0},
+    {KEYBOARD_EVENT_KEY6},
+    {KEYBOARD_EVENT_KEY2},
+
+    {KEYBOARD_EVENT_F1},
+    {KEYBOARD_EVENT_KEY9},
+    {KEYBOARD_EVENT_KEY5},
+    {KEYBOARD_EVENT_KEY1},
+};
 
 static char command_line[200];
 
@@ -31,26 +54,36 @@ void puts_(const char *s)
 
 int main(void)
 {
-  int cnt, data_ready;
+  int cnt, data_ready, update;
   unsigned int keyboard_status;
   int rc;
 
   SystemInit();
   stdio_init_all();
 
+  //sleep_ms(10000);
+
+  UI_Init();
+  KbdInit((const unsigned char*)KeyboardMap, NULL, 0, HALKbdHandler);
+
   shell_init(printf, gets_);
+  //printf("shell_init\n");
 
   sleep_ms(1000); // time for peripheral devices to initialize
 
   BuildDeviceList();
+  //printf("BuildDeviceList\n");
 
   BuildShellCommands();
+  //printf("BuildShellCommands\n");
 
-  UI_Init();
+  dev_keyboard_init();
+  //printf("dev_keyboard_init\n");
 
   getstring_init(command_line, sizeof(command_line), getch_, puts_);
+  //printf("getstring_init\n");
 
-  cnt = 0;
+  cnt = data_ready = 0;
   while(1)
   {
     sleep_ms(100);
@@ -77,11 +110,21 @@ int main(void)
           break;
       }
     }
+    if (!cnt)
+      update = process_current_keyboard_device_switch();
+    else
+      update = 0;
     BuildDeviceData(cnt++);
+    //printf("BuildDeviceData\n");
     keyboard_status = keyboard_get_filtered_status();
-    data_ready = cnt == 10;
-    if (data_ready)
-      cnt = 0;
-    Process_Timer_Event(data_ready, keyboard_status);
+    //printf("keyboard_status: %d\n");
+    if (!(cnt % 5))
+      data_ready++;
+    if (data_ready == 2)
+      cnt = data_ready = 0;
+    update |= Process_Timer_Event(data_ready, keyboard_status);
+    //printf("Process_Timer_Event\n");
+    if (update)
+      LED_Update();
   }
 }

@@ -15,10 +15,12 @@ int KbdIsInterruptValid(void)
   return KbdGet() != KBD_ALL1;
 }
 
-unsigned char MatrixKbdHandler(void)
+unsigned char MatrixKbdHandler(int set_after)
 {
   int i, j, rc, set;
 
+  if (!set_after)
+    KbdSet(0);
   rc = KbdGet();
   if (rc == KBD_ALL1)
     return 0;
@@ -35,13 +37,15 @@ unsigned char MatrixKbdHandler(void)
         rc >>= 1;
         j++;
       }
-      KbdSet(0);
+      if (set_after)
+        KbdSet(0);
       return i * KBD_COUNTX + j + 1;
     }
     set <<= 1;
     set |= 1;
   }
-  KbdSet(0);
+  if (set_after)
+    KbdSet(0);
   return 0;
 }
 #endif

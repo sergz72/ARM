@@ -3,6 +3,7 @@
 
 void max7219_init(unsigned short intensity)
 {
+  max7219_display_test_off();
   max7219_scan_limit(7);
   max7219_decode_mode(0);
   max7219_intensity(intensity);

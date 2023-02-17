@@ -1,21 +1,26 @@
-//#include <stdio.h>
+#include <stdio.h>
 #include "board.h"
 #include "dev_cap_meter.h"
 #include "hardware/pio.h"
 
 void* cap_meter_initializer(void)
 {
-  return NULL;
+  return (void*)1;
 }
 
-void *cap_meter_data_collector(int step, void* config, void *data)
+void cap_meter_ui_init_handler(void* config)
 {
-  return NULL;
+  printf("cap_meter_ui_init_handler\n");
 }
 
 void cap_meter_ui_handler(void* data, void* config)
 {
 
+}
+
+int cap_meter_ui_keyboard_handler(void *config, unsigned int event)
+{
+  return 0;
 }
 
 int cap_meter_print_config(printf_func pfunc, void *device_config)

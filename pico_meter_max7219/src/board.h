@@ -25,9 +25,9 @@
 #define SPI_4BIT_CS_PIN   17
 
 #define KB1_PIN 22
-#define KB2_PIN 4
+#define KB2_PIN 2
 #define KB3_PIN 3
-#define KB4_PIN 2
+#define KB4_PIN 4
 
 #define SCL_PIN 1
 #define SDA_PIN 0
@@ -55,17 +55,14 @@
 #define SHELL_HISTORY_SIZE 20
 #define SHELL_HISTORY_ITEM_LENGTH 100
 
-#define PRINTF_BUFFER_LENGTH 100
-#define SERIAL_QUEUE_SIZE 100
-
 #define I2C_TIMEOUT 1000000
+
+#define KBD_COUNTX 4
 
 extern volatile unsigned int counter_value1, counter_value2, cap_value, cap_value_updated;
 
 void SystemInit(void);
 void SPI_4BIT_DATA_SET(unsigned char data);
-int i2c_soft_command(int channel, unsigned int address, const unsigned char *commands,  unsigned int commands_length,
-                     const unsigned char *out_data, unsigned int out_data_length,
-                     unsigned char in_data[], unsigned int in_data_length, unsigned int timeout);
+unsigned char HALKbdHandler(void);
 
 #endif

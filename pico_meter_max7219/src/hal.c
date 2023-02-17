@@ -10,6 +10,8 @@
 #include <spi_4bit_soft.h>
 #include "dev_si5351.h"
 #include <max7219.h>
+#include <keyboard.h>
+#include <i2c_soft.h>
 
 volatile unsigned int counter_value1, counter_value2, cap_value, cap_value_updated;
 unsigned int pwm_slice_num[2], pwm_channel[2];
@@ -38,37 +40,39 @@ void pwm_pio_init(PIO pio, uint sm, unsigned int period)
   pio_pwm_set_level(pio, sm, period / 100);
 }
 
-void pio_irh()
+void pio0_irh()
 {
   if (pio0_hw->irq & 1) // PIO0 IRQ0 fired
   {
     counter_value1 = UINT32_MAX - pio_sm_get(pio0, 1);
     pio0_hw->irq = 1;
+    return;
   }
-  else if (pio0_hw->irq & 2) // PIO0 IRQ1 fired
-  {
-    counter_value2 = UINT32_MAX - pio_sm_get(pio0, 2);
-    pio0_hw->irq = 2;
-  }
-  else  // PIO0 IRQ2 fired
-  {
-    cap_value = CAP_MAX - pio_sm_get(pio0, 3);
-    if (cap_value < CAP_OFFSET)
-      cap_value = 0;
-    else
-      cap_value -= CAP_OFFSET;
-    pio0_hw->irq = 4;
-    gpio_set_dir(CAP_RLOW_PIN, true);
-    cap_value_updated = 1;
-  }
+  counter_value2 = UINT32_MAX - pio_sm_get(pio0, 2);
+  pio0_hw->irq = 2;
+}
+
+void pio1_irh()
+{
+  cap_value = CAP_MAX - pio_sm_get(pio0, 3);
+  if (cap_value < CAP_OFFSET)
+    cap_value = 0;
+  else
+    cap_value -= CAP_OFFSET;
+  pio0_hw->irq = 0;
+  gpio_set_dir(CAP_RLOW_PIN, true);
+  cap_value_updated = 1;
 }
 
 void pio_irq_setup(void)
 {
   // Enable IRQ0 on PIO
-  irq_set_exclusive_handler(PIO0_IRQ_0, pio_irh);
+  irq_set_exclusive_handler(PIO0_IRQ_0, pio0_irh);
   irq_set_enabled(PIO0_IRQ_0, true);
-  pio0_hw->inte0 = PIO_IRQ0_INTE_SM0_BITS | PIO_IRQ0_INTE_SM1_BITS | PIO_IRQ0_INTE_SM2_BITS;
+  pio0_hw->inte0 = PIO_IRQ0_INTE_SM0_BITS | PIO_IRQ0_INTE_SM1_BITS;
+  irq_set_exclusive_handler(PIO1_IRQ_0, pio1_irh);
+  irq_set_enabled(PIO1_IRQ_0, true);
+  pio1_hw->inte0 = PIO_IRQ0_INTE_SM0_BITS;
 }
 
 void counter_pio_init(PIO pio, uint sm, uint sm2)
@@ -79,14 +83,32 @@ void counter_pio_init(PIO pio, uint sm, uint sm2)
   counter2_program_init(pio, sm2, offset2, FREQ2_PIN, PICO_DEFAULT_LED_PIN);
   pio_sm_put_blocking(pio, sm, UINT32_MAX);
   pio_sm_exec(pio, sm, pio_encode_pull(false, false));
+  pio_sm_set_enabled(pio, sm, true);
   pio_sm_put_blocking(pio, sm2, UINT32_MAX);
   pio_sm_exec(pio, sm2, pio_encode_pull(false, false));
+  pio_sm_set_enabled(pio, sm2, true);
 }
 
 void cap_pio_init(PIO pio, uint sm)
 {
   uint offset = pio_add_program(pio, &cap_program);
   cap_program_init(pio, sm, offset, CAP_RHIGH_PIN, CAP_IN_PIN);
+}
+
+void KbdGpioInit(void)
+{
+  gpio_init(KB1_PIN);
+  gpio_init(KB2_PIN);
+  gpio_init(KB3_PIN);
+  gpio_init(KB4_PIN);
+  gpio_set_dir(KB1_PIN, false);
+  gpio_set_dir(KB2_PIN, false);
+  gpio_set_dir(KB3_PIN, false);
+  gpio_set_dir(KB4_PIN, false);
+  gpio_pull_up(KB1_PIN);
+  gpio_pull_up(KB2_PIN);
+  gpio_pull_up(KB3_PIN);
+  gpio_pull_up(KB4_PIN);
 }
 
 void SystemInit(void)
@@ -107,8 +129,8 @@ void SystemInit(void)
   counter_value1 = counter_value2 = cap_value = cap_value_updated = 0;
 
   pio_irq_setup();
-  pwm_pio_init(pio0, 0, 125000000);
-  counter_pio_init(pio0, 1, 2);
+  pwm_pio_init(pio1, 0, 125000000 / 3);
+  counter_pio_init(pio0, 0, 1);
 
   gpio_init(SPI_4BIT_DIO0_PIN);
   gpio_init(SPI_4BIT_DIO1_PIN);
@@ -131,7 +153,9 @@ void SystemInit(void)
   gpio_disable_pulls(CAP_IN_PIN);
   gpio_disable_pulls(CAP_RLOW_PIN);
 
-  cap_pio_init(pio0, 3);
+  cap_pio_init(pio1, 1);
+
+  KbdGpioInit();
 }
 
 void spi_4bit_delay(void)
@@ -196,4 +220,25 @@ int si5351_write_bulk(int channel, unsigned char addr, unsigned char bytes, unsi
 int si5351_write(int channel, unsigned char addr, unsigned char data)
 {
   return i2c_soft_command(channel, SI5351_DEVICE_ID, &addr, 1, &data, 1, NULL, 0, I2C_TIMEOUT);
+}
+
+void KbdSet(int state)
+{
+  SPI_4BIT_DATA_SET(state);
+}
+
+int KbdGet(void)
+{
+  unsigned int value = gpio_get_all();
+  // 22, 2, 3, 4
+  return (int)(((value >> 22) & 1) | ((value & 0x1C) >> 1));
+}
+
+unsigned char HALKbdHandler(void)
+{
+  return MatrixKbdHandler(0);
+}
+
+void KbdLocksUpdated(int Locks)
+{
 }

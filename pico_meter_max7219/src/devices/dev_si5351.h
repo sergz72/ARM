@@ -5,6 +5,6 @@
 
 void* si5351_initializer(void);
 void si5351_ui_init_handler(void* config);
-void si5351_ui_keyboard_handler(void *config, unsigned int event);
+int si5351_ui_keyboard_handler(void *config, unsigned int event);
 
 #endif //STM32F401_METER_DEV_SI5351_H

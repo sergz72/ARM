@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include "device_list.h"
 #include "board.h"
+#include "dev_keyboard.h"
 
 typedef struct {
   int (*print_config)(printf_func pfunc, void *device_config);
@@ -17,7 +18,7 @@ typedef struct {
 } set_config_command_data;
 
 const Device *device_list[MAX_DEVICES];
-void *device_data[MAX_DEVICES];
+void *device_data;
 void* device_config[MAX_DEVICES];
 int found_devices;
 
@@ -43,16 +44,15 @@ void BuildDeviceList(void)
 
 void BuildDeviceData(int step)
 {
-  int i;
   const Device* d;
 
-  for (i = 0; i < found_devices; i++)
+  if (current_keyboard_device >= 0)
   {
-    d = device_list[i];
+    d = device_list[current_keyboard_device];
     if (d->data_collector)
-      device_data[i] = d->data_collector(step, device_config[i], device_data[i]);
+      device_data = d->data_collector(step, device_config[current_keyboard_device], device_data);
     else
-      device_data[i] = NULL;
+      device_data = NULL;
   }
 }
 

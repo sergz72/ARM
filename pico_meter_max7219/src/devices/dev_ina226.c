@@ -15,10 +15,14 @@ static const INA226Config dcfg = {
 
 void* ina226_initializer(void)
 {
-  DEV_INA226Config* cfg = malloc(sizeof(DEV_INA226Config));
-  if (cfg)
-    cfg->r = 100; //mOhm
-  return cfg;
+  if (!ina226SetConfig(0, INA226_DEVICE_ID, &dcfg))
+  {
+    DEV_INA226Config *cfg = malloc(sizeof(DEV_INA226Config));
+    if (cfg)
+      cfg->r = 100; //mOhm
+    return cfg;
+  }
+  return NULL;
 }
 
 void *ina226_data_collector(int step, void *config, void *prev_data)
@@ -46,6 +50,11 @@ void *ina226_data_collector(int step, void *config, void *prev_data)
   }
   ina226SetConfig(0, INA226_DEVICE_ID, &dcfg);
   return data;
+}
+
+void ina226_ui_init_handler(void* config)
+{
+
 }
 
 void ina226_ui_handler(void* data, void* config)

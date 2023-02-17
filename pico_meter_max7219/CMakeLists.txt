@@ -22,6 +22,7 @@ file(GLOB SOURCES
         "../common_lib/rf/si5351.c"
         "../common_lib/display/max7219.c"
         "../common_lib/display/seven_seg.c"
+        "../common_lib/keyboard/keyboard.c"
         "../common_lib/spi_4bit_soft.c"
         "../common_lib/shell/shell.c"
         "../common_lib/fixed_queue.c"

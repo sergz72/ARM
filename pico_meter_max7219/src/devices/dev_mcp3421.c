@@ -24,17 +24,21 @@ static const MCP3421Config dcfg = {
 
 void* mcp3421_initializer(void)
 {
-  DEV_MCP3421Config* cfg = malloc(sizeof(DEV_MCP3421Config));
-  if (cfg)
+  if (!mcp3421SetConfig(0, MCP3421_DEVICE_ID, &dcfg))
   {
-    if (read_config_from_eeprom(cfg, sizeof(DEV_MCP3421Config)) ||
-        !isValidCoef(cfg->koef) || !isValidOffset(cfg->offset))
+    DEV_MCP3421Config *cfg = malloc(sizeof(DEV_MCP3421Config));
+    if (cfg)
     {
-      cfg->koef = 116200;
-      cfg->offset = -1510;
+      if (read_config_from_eeprom(cfg, sizeof(DEV_MCP3421Config)) ||
+          !isValidCoef(cfg->koef) || !isValidOffset(cfg->offset))
+      {
+        cfg->koef = 116200;
+        cfg->offset = -1510;
+      }
     }
+    return cfg;
   }
-  return cfg;
+  return NULL;
 }
 
 void *mcp3421_data_collector(int step, void *config, void *prev_data)

@@ -1,6 +1,7 @@
 #include <malloc.h>
 #include "dev_si5351.h"
 #include <si5351.h>
+#include "ui.h"
 
 void* si5351_initializer(void)
 {
@@ -13,10 +14,13 @@ void* si5351_initializer(void)
 
 void si5351_ui_init_handler(void* config)
 {
-
+  LED_Write_String(0, "F       ");
+  LED_Write_String(1, "        ");
+  LED_Write_String(2, "        ");
+  LED_Write_String(3, "        ");
 }
 
-void si5351_ui_keyboard_handler(void *config, unsigned int event)
+int si5351_ui_keyboard_handler(void *config, unsigned int event)
 {
-
+  return 0;
 }

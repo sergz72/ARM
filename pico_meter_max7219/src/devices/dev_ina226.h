@@ -15,6 +15,7 @@ typedef struct {
 void* ina226_initializer(void);
 void *ina226_data_collector(int step, void* config, void *data);
 void ina226_ui_handler(void* data, void* config);
+void ina226_ui_init_handler(void* config);
 
 #endif
 

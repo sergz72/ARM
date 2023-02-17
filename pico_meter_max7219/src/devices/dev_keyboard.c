@@ -1,36 +1,74 @@
 #include "dev_keyboard.h"
 #include <devices.h>
-#include "board.h"
-#include <seven_seg.h>
-#include <memory.h>
 #include "ui.h"
+#include <keyboard.h>
+#include <stdio.h>
 
 static unsigned int current_keyboard_status;
-static int current_keyboard_device;
+int current_keyboard_device;
+static int current_keyboard_device_switch;
 
 static void show_menu(void)
 {
-}
+  int line, pos, idx;
+  unsigned char buffer[8], *p;
 
-static void send_keyboard_event(unsigned int event)
-{
-  device_list[current_keyboard_device]->ui_keyboard_handler(device_config[current_keyboard_device], event);
-}
-
-unsigned int convert_keyboard_status(unsigned int keyboard_status)
-{
-  unsigned int v = 1, key = KEYBOARD_EVENT_KEY1;
-  int i;
-
-  for (i = 0; i < 8; i++)
+  idx = 0;
+  for (line = 0; line < 4; line++)
   {
-    if (keyboard_status & v)
-      return key;
-    v <<= 1;
-    key++;
+    p = buffer;
+    for (pos = 0; pos < 4; pos++)
+    {
+      if (idx < found_devices)
+      {
+        *p++ = device_list[idx]->short_name[0];
+        *p++ = device_list[idx]->short_name[1];
+      }
+      else
+      {
+        *p++ = ' ';
+        *p++ = ' ';
+      }
+      idx++;
+    }
+    LED_Write_String(line, (const char*)buffer);
+  }
+}
+
+static int send_keyboard_event(unsigned int event)
+{
+  ui_keyboard_handler_type handler = device_list[current_keyboard_device]->ui_keyboard_handler;
+  if (handler)
+    return handler(device_config[current_keyboard_device], event);
+  return 0;
+}
+
+void dev_keyboard_init(void)
+{
+  current_keyboard_device = -1;
+  current_keyboard_device_switch = -2;
+  current_keyboard_status = 0;
+  show_menu();
+  LED_Update();
+}
+
+int process_current_keyboard_device_switch(void)
+{
+  ui_init_handler_type handler = NULL;
+
+  if (current_keyboard_device_switch != -2)
+  {
+    current_keyboard_device = current_keyboard_device_switch;
+    if (current_keyboard_device >= 0)
+    {
+      handler = device_list[current_keyboard_device]->ui_init_handler;
+      if (handler)
+        handler(device_config[current_keyboard_device]);
+    }
+    current_keyboard_device_switch = -2;
   }
 
-  return 0;
+  return handler != NULL;
 }
 
 void process_cursor_off_event(void)
@@ -41,14 +79,20 @@ void process_cursor_off_event(void)
 
 int process_keyboard_event(unsigned int keyboard_status)
 {
+  printf("%d %d", current_keyboard_device, keyboard_status);
   if (current_keyboard_device >= 0)
   {
     if (keyboard_status == KEYBOARD_EVENT_LEAVE)
     {
-      cursorEnabled = 0;
-      send_keyboard_event(KEYBOARD_EVENT_LEAVE);
-      current_keyboard_device = -1;
-      show_menu();
+      if (current_keyboard_device_switch == -2)
+      {
+        cursorEnabled = 0;
+        if (!send_keyboard_event(KEYBOARD_EVENT_LEAVE))
+        {
+          current_keyboard_device_switch = -1;
+          show_menu();
+        }
+      }
     }
     else
       send_keyboard_event(keyboard_status);
@@ -56,10 +100,9 @@ int process_keyboard_event(unsigned int keyboard_status)
   }
   else
   {
-    if (keyboard_status < found_devices)
+    if (keyboard_status <= found_devices && current_keyboard_device_switch == -2)
     {
-      current_keyboard_device = keyboard_status;
-      show_menu();
+      current_keyboard_device_switch = (int)keyboard_status - 1;
       send_keyboard_event(KEYBOARD_EVENT_ENTER);
       return 1;
     }
@@ -69,9 +112,10 @@ int process_keyboard_event(unsigned int keyboard_status)
 
 unsigned int keyboard_get_filtered_status(void)
 {
-  unsigned int status = 0;//keyboard_get_status();
+  unsigned int status = KbdCheck();
   if (status != current_keyboard_status)
   {
+    //printf("new keyboard status: %d\n", current_keyboard_status);
     current_keyboard_status = status;
     return status;
   }
