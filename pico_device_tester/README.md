@@ -10,17 +10,19 @@ Uses command line interface using USB CDC.
 
 **Pins:**
 
-**I2C:** 4, 5
+**I2C:**
+- SDA: GP4
+- SCL: GP5
 
 **TM1638 (PLEASE USE 3.3v supply!)**
-- CLK: 0
-- DIO: 1
-- CS: 2
+- CLK: GP0
+- DIO: GP1
+- CS: GP2
 
 **MAX7219:**
-- CLK: 16
-- CS: 17
-- First module DIO: 18
-- Second module DIO: 19
-- Third module DIO: 20
-- Fourth module DIO: 21
+- CLK: GP16
+- CS: GP17
+- First module DIO: GP18
+- Second module DIO: GP19
+- Third module DIO: GP20
+- Fourth module DIO: GP21
