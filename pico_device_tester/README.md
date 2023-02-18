@@ -1,6 +1,6 @@
 # Raspberry PI pico tester for various devices
 
-Uses command line interface using USB CDC.
+Uses command line interface via USB CDC.
 
 **Can test:**
 - I2C devices
