@@ -22,7 +22,7 @@ Uses command line interface via USB CDC.
 **MAX7219:**
 - CLK: GP16
 - CS: GP17
-- First module DIO: GP18
-- Second module DIO: GP19
-- Third module DIO: GP20
-- Fourth module DIO: GP21
+- First module DIN: GP18
+- Second module DIN: GP19
+- Third module DIN: GP20
+- Fourth module DIN: GP21
