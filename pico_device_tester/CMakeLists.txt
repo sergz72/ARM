@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.12)
 
 include(pico_sdk_import.cmake)
 
-project(pico_i2c_tester C CXX ASM)
+project(pico_device_tester C CXX ASM)
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 17)
 
@@ -14,7 +14,7 @@ add_compile_options(-Wall
         -Wno-maybe-uninitialized
         )
 
-add_executable(pico_i2c_tester
+add_executable(pico_device_tester
         src/hal.c
         src/main.c
         src/i2c_commands.c
@@ -34,12 +34,12 @@ add_executable(pico_i2c_tester
 
 include_directories(src ../common_lib ../common_lib/rf ../common_lib/shell ../common_lib/keyboard_display ../common_lib/display)
 
-target_link_libraries(pico_i2c_tester pico_stdlib hardware_i2c)
+target_link_libraries(pico_device_tester pico_stdlib hardware_i2c)
 
 # enable usb output, disable uart output
-pico_enable_stdio_usb(pico_i2c_tester 1)
-pico_enable_stdio_uart(pico_i2c_tester 0)
+pico_enable_stdio_usb(pico_device_tester 1)
+pico_enable_stdio_uart(pico_device_tester 0)
 
-pico_add_extra_outputs(pico_i2c_tester)
+pico_add_extra_outputs(pico_device_tester)
 
 add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD COMMAND size ${PROJECT_NAME}.elf)
