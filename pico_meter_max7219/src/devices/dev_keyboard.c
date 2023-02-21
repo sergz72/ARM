@@ -22,7 +22,7 @@ static void show_menu(void)
       if (idx < found_devices)
       {
         *p++ = device_list[idx]->short_name[0];
-        *p++ = device_list[idx]->short_name[1];
+        *p++ = device_list[idx]->short_name[1] | 0x80;
       }
       else
       {
@@ -31,7 +31,7 @@ static void show_menu(void)
       }
       idx++;
     }
-    LED_Write_String(line, (const char*)buffer);
+    LED_Write_String(line, 0, (const char*)buffer);
   }
 }
 
@@ -59,22 +59,21 @@ int process_current_keyboard_device_switch(void)
   if (current_keyboard_device_switch != -2)
   {
     current_keyboard_device = current_keyboard_device_switch;
+    current_keyboard_device_switch = -2;
     if (current_keyboard_device >= 0)
     {
       handler = device_list[current_keyboard_device]->ui_init_handler;
       if (handler)
         handler(device_config[current_keyboard_device]);
     }
-    current_keyboard_device_switch = -2;
+    else
+    {
+      show_menu();
+      return 1;
+    }
   }
 
   return handler != NULL;
-}
-
-void process_cursor_off_event(void)
-{
-  if (current_keyboard_device >= 0)
-    send_keyboard_event(KEYBOARD_EVENT_LEAVE);
 }
 
 int process_keyboard_event(unsigned int keyboard_status)
@@ -88,10 +87,7 @@ int process_keyboard_event(unsigned int keyboard_status)
       {
         cursorEnabled = 0;
         if (!send_keyboard_event(KEYBOARD_EVENT_LEAVE))
-        {
           current_keyboard_device_switch = -1;
-          show_menu();
-        }
       }
     }
     else
@@ -103,8 +99,7 @@ int process_keyboard_event(unsigned int keyboard_status)
     if (keyboard_status <= found_devices && current_keyboard_device_switch == -2)
     {
       current_keyboard_device_switch = (int)keyboard_status - 1;
-      send_keyboard_event(KEYBOARD_EVENT_ENTER);
-      return 1;
+      return 0;
     }
   }
   return 0;

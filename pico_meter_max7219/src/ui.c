@@ -22,6 +22,11 @@ void UI_Init(void)
   cursorEnabled = 0;
 }
 
+void LED_ClearScreen(void)
+{
+  memset(display_data, 0, sizeof(display_data));
+}
+
 void LED_Update(void)
 {
   int i, j;
@@ -39,12 +44,21 @@ void LED_Update(void)
   max7219_out(&display_rawdata[0][0]);
 }
 
-void LED_Write_String(int line, const char *buffer)
+void LED_Write_String(int line, unsigned int dots, const char *buffer)
 {
-  memcpy(display_data[line], buffer, 8 * MAX7219_NUM_SERIES);
+  unsigned int d, i;
+
+  d = 1;
+  for (i = 0; i < 8 * MAX7219_NUM_SERIES; i++)
+  {
+    display_data[line][i] = buffer[i];
+    if (dots & d)
+      display_data[line][i] |= 0x80;
+    d <<= 1;
+  }
 }
 
-void LED_Printf(int line, const char *format, ...)
+void LED_Printf(int line, unsigned int dots, const char *format, ...)
 {
   char buffer[8 * MAX7219_NUM_SERIES + 1];
   va_list vArgs;
@@ -52,7 +66,7 @@ void LED_Printf(int line, const char *format, ...)
   va_start(vArgs, format);
   vsnprintf(buffer, sizeof(buffer), format, vArgs);
   va_end(vArgs);
-  LED_Write_String(line, buffer);
+  LED_Write_String(line, dots, buffer);
 }
 
 int Process_Timer_Event(int data_ready, unsigned int keyboard_status)
@@ -61,15 +75,6 @@ int Process_Timer_Event(int data_ready, unsigned int keyboard_status)
   ui_data_handler_type handler;
 
   update = 0;
-  if (cursorEnabled)
-  {
-    cursorEnabled--;
-    if (!cursorEnabled)
-    {
-      process_cursor_off_event();
-      update = 1;
-    }
-  }
 
   if (keyboard_status)
   {
@@ -78,8 +83,10 @@ int Process_Timer_Event(int data_ready, unsigned int keyboard_status)
       update = 1;
   }
 
-  switch (data_ready)
+  if (current_keyboard_device >= 0)
   {
+    switch (data_ready)
+    {
     case 1:
       if (cursorEnabled)
       {
@@ -103,6 +110,7 @@ int Process_Timer_Event(int data_ready, unsigned int keyboard_status)
         device_data = NULL;
       }
       break;
+    }
   }
 
   return update;
@@ -113,5 +121,5 @@ void enableCursor(unsigned int line, unsigned int position1, unsigned int positi
   cursorLine = line;
   cursorPosition1 = position1;
   cursorPosition2 = position2;
-  cursorEnabled = CURSOR_TIMEOUT;
+  cursorEnabled = 1;
 }

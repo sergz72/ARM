@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <pico/time.h>
 #include <keyboard.h>
+#include "main_loop.h"
 
 const unsigned char KeyboardMap[][1] = {
     {KEYBOARD_EVENT_F4},
@@ -54,8 +55,6 @@ void puts_(const char *s)
 
 int main(void)
 {
-  int cnt, data_ready, update;
-  unsigned int keyboard_status;
   int rc;
 
   SystemInit();
@@ -83,7 +82,7 @@ int main(void)
   getstring_init(command_line, sizeof(command_line), getch_, puts_);
   //printf("getstring_init\n");
 
-  cnt = data_ready = 0;
+  main_loop_init();
   while(1)
   {
     sleep_ms(100);
@@ -110,21 +109,6 @@ int main(void)
           break;
       }
     }
-    if (!cnt)
-      update = process_current_keyboard_device_switch();
-    else
-      update = 0;
-    BuildDeviceData(cnt++);
-    //printf("BuildDeviceData\n");
-    keyboard_status = keyboard_get_filtered_status();
-    //printf("keyboard_status: %d\n");
-    if (!(cnt % 5))
-      data_ready++;
-    if (data_ready == 2)
-      cnt = data_ready = 0;
-    update |= Process_Timer_Event(data_ready, keyboard_status);
-    //printf("Process_Timer_Event\n");
-    if (update)
-      LED_Update();
+    main_loop();
   }
 }

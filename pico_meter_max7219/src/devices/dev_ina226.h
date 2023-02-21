@@ -3,7 +3,7 @@
 
 typedef struct {
   int current, voltage;
-  unsigned int power, main_power, other_power;
+  unsigned int power;
 } DEV_INA226Data;
 
 typedef struct {

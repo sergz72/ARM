@@ -6,6 +6,7 @@
 #include "device_list.h"
 #include "board.h"
 #include "dev_keyboard.h"
+#include "settings.h"
 
 typedef struct {
   int (*print_config)(printf_func pfunc, void *device_config);
@@ -56,7 +57,7 @@ void BuildDeviceData(int step)
   }
 }
 
-static int get_config_handler(printf_func pfunc, gets_func gfunc, int argc, char **argv, void *data)
+static int get_device_config_handler(printf_func pfunc, gets_func gfunc, int argc, char **argv, void *data)
 {
   get_config_command_data *d = (get_config_command_data *)data;
   if (d)
@@ -64,7 +65,7 @@ static int get_config_handler(printf_func pfunc, gets_func gfunc, int argc, char
   return 1;
 }
 
-static int set_config_handler(printf_func pfunc, gets_func gfunc, int argc, char **argv, void *data)
+static int set_device_config_handler(printf_func pfunc, gets_func gfunc, int argc, char **argv, void *data)
 {
   set_config_command_data *d = (set_config_command_data *)data;
   if (d)
@@ -72,7 +73,7 @@ static int set_config_handler(printf_func pfunc, gets_func gfunc, int argc, char
   return 1;
 }
 
-static const ShellCommandItem *BuildCommandItems(int idx, unsigned int num_parameters,
+static const ShellCommandItem *BuildCommandItems(unsigned int num_parameters,
                                                  int (*final_handler)(printf_func pfunc, gets_func gfunc, int argc, char **argv, void *data))
 {
   ShellCommandItem *items = malloc(sizeof(ShellCommandItem) * (1 + num_parameters));
@@ -94,7 +95,7 @@ static const ShellCommandItem *BuildCommandItems(int idx, unsigned int num_param
   return result;
 }
 
-static void BuildPrintConfigCommand(const Device* d, int idx)
+static void BuildPrintDeviceConfigCommand(const Device* d, int idx)
 {
   if (!d->print_config)
     return;
@@ -114,14 +115,14 @@ static void BuildPrintConfigCommand(const Device* d, int idx)
         data->idx = idx;
         data->print_config = d->print_config;
         cmd->data = data;
-        cmd->items = BuildCommandItems(idx, 0, get_config_handler);
+        cmd->items = BuildCommandItems(0, get_device_config_handler);
         shell_register_command(cmd);
       }
     }
   }
 }
 
-static void BuildSetConfigCommand(const Device* d, int idx)
+static void BuildSetDeviceConfigCommand(const Device* d, int idx)
 {
   if (!d->set_config)
     return;
@@ -143,10 +144,66 @@ static void BuildSetConfigCommand(const Device* d, int idx)
         data->idx = idx;
         data->set_config = d->set_config;
         cmd->data = data;
-        cmd->items = BuildCommandItems(idx, d->set_config_parameter_count, set_config_handler);
+        cmd->items = BuildCommandItems(d->set_config_parameter_count, set_device_config_handler);
         shell_register_command(cmd);
       }
     }
+  }
+}
+
+static int get_config_handler(printf_func pfunc, gets_func gfunc, int argc, char** argv, void* data)
+{
+  int i;
+
+  for (i = 0; i < SETTINGS_COUNT; i++)
+    pfunc("%s %ld\n", setting_names[i], settings[i]);
+  return 0;
+}
+
+static int set_config_handler(printf_func pfunc, gets_func gfunc, int argc, char** argv, void* data)
+{
+  int i;
+  char* name = argv[0];
+  long long int value = atol(argv[1]);
+
+  for (i = 0; i < SETTINGS_COUNT; i++)
+  {
+    if (!strcmp(name, setting_names[i]))
+    {
+      settings[i] = value;
+      return save_settings();
+    }
+  }
+
+  pfunc("unknown setting name\n");
+  return 1;
+}
+
+void BuildPrintConfigCommand(void)
+{
+  ShellCommand* cmd = malloc(sizeof(ShellCommand));
+  if (cmd)
+  {
+    cmd->name = "config_get";
+    cmd->help = NULL;
+    cmd->init = NULL;
+    cmd->data = NULL;
+    cmd->items = BuildCommandItems(0, get_config_handler);
+    shell_register_command(cmd);
+  }
+}
+
+void BuildSetConfigCommand(void)
+{
+  ShellCommand* cmd = malloc(sizeof(ShellCommand));
+  if (cmd)
+  {
+    cmd->name = "config_set";
+    cmd->help = "config_set name value";
+    cmd->init = NULL;
+    cmd->data = NULL;
+    cmd->items = BuildCommandItems(2, set_config_handler);
+    shell_register_command(cmd);
   }
 }
 
@@ -155,10 +212,13 @@ void BuildShellCommands(void)
   int i;
   const Device* d;
 
+  BuildPrintConfigCommand();
+  BuildSetConfigCommand();
+
   for (i = 0; i < found_devices; i++)
   {
     d = device_list[i];
-    BuildPrintConfigCommand(d, i);
-    BuildSetConfigCommand(d, i);
+    BuildPrintDeviceConfigCommand(d, i);
+    BuildSetDeviceConfigCommand(d, i);
   }
 }

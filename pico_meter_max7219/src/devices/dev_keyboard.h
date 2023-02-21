@@ -20,7 +20,6 @@
 
 int process_keyboard_event(unsigned int keyboard_status);
 unsigned int keyboard_get_filtered_status(void);
-void process_cursor_off_event(void);
 void dev_keyboard_init(void);
 int process_current_keyboard_device_switch(void);
 

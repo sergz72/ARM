@@ -40,12 +40,6 @@
 #define MAX7219_NUM_PARALLEL 4
 #define MAX7219_NUM_SERIES 1
 
-#define CAP_MAX 60000000
-#define CAP_OFFSET 121
-
-#define KOEF_MUL 10000077
-#define KOEF_DIV 10000000
-
 #define SI5351_XTAL_FREQ 25000000
 #define SI5351_CHANNELS 1
 
@@ -58,6 +52,21 @@
 #define I2C_TIMEOUT 1000000
 
 #define KBD_COUNTX 4
+
+#define DEFAULT_CAP_MAX 60000000
+#define DEFAULT_CAP_OFFSET 121
+#define DEFAULT_CAP_VALUE_MUL 2300
+#define CAP_VALUE_DIV 1000
+#define DEFAULT_MCLK 125000000
+#define DEFAULT_SETTING_U0MUL 5000
+#define DEFAULT_SETTING_U1MUL 5000
+#define DEFAULT_SETTING_U2MUL 5000
+#define U_DIV 1000
+
+#define ADC_MAX 4095
+
+#define DEFAULT_PWM_FREQ 1000 // Hz
+#define DEFAULT_PWM_DUTY 500  // 50.0
 
 extern volatile unsigned int counter_value1, counter_value2, cap_value, cap_value_updated;
 

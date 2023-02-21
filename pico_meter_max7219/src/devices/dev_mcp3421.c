@@ -2,6 +2,7 @@
 #include <mcp3421.h>
 #include <stdlib.h>
 #include "device_config.h"
+#include "ui.h"
 
 typedef struct {
   int voltage;
@@ -50,16 +51,19 @@ void *mcp3421_data_collector(int step, void *config, void *prev_data)
   switch (step)
   {
     case 0:
-      prev_data = malloc(sizeof(DEV_MCP3421Data));
       mcp3421SetConfig(0, MCP3421_DEVICE_ID, &dcfg);
       break;
     case 9:
-      data = (DEV_MCP3421Data *)prev_data;
-      mcp3421Get18BitVoltage(0, MCP3421_DEVICE_ID, &v);
-      data->voltage = (int)((long long int)v * 4096 * cfg->koef / (0x3FFFF * 100)) + cfg->offset;
-      break;
+      prev_data = malloc(sizeof(DEV_MCP3421Data));
+      if (prev_data)
+      {
+        data = (DEV_MCP3421Data*)prev_data;
+        mcp3421Get18BitVoltage(0, MCP3421_DEVICE_ID, &v);
+        data->voltage = (int)((long long int)v * 4096 * cfg->koef / (0x3FFFF * 100)) + cfg->offset;
+      }
+      return prev_data;
   }
-  return prev_data;
+  return NULL;
 }
 
 void mcp3421_ui_handler(void* data, void* config)
@@ -76,10 +80,7 @@ void mcp3421_ui_handler(void* data, void* config)
   }
   else
     sign = ' ';
-  //if (v < 1000000)
-  //  LcdPrintf("U%c%d.%05d", x, y, &fiveBySevenFontInfo, 0, sign, v / 100000, v % 100000);
-  //else
-  //  LcdPrintf("U%c%2d.%04d", x, y, &fiveBySevenFontInfo, 0, sign, v / 100000, (v / 10) % 10000);
+  LED_Printf(0, 4, "%c%2d%05d", sign, v / 1000000, v % 1000000);
 }
 
 int msp3421_print_config(printf_func pfunc, void *config)

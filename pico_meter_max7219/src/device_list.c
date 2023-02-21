@@ -5,6 +5,7 @@
 #include "dev_mcp3421.h"
 #include "dev_freq_pwm.h"
 #include "dev_cap_meter.h"
+#include "dev_voltmeter.h"
 
 const Device devices[] = {
     {
@@ -15,10 +16,10 @@ const Device devices[] = {
         .ui_init_handler = cap_meter_ui_init_handler,
         .ui_data_handler = cap_meter_ui_handler,
         .ui_keyboard_handler = cap_meter_ui_keyboard_handler,
-        .print_config = cap_meter_print_config,
-        .set_config = cap_meter_set_config,
-        .set_config_parameter_count = 2,
-        .set_config_help = "offset R",
+        .print_config = NULL,
+        .set_config = NULL,
+        .set_config_parameter_count = 0,
+        .set_config_help = NULL,
     },
     {
         .name = "freq_pwm",
@@ -28,10 +29,23 @@ const Device devices[] = {
         .ui_init_handler = freq_pwm_ui_init_handler,
         .ui_data_handler = freq_pwm_ui_handler,
         .ui_keyboard_handler = freq_pwm_ui_keyboard_handler,
-        .print_config = freq_pwm_print_config,
-        .set_config = freq_pwm_set_config,
-        .set_config_parameter_count = 1,
-        .set_config_help = "cpu_freq",
+        .print_config = NULL,
+        .set_config = NULL,
+        .set_config_parameter_count = 0,
+        .set_config_help = NULL,
+    },
+    {
+        .name = "voltmeter",
+        .short_name = "UO",
+        .initializer = voltmeter_initializer,
+        .data_collector = voltmeter_data_collector,
+        .ui_init_handler = voltmeter_ui_init_handler,
+        .ui_data_handler = voltmeter_ui_handler,
+        .ui_keyboard_handler = NULL,
+        .print_config = NULL,
+        .set_config = NULL,
+        .set_config_parameter_count = 0,
+        .set_config_help = NULL,
     },
     {
         .name = "ina226",

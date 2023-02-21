@@ -12,6 +12,10 @@
 #include <max7219.h>
 #include <keyboard.h>
 #include <i2c_soft.h>
+#include "settings.h"
+#include "dev_voltmeter.h"
+#include "dev_cap_meter.h"
+#include "dev_freq_pwm.h"
 
 volatile unsigned int counter_value1, counter_value2, cap_value, cap_value_updated;
 unsigned int pwm_slice_num[2], pwm_channel[2];
@@ -240,5 +244,72 @@ unsigned char HALKbdHandler(void)
 }
 
 void KbdLocksUpdated(int Locks)
+{
+}
+
+int hal_read_settings(void)
+{
+  return 1;
+}
+
+int save_settings(void)
+{
+  return 1;
+}
+
+void adc_start_conversion(int channel)
+{
+
+}
+
+int adc_read(void)
+{
+  return 0 + (rand() % ADC_MAX);
+}
+
+void cap_meter_init(void)
+{
+  if (cap_value_updated)
+  {
+    //puts("cap_value_updated");
+    cap_value_updated = 0;
+    gpio_set_dir(CAP_RLOW_PIN, false);
+    pio_sm_put_blocking(pio0, 2, CAP_MAX);
+  }
+}
+
+void cap_meter_on(void)
+{
+
+}
+
+void cap_meter_off(void)
+{
+
+}
+
+void freq_pwm_on(void)
+{
+
+}
+
+void freq_pwm_off(void)
+{
+
+}
+
+void pwm_on(int channel)
+{
+}
+
+void pwm_off(int channel)
+{
+}
+
+void pwm_set_freq(int channel, unsigned int freq)
+{
+}
+
+void pwm_set_duty(int channel, unsigned int duty)
 {
 }
