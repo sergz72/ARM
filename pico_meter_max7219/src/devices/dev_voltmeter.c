@@ -4,6 +4,7 @@
 #include "stddef.h"
 #include <malloc.h>
 #include "board.h"
+#include <stdlib.h>
 
 #define VREF 330
 
@@ -63,4 +64,16 @@ void voltmeter_ui_handler(void* data, void* config)
 
   for (i = 0; i < 3; i++)
     LED_Printf(i, 0x20,  "%6d%02u", d->v[i] / 100, abs(d->v[i] % 100));
+}
+
+int voltmeter_calibrate(printf_func pfunc, int argc, char** argv, void* device_config)
+{
+  int v;
+  v = atoi(argv[0]);
+  if (v <= 0)
+  {
+    pfunc("Invalid value\n");
+    return 1;
+  }
+  return 0;
 }

@@ -20,6 +20,9 @@ const Device devices[] = {
         .set_config = NULL,
         .set_config_parameter_count = 0,
         .set_config_help = NULL,
+        .calibrate = NULL,
+        .calibrate_parameter_count = 0,
+        .calibrate_help = NULL
     },
     {
         .name = "freq_pwm",
@@ -33,6 +36,9 @@ const Device devices[] = {
         .set_config = NULL,
         .set_config_parameter_count = 0,
         .set_config_help = NULL,
+        .calibrate = freq_pwm_calibrate,
+        .calibrate_parameter_count = 2,
+        .calibrate_help = "f1 f2"
     },
     {
         .name = "voltmeter",
@@ -46,6 +52,9 @@ const Device devices[] = {
         .set_config = NULL,
         .set_config_parameter_count = 0,
         .set_config_help = NULL,
+        .calibrate = voltmeter_calibrate,
+        .calibrate_parameter_count = 1,
+        .calibrate_help = "value"
     },
     {
         .name = "ina226",
@@ -59,6 +68,9 @@ const Device devices[] = {
         .set_config = NULL,
         .set_config_parameter_count = 0,
         .set_config_help = NULL,
+        .calibrate = NULL,
+        .calibrate_parameter_count = 0,
+        .calibrate_help = NULL
     },
     {
         .name = "mcp3421",
@@ -72,6 +84,9 @@ const Device devices[] = {
         .set_config = msp3421_set_config,
         .set_config_parameter_count = 2,
         .set_config_help = "coef offset",
+        .calibrate = mcp3421_calibrate,
+        .calibrate_parameter_count = 1,
+        .calibrate_help = "value"
     },
     {
         .name = "si5351",
@@ -81,9 +96,12 @@ const Device devices[] = {
         .ui_init_handler = si5351_ui_init_handler,
         .ui_data_handler = NULL,
         .ui_keyboard_handler = si5351_ui_keyboard_handler,
-        .print_config = NULL,
-        .set_config = NULL,
-        .set_config_parameter_count = 0,
-        .set_config_help = NULL,
+        .print_config = si5351_print_config,
+        .set_config = si5351_set_config,
+        .set_config_parameter_count = 1,
+        .set_config_help = "corr",
+        .calibrate = NULL,
+        .calibrate_parameter_count = 0,
+        .calibrate_help = NULL
     }
 };

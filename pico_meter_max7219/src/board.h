@@ -68,7 +68,9 @@
 #define DEFAULT_PWM_FREQ 1000 // Hz
 #define DEFAULT_PWM_DUTY 500  // 50.0
 
-extern volatile unsigned int counter_value1, counter_value2, cap_value, cap_value_updated;
+#define DEFAULT_SI5351_FREQ 1000000
+
+extern volatile unsigned int cap_value, cap_value_updated;
 
 void SystemInit(void);
 void SPI_4BIT_DATA_SET(unsigned char data);

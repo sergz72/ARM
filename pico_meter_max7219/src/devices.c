@@ -7,6 +7,7 @@
 #include "board.h"
 #include "dev_keyboard.h"
 #include "settings.h"
+#include <stdlib.h>
 
 typedef struct {
   int (*print_config)(printf_func pfunc, void *device_config);
@@ -103,13 +104,13 @@ static void BuildPrintDeviceConfigCommand(const Device* d, int idx)
   ShellCommand *cmd = malloc(sizeof(ShellCommand));
   if (cmd)
   {
-    cmd->name = malloc(strlen(d->name) + 6);
+    cmd->name = malloc(strlen(d->name) + 5);
     if (cmd->name)
     {
       data = malloc(sizeof(get_config_command_data));
       if (data)
       {
-        sprintf((char*)cmd->name, "%s%d_get", d->name, idx);
+        sprintf((char*)cmd->name, "%s_get", d->name);
         cmd->help = NULL;
         cmd->init = NULL;
         data->idx = idx;
@@ -122,33 +123,42 @@ static void BuildPrintDeviceConfigCommand(const Device* d, int idx)
   }
 }
 
-static void BuildSetDeviceConfigCommand(const Device* d, int idx)
+static void BuildDeviceConfigCommand(config_type cfg_func, const char *name, const char *help, unsigned int parameter_count, const char * suffix, int idx)
 {
-  if (!d->set_config)
+  if (!cfg_func)
     return;
   set_config_command_data *data;
   ShellCommand *cmd = malloc(sizeof(ShellCommand));
   if (cmd)
   {
-    cmd->name = malloc(strlen(d->name) + 6);
-    cmd->help = malloc(strlen(d->name) + 7 + strlen(d->set_config_help));
+    cmd->name = malloc(strlen(name) + 5);
+    cmd->help = malloc(strlen(name) + 6 + strlen(help));
     if (cmd->name && cmd->help)
     {
       data = malloc(sizeof(set_config_command_data));
       if (data)
       {
-        sprintf((char*)cmd->name, "%s%d_set", d->name, idx);
-        sprintf((char*)cmd->help, "%s %s", cmd->name, d->set_config_help);
-        cmd->help = NULL;
+        sprintf((char*)cmd->name, "%s_%s", name, suffix);
+        sprintf((char*)cmd->help, "%s %s", cmd->name, help);
         cmd->init = NULL;
         data->idx = idx;
-        data->set_config = d->set_config;
+        data->set_config = cfg_func;
         cmd->data = data;
-        cmd->items = BuildCommandItems(d->set_config_parameter_count, set_device_config_handler);
+        cmd->items = BuildCommandItems(parameter_count, set_device_config_handler);
         shell_register_command(cmd);
       }
     }
   }
+}
+
+static void BuildSetDeviceConfigCommand(const Device* d, int idx)
+{
+  BuildDeviceConfigCommand(d->set_config, d->name, d->set_config_help, d->set_config_parameter_count, "set", idx);
+}
+
+static void BuildDeviceCalibrateCommand(const Device* d, int idx)
+{
+  BuildDeviceConfigCommand(d->calibrate, d->name, d->calibrate_help, d->calibrate_parameter_count, "cal", idx);
 }
 
 static int get_config_handler(printf_func pfunc, gets_func gfunc, int argc, char** argv, void* data)
@@ -220,5 +230,6 @@ void BuildShellCommands(void)
     d = device_list[i];
     BuildPrintDeviceConfigCommand(d, i);
     BuildSetDeviceConfigCommand(d, i);
+    BuildDeviceCalibrateCommand(d, i);
   }
 }

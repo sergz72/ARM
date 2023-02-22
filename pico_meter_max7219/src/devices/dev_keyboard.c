@@ -85,9 +85,11 @@ int process_keyboard_event(unsigned int keyboard_status)
     {
       if (current_keyboard_device_switch == -2)
       {
-        cursorEnabled = 0;
         if (!send_keyboard_event(KEYBOARD_EVENT_LEAVE))
+        {
+          cursorEnabled = 0;
           current_keyboard_device_switch = -1;
+        }
       }
     }
     else

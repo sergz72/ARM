@@ -121,3 +121,15 @@ int msp3421_set_config(printf_func pfunc, int argc, char **argv, void *config)
   pfunc("NULL config\n");
   return 1;
 }
+
+int mcp3421_calibrate(printf_func pfunc, int argc, char** argv, void* device_config)
+{
+  int v;
+  v = atoi(argv[0]);
+  if (v <= 0)
+  {
+    pfunc("Invalid value\n");
+    return 1;
+  }
+  return 0;
+}

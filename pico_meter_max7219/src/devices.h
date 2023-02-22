@@ -8,6 +8,7 @@
 typedef int (*ui_keyboard_handler_type)(void *config, unsigned int event);
 typedef void (*ui_init_handler_type)(void *config);
 typedef void (*ui_data_handler_type)(void* data, void *config);
+typedef int (*config_type)(printf_func pfunc, int argc, char** argv, void* device_config);
 
 typedef struct {
   const char *name, *short_name;
@@ -17,9 +18,12 @@ typedef struct {
   ui_data_handler_type ui_data_handler;
   ui_keyboard_handler_type ui_keyboard_handler;
   int (*print_config)(printf_func pfunc, void *device_config);
-  int (*set_config)(printf_func pfunc, int argc, char **argv, void *device_config);
+  config_type set_config;
   unsigned int set_config_parameter_count;
-  const char *set_config_help;
+  const char* set_config_help;
+  config_type calibrate;
+  unsigned int calibrate_parameter_count;
+  const char* calibrate_help;
 } Device;
 
 extern const Device *device_list[MAX_DEVICES];

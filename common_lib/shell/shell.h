@@ -10,11 +10,12 @@ typedef struct {
 
 typedef int (*printf_func)(const char *, ...);
 typedef char * (*gets_func)(void);
+typedef int (*final_handler_func)(printf_func pfunc, gets_func gfunc, int argc, char** argv, void* data);
 
 typedef struct _ShellCommandItem {
   const char *text;
   int (*handler)(const char *command, ShellCommandParameter **cp, const struct _ShellCommandItem **item);
-  int (*final_handler)(printf_func pfunc, gets_func gfunc, int argc, char **argv, void *data);
+  final_handler_func final_handler;
 } ShellCommandItem;
 
 typedef struct {

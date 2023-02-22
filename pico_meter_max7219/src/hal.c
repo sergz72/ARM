@@ -58,11 +58,11 @@ void pio0_irh()
 
 void pio1_irh()
 {
-  cap_value = CAP_MAX - pio_sm_get(pio0, 3);
-  if (cap_value < CAP_OFFSET)
+  cap_value = settings[SETTING_CAP_MAX] - pio_sm_get(pio0, 3);
+  if (cap_value < settings[SETTING_CAP_OFFSET])
     cap_value = 0;
   else
-    cap_value -= CAP_OFFSET;
+    cap_value -= settings[SETTING_CAP_OFFSET];
   pio0_hw->irq = 0;
   gpio_set_dir(CAP_RLOW_PIN, true);
   cap_value_updated = 1;
@@ -264,7 +264,7 @@ void adc_start_conversion(int channel)
 
 int adc_read(void)
 {
-  return 0 + (rand() % ADC_MAX);
+  return 0;
 }
 
 void cap_meter_init(void)
@@ -274,7 +274,7 @@ void cap_meter_init(void)
     //puts("cap_value_updated");
     cap_value_updated = 0;
     gpio_set_dir(CAP_RLOW_PIN, false);
-    pio_sm_put_blocking(pio0, 2, CAP_MAX);
+    pio_sm_put_blocking(pio0, 2, settings[SETTING_CAP_MAX]);
   }
 }
 
@@ -312,4 +312,19 @@ void pwm_set_freq(int channel, unsigned int freq)
 
 void pwm_set_duty(int channel, unsigned int duty)
 {
+}
+
+void freq_counter_set_interval(unsigned int interval)
+{
+
+}
+
+unsigned int get_counter_value1(void)
+{
+  return counter_value1;
+}
+
+unsigned int get_counter_value2(void)
+{
+  return counter_value2;
 }
