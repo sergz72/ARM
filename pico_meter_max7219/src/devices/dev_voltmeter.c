@@ -29,7 +29,7 @@ static void getResult(int channel, int settingId, void* d)
   if (d)
   {
     data = (VoltmeterData*)d;
-    data->v[channel] = (int)(adc_read() * settings[settingId] * VREF / ADC_MAX / U_DIV);
+    data->v[channel] = (int)(adc_get_result() * settings[settingId] * VREF / ADC_MAX / U_DIV);
   }
 }
 

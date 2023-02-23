@@ -15,7 +15,10 @@ long long int settings[SETTINGS_COUNT];
 
 void read_settings(void)
 {
-  if (hal_read_settings())
+  long long int v;
+  int rc = hal_read_settings();
+  v = settings[SETTING_MCLK];
+  if (rc || (v < 124000000 || v > 126000000))
   {
     settings[SETTING_CAP_VALUE_MUL] = DEFAULT_CAP_VALUE_MUL;
     settings[SETTING_CAP_MAX] = DEFAULT_CAP_MAX;

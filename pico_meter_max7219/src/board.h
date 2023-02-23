@@ -11,11 +11,11 @@
 #define FREQ2_PIN 9
 
 #define PWM1_PIN  15
-#define PWM2_PIN  14
+#define PWM2_PIN  13
 
 #define CAP_IN_PIN    11
 #define CAP_RHIGH_PIN 12
-#define CAP_RLOW_PIN  13
+#define CAP_RLOW_PIN  14
 
 #define SPI_4BIT_DIO0_PIN 18
 #define SPI_4BIT_DIO1_PIN 19
@@ -31,6 +31,10 @@
 
 #define SCL_PIN 1
 #define SDA_PIN 0
+
+#define ADC0_PIN 26
+#define ADC1_PIN 27
+#define ADC2_PIN 28
 
 #define SPI_4BIT_CLK_CLR gpio_put(SPI_4BIT_CLK_PIN, 0)
 #define SPI_4BIT_CLK_SET gpio_put(SPI_4BIT_CLK_PIN, 1)
@@ -67,8 +71,17 @@
 
 #define DEFAULT_PWM_FREQ 1000 // Hz
 #define DEFAULT_PWM_DUTY 500  // 50.0
+#define MINIMUM_PWM_FREQ 10
 
 #define DEFAULT_SI5351_FREQ 1000000
+
+#define PWM_SM 0
+#define PWM_PIO pio1
+#define COUNTER1_SM 0
+#define COUNTER2_SM 1
+#define COUNTER_PIO pio0
+#define CAP_SM 1
+#define CAP_PIO pio1
 
 extern volatile unsigned int cap_value, cap_value_updated;
 

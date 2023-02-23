@@ -3,12 +3,11 @@
 
 #include <shell.h>
 
-void freq_pwm_on(void);
+void freq_pwm_on(unsigned int interval);
 void freq_pwm_off(void);
 void pwm_on(int channel);
 void pwm_off(int channel);
-void pwm_set_freq(int channel, unsigned int freq);
-void pwm_set_duty(int channel, unsigned int duty);
+void pwm_set_freq(int channel, unsigned int freq, unsigned int duty);
 void freq_counter_set_interval(unsigned int interval);
 unsigned int get_counter_value1(void);
 unsigned int get_counter_value2(void);

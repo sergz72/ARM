@@ -10,6 +10,8 @@
 #define SETTING_U2MUL         6
 #define SETTINGS_COUNT        7
 
+#define SETTINGS_SIZE (sizeof(long long int) * SETTINGS_COUNT)
+
 extern long long int settings[];
 extern const char* setting_names[];
 

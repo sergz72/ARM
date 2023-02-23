@@ -10,6 +10,6 @@ void* voltmeter_data_collector(int step, void* config, void* prev_data);
 int voltmeter_calibrate(printf_func pfunc, int argc, char** argv, void* device_config);
 
 void adc_start_conversion(int channel);
-int adc_read(void);
+int adc_get_result(void);
 
 #endif

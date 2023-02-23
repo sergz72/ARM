@@ -2,7 +2,8 @@
 #include <devices.h>
 #include "ui.h"
 #include <keyboard.h>
-#include <stdio.h>
+//#include <stdio.h>
+#include <stddef.h>
 
 static unsigned int current_keyboard_status;
 int current_keyboard_device;
@@ -78,7 +79,7 @@ int process_current_keyboard_device_switch(void)
 
 int process_keyboard_event(unsigned int keyboard_status)
 {
-  printf("%d %d", current_keyboard_device, keyboard_status);
+  //printf("%d %d", current_keyboard_device, keyboard_status);
   if (current_keyboard_device >= 0)
   {
     if (keyboard_status == KEYBOARD_EVENT_LEAVE)

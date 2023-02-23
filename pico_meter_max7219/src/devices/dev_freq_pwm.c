@@ -80,21 +80,18 @@ static void ShowChannel(void)
     else
       f = temp_value;
   }
-  else
+  if (f >= 10000)
   {
-    if (f >= 10000)
-    {
-      f /= 1000;
-      kHz = 'K';
-    }
+    f /= 1000;
+    kHz = 'K';
   }
-  LED_Printf(2, 0x44, "%04d%c%03d", f, kHz, d);
+  LED_Printf(2, 0x40, "%04d%c%03d", f, kHz, d);
 }
 
 void freq_pwm_ui_init_handler(void* config)
 {
   last_counter_value1 = last_counter_value2 = 0xFFFFFFFF;
-  freq_pwm_on();
+  freq_pwm_on(measurement_interval);
   LED_ClearScreen();
   ShowChannel();
   ShowMenu();
@@ -131,8 +128,7 @@ static void ToggleChannelOutput(void)
   channel[current_channel].enabled = enabled;
   if (enabled)
   {
-    pwm_set_freq(current_channel, channel[current_channel].frequency);
-    pwm_set_duty(current_channel, channel[current_channel].duty);
+    pwm_set_freq(current_channel, channel[current_channel].frequency, channel[current_channel].duty);
     pwm_on(current_channel);
   }
   else
@@ -148,7 +144,7 @@ int freq_pwm_ui_keyboard_handler(void *config, unsigned int event)
     {
       channel[current_channel].duty = temp_value;
       if (channel[current_channel].enabled)
-        pwm_set_duty(current_channel, temp_value);
+        pwm_set_freq(current_channel, channel[current_channel].frequency, temp_value);
       cursorEnabled = 0;
       ShowChannel();
       return 1;
@@ -171,9 +167,11 @@ int freq_pwm_ui_keyboard_handler(void *config, unsigned int event)
       if (!default_menu)
       {
         temp_value *= 1000;
+        if (temp_value < MINIMUM_PWM_FREQ)
+          temp_value = MINIMUM_PWM_FREQ;
         channel[current_channel].frequency = temp_value;
         if (channel[current_channel].enabled)
-          pwm_set_freq(current_channel, temp_value);
+          pwm_set_freq(current_channel, temp_value, channel[current_channel].duty);
         cursorEnabled = 0;
         ShowChannel();
         ShowMenu();
@@ -199,9 +197,11 @@ int freq_pwm_ui_keyboard_handler(void *config, unsigned int event)
     {
       if (!default_menu)
       {
+        if (temp_value < MINIMUM_PWM_FREQ)
+          temp_value = MINIMUM_PWM_FREQ;
         channel[current_channel].frequency = temp_value;
         if (channel[current_channel].enabled)
-          pwm_set_freq(current_channel, temp_value);
+          pwm_set_freq(current_channel, temp_value, channel[current_channel].duty);
         cursorEnabled = 0;
         ShowChannel();
         ShowMenu();
