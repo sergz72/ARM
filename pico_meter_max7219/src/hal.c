@@ -21,6 +21,7 @@
 #include <hardware/sync.h>
 #include <hardware/flash.h>
 #include <malloc.h>
+#include "hardware/i2c.h"
 //#include <stdio.h>
 
 #define FLASH_TARGET_OFFSET (2048 * 1024 - FLASH_SECTOR_SIZE)
@@ -167,6 +168,12 @@ void SystemInit(void)
   adc_gpio_init(ADC0_PIN);
   adc_gpio_init(ADC1_PIN);
   adc_gpio_init(ADC2_PIN);
+
+  i2c_init(i2c_default, 100000);
+  gpio_set_function(SDA_PIN, GPIO_FUNC_I2C);
+  gpio_set_function(SCL_PIN, GPIO_FUNC_I2C);
+  gpio_pull_up(SDA_PIN);
+  gpio_pull_up(SCL_PIN);
 }
 
 void spi_4bit_delay(void)
@@ -188,12 +195,34 @@ int i2c_soft_command(int channel, unsigned int address, const unsigned char *com
                      const unsigned char *out_data, unsigned int out_data_length,
                      unsigned char in_data[], unsigned int in_data_length, unsigned int timeout)
 {
-  return 1;
+  int rc, nostop;
+  unsigned int l = commands_length + out_data_length;
+  unsigned char buffer[l];
+  address >>= 1;
+  rc = 0;
+  if (commands_length)
+    memcpy(buffer, commands, commands_length);
+  if (out_data_length)
+    memcpy(&buffer[commands_length], out_data, out_data_length);
+  rc = i2c_write_timeout_us(i2c_default, address, buffer, l, in_data_length > 0 ? true : false, timeout);
+  //printf("i2c_write_timeout_us address = %d, rc = %d\n", address, rc);
+  if (rc == PICO_ERROR_GENERIC || rc == PICO_ERROR_TIMEOUT)
+    return 1;
+  if (in_data_length)
+  {
+    rc = i2c_read_timeout_us(i2c_default, address, in_data, in_data_length, false, timeout);
+    //printf("i2c_read_timeout_us address = %d, rc = %d\n", address, rc);
+    if (rc == PICO_ERROR_GENERIC || rc == PICO_ERROR_TIMEOUT)
+      return 1;
+  }
+  return 0;
 }
 
 int i2c_soft_read(int channel, unsigned int address, unsigned char *in_data, unsigned int in_data_length, unsigned int timeout)
 {
-  return 1;
+  address >>= 1;
+  int rc = i2c_read_timeout_us(i2c_default, address, in_data, in_data_length, false, timeout);
+  return rc == PICO_ERROR_GENERIC || rc == PICO_ERROR_TIMEOUT ? 1 : 0;
 }
 
 int inaReadRegister(int channel, unsigned char address, unsigned char reg, unsigned short *data)

@@ -80,7 +80,7 @@ void mcp3421_ui_handler(void* data, void* config)
   }
   else
     sign = ' ';
-  LED_Printf(0, 4, "%c%2d%05d", sign, v / 1000000, v % 1000000);
+  LED_Printf(0, 4, "%c%2d%05d", sign, v / 100000, v % 100000);
 }
 
 int msp3421_print_config(printf_func pfunc, void *config)

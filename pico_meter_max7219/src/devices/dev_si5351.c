@@ -8,7 +8,7 @@
 #include <stdlib.h>
 
 #define MAX_DIVIDER 128
-#define MINIMUM_FREQUENCY 2500
+#define MINIMUM_FREQUENCY 1000000
 
 #define isValidCorr(x) (x >= -50000 && x <= 50000)
 
