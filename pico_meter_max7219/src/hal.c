@@ -66,7 +66,7 @@ void pio1_irh()
     cap_value = 0;
   else
     cap_value -= settings[SETTING_CAP_OFFSET];
-  pio1_hw->irq = 0;
+  pio1_hw->irq = 1;
   gpio_set_dir(CAP_RLOW_PIN, true);
   cap_value_updated = 1;
 }
@@ -90,10 +90,8 @@ void counter_pio_init(PIO pio, uint sm, uint sm2)
   counter2_program_init(pio, sm2, offset2, FREQ2_PIN, PICO_DEFAULT_LED_PIN);
   pio_sm_put_blocking(pio, sm, UINT32_MAX);
   pio_sm_exec(pio, sm, pio_encode_pull(false, false));
-  //pio_sm_set_enabled(pio, sm, true);
   pio_sm_put_blocking(pio, sm2, UINT32_MAX);
   pio_sm_exec(pio, sm2, pio_encode_pull(false, false));
-  //pio_sm_set_enabled(pio, sm2, true);
 }
 
 void cap_pio_init(PIO pio, uint sm)
@@ -165,7 +163,7 @@ void SystemInit(void)
   KbdGpioInit();
 
   adc_init();
-  adc_set_clkdiv(0);
+  adc_set_clkdiv(512);
   adc_gpio_init(ADC0_PIN);
   adc_gpio_init(ADC1_PIN);
   adc_gpio_init(ADC2_PIN);

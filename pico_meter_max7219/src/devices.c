@@ -181,12 +181,17 @@ static int set_config_handler(printf_func pfunc, gets_func gfunc, int argc, char
     if (!strcmp(name, setting_names[i]))
     {
       settings[i] = value;
-      return save_settings();
+      return 0;
     }
   }
 
   pfunc("unknown setting name\n");
   return 1;
+}
+
+static int commit_config_handler(printf_func pfunc, gets_func gfunc, int argc, char** argv, void* data)
+{
+  return save_settings();
 }
 
 void BuildPrintConfigCommand(void)
@@ -217,6 +222,20 @@ void BuildSetConfigCommand(void)
   }
 }
 
+void BuildCommitConfigCommand(void)
+{
+  ShellCommand* cmd = malloc(sizeof(ShellCommand));
+  if (cmd)
+  {
+    cmd->name = "config_commit";
+    cmd->help = NULL;
+    cmd->init = NULL;
+    cmd->data = NULL;
+    cmd->items = BuildCommandItems(0, commit_config_handler);
+    shell_register_command(cmd);
+  }
+}
+
 void BuildShellCommands(void)
 {
   int i;
@@ -224,6 +243,7 @@ void BuildShellCommands(void)
 
   BuildPrintConfigCommand();
   BuildSetConfigCommand();
+  BuildCommitConfigCommand();
 
   for (i = 0; i < found_devices; i++)
   {

@@ -22,14 +22,21 @@ void voltmeter_ui_init_handler(void* config)
   LED_ClearScreen();
 }
 
-static void getResult(int channel, int settingId, void* d)
+static void getResult(int channel, int offsetId, int settingId, void* d)
 {
   VoltmeterData* data;
+  int result, offset;
 
   if (d)
   {
     data = (VoltmeterData*)d;
-    data->v[channel] = (int)(adc_get_result() * settings[settingId] * VREF / ADC_MAX / U_DIV);
+    result = adc_get_result();
+    offset = settings[offsetId];
+    if (result >= offset)
+      result -= offset;
+    else
+      result = 0;
+    data->v[channel] = (int)(result * settings[settingId] * VREF / ADC_MAX / U_DIV);
   }
 }
 
@@ -42,15 +49,15 @@ void* voltmeter_data_collector(int step, void* config, void* prev_data)
     break;
   case 3:
     prev_data = malloc(sizeof(VoltmeterData));
-    getResult(0, SETTING_U0MUL, prev_data);
+    getResult(0, SETTING_U0OFFSET, SETTING_U0MUL, prev_data);
     adc_start_conversion(1);
     break;
   case 6:
-    getResult(1, SETTING_U1MUL, prev_data);
+    getResult(1, SETTING_U1OFFSET, SETTING_U1MUL, prev_data);
     adc_start_conversion(2);
     break;
   case 9:
-    getResult(2, SETTING_U2MUL, prev_data);
+    getResult(2, SETTING_U2OFFSET, SETTING_U2MUL, prev_data);
     break;
   }
 

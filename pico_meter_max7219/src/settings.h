@@ -8,7 +8,10 @@
 #define SETTING_U0MUL         4
 #define SETTING_U1MUL         5
 #define SETTING_U2MUL         6
-#define SETTINGS_COUNT        7
+#define SETTING_U0OFFSET      7
+#define SETTING_U1OFFSET      8
+#define SETTING_U2OFFSET      9
+#define SETTINGS_COUNT        10
 
 #define SETTINGS_SIZE (sizeof(long long int) * SETTINGS_COUNT)
 
