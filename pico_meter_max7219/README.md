@@ -25,7 +25,7 @@
 **Capacitance meter:**
 - CX input: between GP11 and GND
 - Resistor 220 Ohm between GP12 and GP11
-- Resistor 100 kOhm between GP13 and GP11
+- Resistor 100 kOhm between GP14 and GP11
 
 **Frequency meter:**
 - Channel 1 input pin: GP10
@@ -33,7 +33,7 @@
 
 **PWM Generator:**
 - Channel 1 output pin: GP15
-- Channel 2 output pin: GP14
+- Channel 2 output pin: GP13
 
 **Voltage meter:**
 - Channel 1: pin GP26
