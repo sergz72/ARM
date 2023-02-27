@@ -73,7 +73,7 @@ void voltmeter_ui_handler(void* data, void* config)
     LED_Printf(i, 0x20,  "%6d%02u", d->v[i] / 100, abs(d->v[i] % 100));
 }
 
-void offset_calibration(printf_func pfunc, int channel, int offsetId, int settingId)
+static void offset_calibration(printf_func pfunc, int channel, int offsetId, int settingId)
 {
   VoltmeterData data;
   long long int offset = settings[offsetId];
@@ -115,13 +115,13 @@ void offset_calibration(printf_func pfunc, int channel, int offsetId, int settin
   pfunc("channel %d offset calibration finished. Offset = %d\n", channel, settings[offsetId]);
 }
 
-void coef_calibration(printf_func pfunc, int channel, int offsetId, int settingId, int mv)
+static void coef_calibration(printf_func pfunc, int channel, int offsetId, int settingId, int mv)
 {
   VoltmeterData data;
   long long int coef = settings[settingId];
   long long int above;
   pfunc("calibrating channel %d\n", channel);
-  mv *= 100;
+  mv /= 10;
   while (settings[settingId] < 7000)
   {
     adc_start_conversion(channel);

@@ -1,6 +1,7 @@
 #include "dev_mcp3421.h"
 #include <mcp3421.h>
 #include <stdlib.h>
+#include <pico/time.h>
 #include "device_config.h"
 #include "ui.h"
 
@@ -42,11 +43,17 @@ void* mcp3421_initializer(void)
   return NULL;
 }
 
+static int get_voltage(int koef, int offset)
+{
+  int v;
+  mcp3421Get18BitVoltage(0, MCP3421_DEVICE_ID, &v);
+  return (int)((long long int)v * 4096 * koef / (0x3FFFF * 100)) + offset;
+}
+
 void *mcp3421_data_collector(int step, void *config, void *prev_data)
 {
   DEV_MCP3421Config* cfg = (DEV_MCP3421Config*)config;
   DEV_MCP3421Data *data;
-  int v;
 
   switch (step)
   {
@@ -58,8 +65,7 @@ void *mcp3421_data_collector(int step, void *config, void *prev_data)
       if (prev_data)
       {
         data = (DEV_MCP3421Data*)prev_data;
-        mcp3421Get18BitVoltage(0, MCP3421_DEVICE_ID, &v);
-        data->voltage = (int)((long long int)v * 4096 * cfg->koef / (0x3FFFF * 100)) + cfg->offset;
+        data->voltage = get_voltage(cfg->koef, cfg->offset);
       }
       return prev_data;
   }
@@ -122,14 +128,105 @@ int msp3421_set_config(printf_func pfunc, int argc, char **argv, void *config)
   return 1;
 }
 
+static int mcp3421_read(int koef, int offset)
+{
+  mcp3421SetConfig(0, MCP3421_DEVICE_ID, &dcfg);
+  sleep_ms(300);
+  return get_voltage(koef, offset);
+}
+
+static int offset_calibration(printf_func pfunc, void* device_config)
+{
+  int v, offset;
+  DEV_MCP3421Config *cfg = (DEV_MCP3421Config *)device_config;
+  offset = cfg->offset;
+  pfunc("offset calibration\n");
+  while (isValidOffset(offset))
+  {
+    v = mcp3421_read(cfg->koef, offset);
+    pfunc("offset %d result %d\n", offset, v);
+    if (v < 0)
+      offset++;
+    else
+      break;
+  }
+  if (!isValidOffset(offset))
+  {
+    pfunc("calibration failed.\n");
+    return 1;
+  }
+  while (isValidOffset(offset))
+  {
+    v = mcp3421_read(cfg->koef, offset);
+    pfunc("offset %d result %d\n", offset, v);
+    if (v > 0)
+      offset--;
+    else
+      break;
+  }
+  if (!isValidOffset(offset))
+  {
+    pfunc("calibration failed.\n");
+    return 1;
+  }
+  pfunc("offset calibration finished. Offset = %d\n", offset);
+  cfg->offset = offset;
+  return write_config_to_eeprom(cfg, sizeof(DEV_MCP3421Config));
+}
+
+static int coef_calibration(printf_func pfunc, int mv, void* device_config)
+{
+  int v, coef, above;
+  DEV_MCP3421Config *cfg = (DEV_MCP3421Config *)device_config;
+  coef = cfg->koef;
+  pfunc("coef calibration\n");
+  mv *= 100;
+  while (isValidCoef(coef))
+  {
+    v = mcp3421_read(coef, cfg->offset);
+    pfunc("coef %d result %d\n", coef, v);
+    if (v <= mv)
+      coef++;
+    else
+      break;
+  }
+  if (!isValidCoef(coef))
+  {
+    pfunc("calibration failed.\n");
+    return 1;
+  }
+  above = coef;
+  while (isValidCoef(coef))
+  {
+    coef--;
+    v = mcp3421_read(coef, cfg->offset);
+    pfunc("coef %d result %d\n", coef, v);
+    if (v > mv)
+      above = coef;
+    else if (v < mv)
+      break;
+  }
+  if (!isValidCoef(coef))
+  {
+    pfunc("calibration failed.\n");
+    return 1;
+  }
+  coef = (above + coef) / 2;
+  pfunc("coef calibration finished. Coef = %d\n", coef);
+  cfg->koef = coef;
+  return write_config_to_eeprom(cfg, sizeof(DEV_MCP3421Config));
+}
+
 int mcp3421_calibrate(printf_func pfunc, int argc, char** argv, void* device_config)
 {
   int v;
   v = atoi(argv[0]);
-  if (v <= 0)
+  if (v < 0)
   {
     pfunc("Invalid value\n");
     return 1;
   }
-  return 0;
+  if (!v)
+    return offset_calibration(pfunc, device_config);
+  return coef_calibration(pfunc, v, device_config);
 }

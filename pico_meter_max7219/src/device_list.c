@@ -86,7 +86,7 @@ const Device devices[] = {
         .set_config_help = "coef offset",
         .calibrate = mcp3421_calibrate,
         .calibrate_parameter_count = 1,
-        .calibrate_help = "value"
+        .calibrate_help = "value_mv"
     },
     {
         .name = "si5351",
