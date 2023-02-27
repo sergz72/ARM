@@ -83,7 +83,7 @@ static void offset_calibration(printf_func pfunc, int channel, int offsetId, int
     adc_start_conversion(channel);
     adc_wait();
     getResult(channel, offsetId, settingId, &data);
-    pfunc("offset %ld result %d\n", settings[offsetId], data.v[channel]);
+    pfunc("offset %lld result %d\n", settings[offsetId], data.v[channel]);
     if (!data.v[channel])
       settings[offsetId]--;
     else
@@ -100,7 +100,7 @@ static void offset_calibration(printf_func pfunc, int channel, int offsetId, int
     adc_start_conversion(channel);
     adc_wait();
     getResult(channel, offsetId, settingId, &data);
-    pfunc("offset %ld result %d\n", settings[offsetId], data.v[channel]);
+    pfunc("offset %lld result %d\n", settings[offsetId], data.v[channel]);
     if (data.v[channel])
       settings[offsetId]++;
     else
@@ -112,7 +112,7 @@ static void offset_calibration(printf_func pfunc, int channel, int offsetId, int
     pfunc("channel %d calibration failed.\n", channel);
     return;
   }
-  pfunc("channel %d offset calibration finished. Offset = %d\n", channel, settings[offsetId]);
+  pfunc("channel %d offset calibration finished. Offset = %lld\n", channel, settings[offsetId]);
 }
 
 static void coef_calibration(printf_func pfunc, int channel, int offsetId, int settingId, int mv)
@@ -127,7 +127,7 @@ static void coef_calibration(printf_func pfunc, int channel, int offsetId, int s
     adc_start_conversion(channel);
     adc_wait();
     getResult(channel, offsetId, settingId, &data);
-    pfunc("coef %ld result %d\n", settings[settingId], data.v[channel]);
+    pfunc("coef %lld result %d\n", settings[settingId], data.v[channel]);
     if (data.v[channel] <= mv)
       settings[settingId]++;
     else
@@ -146,7 +146,7 @@ static void coef_calibration(printf_func pfunc, int channel, int offsetId, int s
     adc_start_conversion(channel);
     adc_wait();
     getResult(channel, offsetId, settingId, &data);
-    pfunc("coef %ld result %d\n", settings[settingId], data.v[channel]);
+    pfunc("coef %lld result %d\n", settings[settingId], data.v[channel]);
     if (data.v[channel] > mv)
       above = settings[settingId];
     else if (data.v[channel] < mv)
@@ -159,7 +159,7 @@ static void coef_calibration(printf_func pfunc, int channel, int offsetId, int s
     return;
   }
   settings[settingId] = (above + settings[settingId]) / 2;
-  pfunc("channel %d coef calibration finished. Coef = %d\n", channel, settings[settingId]);
+  pfunc("channel %d coef calibration finished. Coef = %lld\n", channel, settings[settingId]);
 }
 
 int voltmeter_calibrate(printf_func pfunc, int argc, char** argv, void* device_config)
