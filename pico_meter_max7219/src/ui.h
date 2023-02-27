@@ -8,7 +8,11 @@ void LED_Write_String(int line, unsigned int dots, const char *buffer);
 void LED_Printf(int line, unsigned int dots, const char *format, ...);
 void LED_Update(void);
 void LED_ClearScreen(void);
+void BuildUIShellCommands(void);
+void display_on(void);
+void display_off(void);
+void display_toggle(void);
 
-extern unsigned int cursorPosition1, cursorPosition2, cursorLine, cursorEnabled;
+extern unsigned int cursorPosition1, cursorPosition2, cursorLine, cursorEnabled, displayIsOff;
 
 #endif

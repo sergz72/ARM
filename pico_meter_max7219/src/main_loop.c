@@ -30,6 +30,6 @@ void main_loop(void)
     cnt = 0;
   update |= Process_Timer_Event(data_ready, keyboard_status);
   //printf("Process_Timer_Event\n");
-  if (update)
+  if (update && !displayIsOff)
     LED_Update();
 }

@@ -54,7 +54,7 @@ const Device devices[] = {
         .set_config_help = NULL,
         .calibrate = voltmeter_calibrate,
         .calibrate_parameter_count = 1,
-        .calibrate_help = "value"
+        .calibrate_help = "value_mv"
     },
     {
         .name = "ina226",

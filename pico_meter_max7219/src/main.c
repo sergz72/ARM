@@ -74,6 +74,7 @@ int main(void)
   //printf("BuildDeviceList\n");
 
   BuildShellCommands();
+  BuildUIShellCommands();
   //printf("BuildShellCommands\n");
 
   dev_keyboard_init();

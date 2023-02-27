@@ -11,5 +11,6 @@ int voltmeter_calibrate(printf_func pfunc, int argc, char** argv, void* device_c
 
 void adc_start_conversion(int channel);
 int adc_get_result(void);
+void adc_wait(void);
 
 #endif

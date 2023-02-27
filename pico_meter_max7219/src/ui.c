@@ -11,15 +11,35 @@
 
 #define CURSOR_TIMEOUT 50
 
-unsigned int cursorLine, cursorPosition1, cursorPosition2, cursorEnabled;
+unsigned int cursorLine, cursorPosition1, cursorPosition2, cursorEnabled, displayIsOff;
 
 static unsigned char display_data[MAX7219_NUM_PARALLEL][MAX7219_NUM_SERIES * 8];
 static unsigned char display_rawdata[MAX7219_NUM_PARALLEL][MAX7219_NUM_SERIES * 8];
 
+static int display_on_handler(printf_func pfunc, gets_func gfunc, int argc, char **argv, void *data);
+static const ShellCommandItem display_on_command_items[] = {
+    {NULL, NULL, display_on_handler}
+};
+static const ShellCommand display_on_command = {
+    display_on_command_items,
+    "display_on",
+    NULL
+};
+
+static int display_off_handler(printf_func pfunc, gets_func gfunc, int argc, char **argv, void *data);
+static const ShellCommandItem display_off_command_items[] = {
+    {NULL, NULL, display_off_handler}
+};
+static const ShellCommand display_off_command = {
+    display_off_command_items,
+    "display_off",
+    NULL
+};
+
 void UI_Init(void)
 {
   max7219_init(1);
-  cursorEnabled = 0;
+  cursorEnabled = displayIsOff = 0;
 }
 
 void LED_ClearScreen(void)
@@ -88,7 +108,7 @@ int Process_Timer_Event(int data_ready, unsigned int keyboard_status)
     switch (data_ready)
     {
     case 1:
-      if (cursorEnabled)
+      if (cursorEnabled && !displayIsOff)
       {
         for (i = (int)cursorPosition1; i <= cursorPosition2; i++)
           display_rawdata[cursorLine][i] = 0;
@@ -122,4 +142,42 @@ void enableCursor(unsigned int line, unsigned int position1, unsigned int positi
   cursorPosition1 = position1;
   cursorPosition2 = position2;
   cursorEnabled = 1;
+}
+
+void display_on(void)
+{
+  max7219_on();
+  displayIsOff = 0;
+}
+
+void display_off(void)
+{
+  max7219_off();
+  displayIsOff = 1;
+}
+
+void display_toggle(void)
+{
+  if (displayIsOff)
+    display_on();
+  else
+    display_off();
+}
+
+static int display_on_handler(printf_func pfunc, gets_func gfunc, int argc, char **argv, void *data)
+{
+  display_on();
+  return 0;
+}
+
+static int display_off_handler(printf_func pfunc, gets_func gfunc, int argc, char **argv, void *data)
+{
+  display_off();
+  return 0;
+}
+
+void BuildUIShellCommands(void)
+{
+  shell_register_command(&display_on_command);
+  shell_register_command(&display_off_command);
 }

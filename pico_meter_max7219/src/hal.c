@@ -195,7 +195,7 @@ int i2c_soft_command(int channel, unsigned int address, const unsigned char *com
                      const unsigned char *out_data, unsigned int out_data_length,
                      unsigned char in_data[], unsigned int in_data_length, unsigned int timeout)
 {
-  int rc, nostop;
+  int rc;
   unsigned int l = commands_length + out_data_length;
   unsigned char buffer[l];
   address >>= 1;
@@ -311,6 +311,12 @@ void adc_start_conversion(int channel)
 {
   adc_select_input(channel);
   hw_set_bits(&adc_hw->cs, ADC_CS_START_ONCE_BITS);
+}
+
+void adc_wait(void)
+{
+  while (!(adc_hw->cs & ADC_CS_READY_BITS))
+    tight_loop_contents();
 }
 
 int adc_get_result(void)

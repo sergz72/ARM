@@ -19,7 +19,39 @@ typedef struct {
   int idx;
 } set_config_command_data;
 
-const Device *device_list[MAX_DEVICES];
+static int get_config_handler(printf_func pfunc, gets_func gfunc, int argc, char **argv, void *data);
+static const ShellCommandItem print_config_command_items[] = {
+    {NULL, NULL, get_config_handler}
+};
+static const ShellCommand print_config_command = {
+    print_config_command_items,
+    "config_get",
+    NULL
+};
+
+static int commit_config_handler(printf_func pfunc, gets_func gfunc, int argc, char **argv, void *data);
+static const ShellCommandItem commit_config_command_items[] = {
+    {NULL, NULL, commit_config_handler}
+};
+static const ShellCommand commit_config_command = {
+    commit_config_command_items,
+    "config_commit",
+    NULL
+};
+
+static int set_config_handler(printf_func pfunc, gets_func gfunc, int argc, char **argv, void *data);
+static const ShellCommandItem set_config_command_items[] = {
+    {NULL, param_handler, NULL},
+    {NULL, param_handler, NULL},
+    {NULL, NULL, set_config_handler}
+};
+static const ShellCommand set_config_command = {
+    set_config_command_items,
+    "config_set",
+    "config_set name value"
+};
+
+Device *device_list[MAX_DEVICES];
 void *device_data;
 void* device_config[MAX_DEVICES];
 int found_devices;
@@ -37,7 +69,7 @@ void BuildDeviceList(void)
     config = d->initializer();
     if (config)
     {
-      device_list[found_devices] = d;
+      device_list[found_devices] = (Device*)d;
       device_config[found_devices++] = config;
     }
     d++;
@@ -194,56 +226,14 @@ static int commit_config_handler(printf_func pfunc, gets_func gfunc, int argc, c
   return save_settings();
 }
 
-void BuildPrintConfigCommand(void)
-{
-  ShellCommand* cmd = malloc(sizeof(ShellCommand));
-  if (cmd)
-  {
-    cmd->name = "config_get";
-    cmd->help = NULL;
-    cmd->init = NULL;
-    cmd->data = NULL;
-    cmd->items = BuildCommandItems(0, get_config_handler);
-    shell_register_command(cmd);
-  }
-}
-
-void BuildSetConfigCommand(void)
-{
-  ShellCommand* cmd = malloc(sizeof(ShellCommand));
-  if (cmd)
-  {
-    cmd->name = "config_set";
-    cmd->help = "config_set name value";
-    cmd->init = NULL;
-    cmd->data = NULL;
-    cmd->items = BuildCommandItems(2, set_config_handler);
-    shell_register_command(cmd);
-  }
-}
-
-void BuildCommitConfigCommand(void)
-{
-  ShellCommand* cmd = malloc(sizeof(ShellCommand));
-  if (cmd)
-  {
-    cmd->name = "config_commit";
-    cmd->help = NULL;
-    cmd->init = NULL;
-    cmd->data = NULL;
-    cmd->items = BuildCommandItems(0, commit_config_handler);
-    shell_register_command(cmd);
-  }
-}
-
 void BuildShellCommands(void)
 {
   int i;
   const Device* d;
 
-  BuildPrintConfigCommand();
-  BuildSetConfigCommand();
-  BuildCommitConfigCommand();
+  shell_register_command(&print_config_command);
+  shell_register_command(&set_config_command);
+  shell_register_command(&commit_config_command);
 
   for (i = 0; i < found_devices; i++)
   {

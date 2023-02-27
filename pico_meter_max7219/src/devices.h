@@ -26,7 +26,7 @@ typedef struct {
   const char* calibrate_help;
 } Device;
 
-extern const Device *device_list[MAX_DEVICES];
+extern Device *device_list[MAX_DEVICES];
 extern void *device_data;
 extern void* device_config[MAX_DEVICES];
 

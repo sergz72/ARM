@@ -102,7 +102,7 @@ void ShowCounter(int line, unsigned int value)
   value = (unsigned int)((unsigned long long int)value * settings[SETTING_MCLK] / DEFAULT_MCLK);
   if (value < 100000000)
     LED_Printf(line, measurement_interval == 10 ? 0x40 : 0, "%8d", value);
- else
+  else
     LED_Write_String(line, 0, "HI      ");
 }
 
@@ -140,15 +140,20 @@ int freq_pwm_ui_keyboard_handler(void *config, unsigned int event)
   switch (event)
   {
   case KEYBOARD_EVENT_ENTER:
-    if (cursorEnabled && default_menu)
+    if (cursorEnabled)
     {
-      channel[current_channel].duty = temp_value;
-      if (channel[current_channel].enabled)
-        pwm_set_freq(current_channel, channel[current_channel].frequency, temp_value);
-      cursorEnabled = 0;
-      ShowChannel();
-      return 1;
+      if (default_menu)
+      {
+        channel[current_channel].duty = temp_value;
+        if (channel[current_channel].enabled)
+          pwm_set_freq(current_channel, channel[current_channel].frequency, temp_value);
+        cursorEnabled = 0;
+        ShowChannel();
+        return 1;
+      }
     }
+    else
+      display_toggle();
     break;
   case KEYBOARD_EVENT_LEAVE:
     if (cursorEnabled)
