@@ -1,5 +1,7 @@
 # STM32401 Blue pill universal measuring tool
 
+![](stm32f401_meter.jpg)
+
 **Uses:**
 - [STM32F401 Development Board](https://www.amazon.de/gp/product/B0B5DVM7KH)
 - 128x64 lcd module with ks0108 controller

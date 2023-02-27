@@ -1,5 +1,7 @@
 # Raspberry PI pico universal measuring tool
 
+![](pico_meter_max7219.jpg)
+
 **Uses:**
 - 4x[MAX7216 LED board](https://www.amazon.de/gp/product/B07Z7RLGC2)
 - [4x4 Matrix Keypad](https://www.amazon.de/gp/product/B07ZSYP188)
