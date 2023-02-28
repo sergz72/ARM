@@ -122,6 +122,8 @@ int si5351_ui_keyboard_handler(void *config, unsigned int event)
       ShowChannel(current_channel);
       return 1;
     }
+    else
+      display_toggle();
     break;
   case KEYBOARD_EVENT_LEAVE:
     if (cursorEnabled)

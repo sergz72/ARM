@@ -92,11 +92,11 @@ int main(void)
       switch (command_line[0])
       {
         case SHELL_UP_KEY:
-          puts("\r\33[2K$ ");
+          puts_("\r\33[2K$ ");
           getstring_buffer_init(shell_get_prev_from_history());
           break;
         case SHELL_DOWN_KEY:
-          puts("\r\33[2K$ ");
+          puts_("\r\33[2K$ ");
           getstring_buffer_init(shell_get_next_from_history());
           break;
         default:
