@@ -53,6 +53,7 @@ Channel3:
 Channel4:
 - SDA: PB8
 - SCL: PB9
+- GPIO: PA15, PB5
 
 **Optional TM1638 module connection(Uses I2C channel 4 pins):**
 - PB9: GND
