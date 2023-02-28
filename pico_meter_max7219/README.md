@@ -48,6 +48,6 @@
 - Channel 2 output pin: GP13
 
 **Voltage meter:**
-- Channel 1: pin GP26
-- Channel 2: pin GP27
-- Channel 3: pin GP28
+- Channel 1: pin GP26. Voltage divider: 1MOhm resistor from input to GP26, 200kOhm resistor from GP26 to GND
+- Channel 2: pin GP27. Voltage divider: 1MOhm resistor from input to GP27, 200kOhm resistor from GP27 to GND
+- Channel 3: pin GP28. Voltage divider: 1MOhm resistor from input to GP28, 200kOhm resistor from GP28 to GND
