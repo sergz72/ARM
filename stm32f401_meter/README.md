@@ -3,7 +3,7 @@
 ![](stm32f401_meter.jpg)
 
 **Supports:**
-1. External I2C devices:
+1. Up to 4 external I2C devices:
   - SI5351 DDS generator
   - INA226 current shunt and power monitor
   - INA3221 three-channel, high-side current and bus voltage monitor
