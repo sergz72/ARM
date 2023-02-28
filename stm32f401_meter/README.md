@@ -59,4 +59,4 @@ Channel4:
 - PB9: GND
 - PB8: DIO
 - PA15: CLK
-- CS: PB5
+- PB5: CS
