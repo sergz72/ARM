@@ -2,6 +2,16 @@
 
 ![](pico_meter_max7219.jpg)
 
+**Features:**
+1. 3 channel voltmeter
+2. 2 channel frequency counter
+3. 2 channel PWM generator
+4. Capacitance meter
+5. External I2C device support:
+  - SI5351 DDS generator
+  - INA226 current shunt and power monitor
+  - MCP3421 ADC
+
 **Uses:**
 - 4x[MAX7216 LED board](https://www.amazon.de/gp/product/B07Z7RLGC2)
 - [4x4 Matrix Keypad](https://www.amazon.de/gp/product/B07ZSYP188)
