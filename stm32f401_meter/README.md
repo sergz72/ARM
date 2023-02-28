@@ -2,6 +2,16 @@
 
 ![](stm32f401_meter.jpg)
 
+**Supports:**
+1. External I2C devices:
+  - SI5351 DDS generator
+  - INA226 current shunt and power monitor
+  - INA3221 three-channel, high-side current and bus voltage monitor
+  - ADS1115 4-channel, delta-sigma ADC
+  - MCP3421 ADC
+  - Generic DDS I2C device (example device: https://github.com/sergz72/MSP430/blob/main/generator_ad9833)
+2. Optionally [TM1638 LED/keyboard](https://www.amazon.de/gp/product/B07Y9QB74M)
+
 **Uses:**
 - [STM32F401 Development Board](https://www.amazon.de/gp/product/B0B5DVM7KH)
 - 128x64 lcd module with ks0108 controller
