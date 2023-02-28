@@ -8,9 +8,9 @@
 3. 2-channel 10Hz-9999kHz PWM generator
 4. Capacitance meter. Range is 1pF-10uF. Maximal resolution is 0.1 pF
 5. External I2C device support:
-  - SI5351 DDS generator
-  - INA226 current shunt and power monitor
-  - MCP3421 ADC
+  - SI5351 DDS generator, Frequency range: 7813Hz...100MHz
+  - INA226 current shunt and power monitor. Voltage range is 0..36v, resolution is 1mV, Current range with 0.1Ohm shunt resistor is -0.8..0.8A, resolution: 0.1mA
+  - MCP3421 ADC with voltage divider 1:11 (1MOhm resistor from input to ADC, 100kOhm resistor+0.1uf capacitor from ADC to GND). Range is -4..+33v. Resolution is 0.01mV
 
 **Uses:**
 - 4x[MAX7216 LED board](https://www.amazon.de/gp/product/B07Z7RLGC2)

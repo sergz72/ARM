@@ -4,11 +4,11 @@
 
 **Supports:**
 1. Up to 4 external I2C devices:
-  - SI5351 DDS generator
-  - INA226 current shunt and power monitor
-  - INA3221 three-channel, high-side current and bus voltage monitor
-  - ADS1115 4-channel, delta-sigma ADC
-  - MCP3421 ADC
+  - SI5351 DDS generator. Frequency range: 7813Hz...112.5MHz
+  - INA226 current shunt and power monitor. Voltage range is 0..36v, resolution is 1mV, Current range with 0.1Ohm shunt resistor is -0.8..0.8A, resolution: 0.1mA
+  - INA3221 three-channel, high-side current and bus voltage monitor. Voltage range is 0..26v, resolution is 1mV, Current range with 0.1Ohm shunt resistor is -1.6..1.6A, resolution: 0.1mA
+  - ADS1115 4-channel, delta-sigma ADC with with voltage divider 1:10. Resolution is 1mV
+  - MCP3421 ADC with voltage divider 1:11 (1MOhm resistor from input to ADC, 100kOhm resistor+0.1uf capacitor from ADC to GND). Range is -4..+33v. Resolution is 0.01mV
   - Generic DDS I2C device (example device: https://github.com/sergz72/MSP430/blob/main/generator_ad9833)
 2. Optionally [TM1638 LED/keyboard](https://www.amazon.de/gp/product/B07Y9QB74M)
 
