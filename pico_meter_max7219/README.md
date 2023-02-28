@@ -3,10 +3,10 @@
 ![](pico_meter_max7219.jpg)
 
 **Features:**
-1. 3-channel voltmeter
-2. 2-channel frequency counter
-3. 2-channel PWM generator
-4. Capacitance meter
+1. 3-channel 0-19v voltmeter. Resolution is 0.01v.
+2. 2-channel 1Hz-30MHz frequency counter
+3. 2-channel 10Hz-9999kHz PWM generator
+4. Capacitance meter. Range is 1pF-10uF. Maximal resolution is 0.1 pF
 5. External I2C device support:
   - SI5351 DDS generator
   - INA226 current shunt and power monitor
