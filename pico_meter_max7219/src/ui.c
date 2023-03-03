@@ -38,7 +38,7 @@ static const ShellCommand display_off_command = {
 
 void UI_Init(void)
 {
-  max7219_init(1);
+  max7219_init(15);
   cursorEnabled = displayIsOff = 0;
 }
 

@@ -13,8 +13,12 @@
   - MCP3421 ADC with voltage divider 1:11 (1MOhm resistor from input to ADC, 100kOhm resistor+0.1uf capacitor from ADC to GND). Range is -4..+33v. Resolution is 0.01mV. Calibration is supported.
 
 **Uses:**
-- 4x[MAX7216 LED board](https://www.amazon.de/gp/product/B07Z7RLGC2)
+- 4x[MAX7219 LED board](https://www.amazon.de/gp/product/B07Z7RLGC2)
 - [4x4 Matrix Keypad](https://www.amazon.de/gp/product/B07ZSYP188)
+
+**Required MAX7219 board modifications:**
+
+![](max7219_modifications.jpg)
 
 **Pins:**
 
