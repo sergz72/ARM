@@ -6,6 +6,7 @@
 #include "dev_freq_pwm.h"
 #include "dev_cap_meter.h"
 #include "dev_voltmeter.h"
+#include "dev_l_meter.h"
 
 const Device devices[] = {
     {
@@ -16,6 +17,22 @@ const Device devices[] = {
         .ui_init_handler = cap_meter_ui_init_handler,
         .ui_data_handler = cap_meter_ui_handler,
         .ui_keyboard_handler = cap_meter_ui_keyboard_handler,
+        .print_config = NULL,
+        .set_config = NULL,
+        .set_config_parameter_count = 0,
+        .set_config_help = NULL,
+        .calibrate = NULL,
+        .calibrate_parameter_count = 0,
+        .calibrate_help = NULL
+    },
+    {
+        .name = "l_meter",
+        .short_name = "L ",
+        .initializer = l_meter_initializer,
+        .data_collector = NULL,
+        .ui_init_handler = l_meter_ui_init_handler,
+        .ui_data_handler = l_meter_ui_handler,
+        .ui_keyboard_handler = l_meter_ui_keyboard_handler,
         .print_config = NULL,
         .set_config = NULL,
         .set_config_parameter_count = 0,

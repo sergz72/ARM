@@ -11,7 +11,8 @@ const char* setting_names[] = {
   "u2mul",
   "u0offset",
   "u1offset",
-  "u2offset"
+  "u2offset",
+  "l_cap"
 };
 
 long long int settings[SETTINGS_COUNT];
@@ -33,5 +34,6 @@ void read_settings(void)
     settings[SETTING_U0OFFSET] = DEFAULT_SETTING_UOFFSET;
     settings[SETTING_U1OFFSET] = DEFAULT_SETTING_UOFFSET;
     settings[SETTING_U2OFFSET] = DEFAULT_SETTING_UOFFSET;
+    settings[SETTING_L_CAP] = DEFAULT_SETTING_L_CAP;
   }
 }

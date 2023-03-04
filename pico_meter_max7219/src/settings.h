@@ -11,7 +11,8 @@
 #define SETTING_U0OFFSET      7
 #define SETTING_U1OFFSET      8
 #define SETTING_U2OFFSET      9
-#define SETTINGS_COUNT        10
+#define SETTING_L_CAP         10
+#define SETTINGS_COUNT        11
 
 #define SETTINGS_SIZE (sizeof(long long int) * SETTINGS_COUNT)
 

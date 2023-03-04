@@ -7,7 +7,8 @@
 2. 2-channel 1Hz-30MHz frequency counter. Calibration is supported.
 3. 2-channel 10Hz-9999kHz PWM generator
 4. Capacitance meter. Range is 1pF-10uF. Maximal resolution is 0.1 pF. Calibration is supported.
-5. External I2C device support:
+5. Inductance meter. Uses ![this adapter](https://github.com/sergz72/Projects/tree/master/lmeter). Range is 0.1uH-10H. Maximal resolution is 0.01uH.
+6. External I2C device support:
   - SI5351 DDS generator, Frequency range: 7813Hz...100MHz
   - INA226 current shunt and power monitor. Voltage range is 0..36v, resolution is 1mV, Current range with 0.1Ohm shunt resistor is -0.8..0.8A, resolution: 0.1mA
   - MCP3421 ADC with voltage divider 1:11 (1MOhm resistor from input to ADC, 100kOhm resistor+0.1uf capacitor from ADC to GND). Range is -4..+33v. Resolution is 0.01mV. Calibration is supported.
@@ -16,7 +17,7 @@
 - 4x[MAX7219 LED board](https://www.amazon.de/gp/product/B07Z7RLGC2)
 - [4x4 Matrix Keypad](https://www.amazon.de/gp/product/B07ZSYP188)
 
-**Required MAX7219 board modifications:**
+**Required MAX7219 board modifications for power line noise reduction:**
 
 ![](max7219_modifications.jpg)
 

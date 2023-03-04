@@ -3,7 +3,7 @@
 
 #include <shell.h>
 
-void freq_pwm_on(unsigned int interval);
+void freq_pwm_on(unsigned int interval, int sm);
 void freq_pwm_off(void);
 void pwm_on(int channel);
 void pwm_off(int channel);

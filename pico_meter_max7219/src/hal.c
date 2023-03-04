@@ -348,11 +348,13 @@ void cap_meter_off(void)
   pio_sm_set_enabled(CAP_PIO, CAP_SM, false);
 }
 
-void freq_pwm_on(unsigned int interval)
+void freq_pwm_on(unsigned int interval, int sm)
 {
   freq_counter_set_interval(interval);
-  pio_sm_set_enabled(COUNTER_PIO, COUNTER1_SM, true);
-  pio_sm_set_enabled(COUNTER_PIO, COUNTER2_SM, true);
+  if (sm & 1)
+    pio_sm_set_enabled(COUNTER_PIO, COUNTER1_SM, true);
+  if (sm & 2)
+    pio_sm_set_enabled(COUNTER_PIO, COUNTER2_SM, true);
 }
 
 void freq_pwm_off(void)

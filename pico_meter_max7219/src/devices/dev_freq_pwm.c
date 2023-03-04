@@ -91,7 +91,7 @@ static void ShowChannel(void)
 void freq_pwm_ui_init_handler(void* config)
 {
   last_counter_value1 = last_counter_value2 = 0xFFFFFFFF;
-  freq_pwm_on(measurement_interval);
+  freq_pwm_on(measurement_interval, 3);
   LED_ClearScreen();
   ShowChannel();
   ShowMenu();
