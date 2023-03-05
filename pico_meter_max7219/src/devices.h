@@ -6,6 +6,7 @@
 #include <shell.h>
 
 typedef int (*ui_keyboard_handler_type)(void *config, unsigned int event);
+typedef int (*ui_encoder_handler_type)(void *config, unsigned int event, int counter);
 typedef void (*ui_init_handler_type)(void *config);
 typedef void (*ui_data_handler_type)(void* data, void *config);
 typedef int (*config_type)(printf_func pfunc, int argc, char** argv, void* device_config);
@@ -17,6 +18,7 @@ typedef struct {
   ui_init_handler_type ui_init_handler;
   ui_data_handler_type ui_data_handler;
   ui_keyboard_handler_type ui_keyboard_handler;
+  ui_encoder_handler_type ui_encoder_handler;
   int (*print_config)(printf_func pfunc, void *device_config);
   config_type set_config;
   unsigned int set_config_parameter_count;

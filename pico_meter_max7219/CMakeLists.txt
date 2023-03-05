@@ -20,6 +20,7 @@ file(GLOB SOURCES
         "src/devices/*.*"
         "../common_lib/sensor/ina226.c"
         "../common_lib/sensor/mcp3421.c"
+        "../common_lib/sensor/mcp9600.c"
         "../common_lib/rf/si5351.c"
         "../common_lib/display/max7219.c"
         "../common_lib/display/seven_seg.c"

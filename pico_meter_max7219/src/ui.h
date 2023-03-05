@@ -1,7 +1,7 @@
 #ifndef _UI_H
 #define _UI_H
 
-int Process_Timer_Event(int data_ready, unsigned int keyboard_status);
+int Process_Timer_Event(int data_ready, unsigned int keyboard_status, unsigned int encoder_status);
 void UI_Init(void);
 void enableCursor(unsigned int line, unsigned int position1, unsigned int position2);
 void LED_Write_String(int line, unsigned int dots, const char *buffer);

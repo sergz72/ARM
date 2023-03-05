@@ -7,6 +7,7 @@
 #include "dev_cap_meter.h"
 #include "dev_voltmeter.h"
 #include "dev_l_meter.h"
+#include "dev_mcp9600.h"
 
 const Device devices[] = {
     {
@@ -17,6 +18,7 @@ const Device devices[] = {
         .ui_init_handler = cap_meter_ui_init_handler,
         .ui_data_handler = cap_meter_ui_handler,
         .ui_keyboard_handler = cap_meter_ui_keyboard_handler,
+        .ui_encoder_handler = NULL,
         .print_config = NULL,
         .set_config = NULL,
         .set_config_parameter_count = 0,
@@ -33,6 +35,7 @@ const Device devices[] = {
         .ui_init_handler = l_meter_ui_init_handler,
         .ui_data_handler = l_meter_ui_handler,
         .ui_keyboard_handler = l_meter_ui_keyboard_handler,
+        .ui_encoder_handler = NULL,
         .print_config = NULL,
         .set_config = NULL,
         .set_config_parameter_count = 0,
@@ -49,6 +52,7 @@ const Device devices[] = {
         .ui_init_handler = freq_pwm_ui_init_handler,
         .ui_data_handler = freq_pwm_ui_handler,
         .ui_keyboard_handler = freq_pwm_ui_keyboard_handler,
+        .ui_encoder_handler = NULL,
         .print_config = NULL,
         .set_config = NULL,
         .set_config_parameter_count = 0,
@@ -65,6 +69,7 @@ const Device devices[] = {
         .ui_init_handler = voltmeter_ui_init_handler,
         .ui_data_handler = voltmeter_ui_handler,
         .ui_keyboard_handler = NULL,
+        .ui_encoder_handler = NULL,
         .print_config = NULL,
         .set_config = NULL,
         .set_config_parameter_count = 0,
@@ -81,6 +86,7 @@ const Device devices[] = {
         .ui_init_handler = ina226_ui_init_handler,
         .ui_data_handler = ina226_ui_handler,
         .ui_keyboard_handler = NULL,
+        .ui_encoder_handler = NULL,
         .print_config = NULL,
         .set_config = NULL,
         .set_config_parameter_count = 0,
@@ -91,12 +97,13 @@ const Device devices[] = {
     },
     {
         .name = "mcp3421",
-        .short_name = "MC",
+        .short_name = "M3",
         .initializer = mcp3421_initializer,
         .data_collector = mcp3421_data_collector,
         .ui_init_handler = NULL,
         .ui_data_handler = mcp3421_ui_handler,
         .ui_keyboard_handler = NULL,
+        .ui_encoder_handler = NULL,
         .print_config = msp3421_print_config,
         .set_config = msp3421_set_config,
         .set_config_parameter_count = 2,
@@ -106,6 +113,23 @@ const Device devices[] = {
         .calibrate_help = "value_mv"
     },
     {
+        .name = "mcp9600",
+        .short_name = "M9",
+        .initializer = mcp9600_initializer,
+        .data_collector = mcp9600_data_collector,
+        .ui_init_handler = mcp9600_ui_init_handler,
+        .ui_data_handler = mcp9600_ui_handler,
+        .ui_keyboard_handler = mcp9600_ui_keyboard_handler,
+        .ui_encoder_handler = NULL,
+        .print_config = NULL,
+        .set_config = NULL,
+        .set_config_parameter_count = 0,
+        .set_config_help = NULL,
+        .calibrate = NULL,
+        .calibrate_parameter_count = 0,
+        .calibrate_help = NULL
+    },
+    {
         .name = "si5351",
         .short_name = "SI",
         .initializer = si5351_initializer,
@@ -113,6 +137,7 @@ const Device devices[] = {
         .ui_init_handler = si5351_ui_init_handler,
         .ui_data_handler = NULL,
         .ui_keyboard_handler = si5351_ui_keyboard_handler,
+        .ui_encoder_handler = NULL,
         .print_config = si5351_print_config,
         .set_config = si5351_set_config,
         .set_config_parameter_count = 1,

@@ -12,6 +12,7 @@
   - SI5351 DDS generator, Frequency range: 7813Hz...100MHz
   - INA226 current shunt and power monitor. Voltage range is 0..36v, resolution is 1mV, Current range with 0.1Ohm shunt resistor is -0.8..0.8A, resolution: 0.1mA
   - MCP3421 ADC with voltage divider 1:11 (1MOhm resistor from input to ADC, 100kOhm resistor+0.1uf capacitor from ADC to GND). Range is -4..+33v. Resolution is 0.01mV. Calibration is supported.
+  - MCP9600/9601 Thermocouple EMF to Temperature Converter.
 
 **Uses:**
 - 4x[MAX7219 LED board](https://www.amazon.de/gp/product/B07Z7RLGC2)

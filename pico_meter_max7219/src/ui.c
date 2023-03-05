@@ -2,6 +2,7 @@
 #include "ui.h"
 #include "devices.h"
 #include "dev_keyboard.h"
+#include "dev_encoder.h"
 #include <malloc.h>
 #include <max7219.h>
 #include <stdarg.h>
@@ -89,7 +90,7 @@ void LED_Printf(int line, unsigned int dots, const char *format, ...)
   LED_Write_String(line, dots, buffer);
 }
 
-int Process_Timer_Event(int data_ready, unsigned int keyboard_status)
+int Process_Timer_Event(int data_ready, unsigned int keyboard_status, unsigned int encoder_status)
 {
   int i, update;
   ui_data_handler_type handler;
@@ -99,6 +100,12 @@ int Process_Timer_Event(int data_ready, unsigned int keyboard_status)
   if (keyboard_status)
   {
     i = process_keyboard_event(keyboard_status);
+    if (i)
+      update = 1;
+  }
+  if (encoder_status)
+  {
+    i = process_encoder_event(encoder_status);
     if (i)
       update = 1;
   }

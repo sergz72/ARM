@@ -22,6 +22,7 @@
 #include <hardware/flash.h>
 #include <malloc.h>
 #include "hardware/i2c.h"
+#include <mcp9600.h>
 //#include <stdio.h>
 
 #define FLASH_TARGET_OFFSET (2048 * 1024 - FLASH_SECTOR_SIZE)
@@ -250,6 +251,21 @@ int inaWriteRegister(int channel, unsigned char address, unsigned char reg, unsi
 int mcp3421Write(int channel, unsigned char address, unsigned char data)
 {
   return i2c_soft_command(channel, address, NULL, 0, &data, 1, NULL, 0, I2C_TIMEOUT);
+}
+
+int mcp9600Read16(int channel, unsigned char address, unsigned char reg, unsigned short *data)
+{
+  return inaReadRegister(channel, address, reg, data);
+}
+
+int mcp9600Read8(int channel, unsigned char address, unsigned char reg, unsigned char *data)
+{
+  return i2c_soft_command(channel, address, &reg, 1, NULL, 0, data, 1, I2C_TIMEOUT);
+}
+
+int mcp9600Write(int channel, unsigned char address, unsigned char reg, unsigned char data)
+{
+  return i2c_soft_command(channel, address, &reg, 1, &data, 1, NULL, 0, I2C_TIMEOUT);
 }
 
 int si5351_write_bulk(int channel, unsigned char addr, unsigned char bytes, unsigned char *data)

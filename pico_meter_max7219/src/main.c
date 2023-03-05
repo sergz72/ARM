@@ -2,6 +2,7 @@
 #include "ui.h"
 #include "devices.h"
 #include "dev_keyboard.h"
+#include "dev_encoder.h"
 #include <getstring.h>
 #include <pico/stdio.h>
 #include <stdio.h>
@@ -78,6 +79,7 @@ int main(void)
   //printf("BuildShellCommands\n");
 
   dev_keyboard_init();
+  dev_encoder_init();
   //printf("dev_keyboard_init\n");
 
   getstring_init(command_line, sizeof(command_line), getch_, puts_);
