@@ -426,3 +426,8 @@ unsigned int get_counter_value2(void)
 {
   return counter_value2;
 }
+
+void sleepms(unsigned int ms)
+{
+  sleep_ms(ms);
+}

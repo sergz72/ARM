@@ -1,9 +1,9 @@
 #include "dev_mcp3421.h"
 #include <mcp3421.h>
 #include <stdlib.h>
-#include <pico/time.h>
 #include "device_config.h"
 #include "ui.h"
+#include "board.h"
 
 typedef struct {
   int voltage;
@@ -131,7 +131,7 @@ int msp3421_set_config(printf_func pfunc, int argc, char **argv, void *config)
 static int mcp3421_read(int koef, int offset)
 {
   mcp3421SetConfig(0, MCP3421_DEVICE_ID, &dcfg);
-  sleep_ms(300);
+  sleepms(300);
   return get_voltage(koef, offset);
 }
 

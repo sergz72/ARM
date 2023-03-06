@@ -99,9 +99,9 @@ int process_keyboard_event(unsigned int keyboard_status)
   }
   else
   {
-    if (keyboard_status <= found_devices && current_keyboard_device_switch == -2)
+    if (keyboard_status > KEYBOARD_EVENT_KEY0 && keyboard_status <= found_devices+1 && current_keyboard_device_switch == -2)
     {
-      current_keyboard_device_switch = (int)keyboard_status - 1;
+      current_keyboard_device_switch = (int)keyboard_status - 2;
       return 0;
     }
   }

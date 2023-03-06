@@ -88,5 +88,6 @@ extern volatile unsigned int cap_value, cap_value_updated;
 void SystemInit(void);
 void SPI_4BIT_DATA_SET(unsigned char data);
 unsigned char HALKbdHandler(void);
+void sleepms(unsigned int ms);
 
 #endif

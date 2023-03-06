@@ -64,13 +64,14 @@ static void ShowMenu(void)
     if (!cursorEnabled)
       LED_Printf(3, 0x0C << (default_menu << 1), "C%dF DU%s", current_channel + 1, channel[current_channel].enabled ? "DI" : "En");
     else
-      LED_Write_String(3, 0, "KHHZ    ");
+      LED_Write_String(3, 0, "1 2 3 4 ");
   }
 }
 
 static void ShowChannel(void)
 {
-  char kHz = ' ';
+  char kHz = 'K';
+  unsigned int dots = 0x40;
   unsigned int f = channel[current_channel].frequency;
   unsigned int d = channel[current_channel].duty;
   if (cursorEnabled)
@@ -80,12 +81,21 @@ static void ShowChannel(void)
     else
       f = temp_value;
   }
-  if (f >= 10000)
+  if (f < 10000)
+    kHz = ' ';
+  else if (f < 100000)
   {
-    f /= 1000;
-    kHz = 'K';
+    f /= 10;
+    dots |= 2;
   }
-  LED_Printf(2, 0x40, "%04d%c%03d", f, kHz, d);
+  else if (f < 1000000)
+  {
+    f /= 100;
+    dots |= 4;
+  }
+  else
+    f /= 1000;
+  LED_Printf(2, dots, "%04d%c%03d", f, kHz, d);
 }
 
 void freq_pwm_ui_init_handler(void* config)
@@ -135,6 +145,19 @@ static void ToggleChannelOutput(void)
     pwm_off(current_channel);
 }
 
+static void UpdateFrequency(unsigned int coef)
+{
+  temp_value *= coef;
+  if (temp_value < MINIMUM_PWM_FREQ)
+    temp_value = MINIMUM_PWM_FREQ;
+  channel[current_channel].frequency = temp_value;
+  if (channel[current_channel].enabled)
+    pwm_set_freq(current_channel, temp_value, channel[current_channel].duty);
+  cursorEnabled = 0;
+  ShowChannel();
+  ShowMenu();
+}
+
 int freq_pwm_ui_keyboard_handler(void *config, unsigned int event)
 {
   switch (event)
@@ -171,15 +194,7 @@ int freq_pwm_ui_keyboard_handler(void *config, unsigned int event)
     {
       if (!default_menu)
       {
-        temp_value *= 1000;
-        if (temp_value < MINIMUM_PWM_FREQ)
-          temp_value = MINIMUM_PWM_FREQ;
-        channel[current_channel].frequency = temp_value;
-        if (channel[current_channel].enabled)
-          pwm_set_freq(current_channel, temp_value, channel[current_channel].duty);
-        cursorEnabled = 0;
-        ShowChannel();
-        ShowMenu();
+        UpdateFrequency(1);
         return 1;
       }
       break;
@@ -202,14 +217,7 @@ int freq_pwm_ui_keyboard_handler(void *config, unsigned int event)
     {
       if (!default_menu)
       {
-        if (temp_value < MINIMUM_PWM_FREQ)
-          temp_value = MINIMUM_PWM_FREQ;
-        channel[current_channel].frequency = temp_value;
-        if (channel[current_channel].enabled)
-          pwm_set_freq(current_channel, temp_value, channel[current_channel].duty);
-        cursorEnabled = 0;
-        ShowChannel();
-        ShowMenu();
+        UpdateFrequency(10);
         return 1;
       }
       break;
@@ -224,44 +232,55 @@ int freq_pwm_ui_keyboard_handler(void *config, unsigned int event)
     }
     break;
   case KEYBOARD_EVENT_F3:
-    if (!cursorEnabled)
+    if (cursorEnabled)
     {
-      if (frequency_counter_menu)
+      if (!default_menu)
       {
-        measurement_interval = 1;
-        freq_counter_set_interval(measurement_interval);
-        frequency_counter_menu = 0;
-        ShowChannel();
-        ShowMenu();
+        UpdateFrequency(100);
         return 1;
       }
-      else
+      break;
+    }
+    if (frequency_counter_menu)
+    {
+      measurement_interval = 1;
+      freq_counter_set_interval(measurement_interval);
+      frequency_counter_menu = 0;
+      ShowChannel();
+      ShowMenu();
+      return 1;
+    }
+    else
+    {
+      if (default_menu != 1)
       {
-        if (default_menu != 1)
-        {
-          default_menu = 1;
-          ShowMenu();
-          return 1;
-        }
+        default_menu = 1;
+        ShowMenu();
+        return 1;
       }
     }
     break;
   case KEYBOARD_EVENT_F4:
-    if (!cursorEnabled)
+    if (cursorEnabled)
     {
-      if (frequency_counter_menu)
+      if (!default_menu)
       {
-        measurement_interval = 10;
-        freq_counter_set_interval(measurement_interval);
-        frequency_counter_menu = 0;
-        ShowChannel();
+        UpdateFrequency(1000);
+        return 1;
       }
-      else
-        ToggleChannelOutput();
-      ShowMenu();
-      return 1;
+      break;
     }
-    break;
+    if (frequency_counter_menu)
+    {
+      measurement_interval = 10;
+      freq_counter_set_interval(measurement_interval);
+      frequency_counter_menu = 0;
+      ShowChannel();
+    }
+    else
+      ToggleChannelOutput();
+    ShowMenu();
+    return 1;
   default:
     if (!cursorEnabled)
     {
