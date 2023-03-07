@@ -4,7 +4,7 @@
 #include "dev_keyboard.h"
 #include "settings.h"
 #include <stdlib.h>
-#include <stdio.h>
+//#include <stdio.h>
 
 /*
 
@@ -36,7 +36,8 @@ typedef struct {
   int enabled;
 } PWM_Channel;
 
-static unsigned int last_counter_value1, last_counter_value2, temp_value, measurement_interval;
+static unsigned int last_counter_value1, last_counter_value2, temp_value, measurement_interval,
+                    frequency_multiplier, duty_multiplier;
 static int current_channel, default_menu, frequency_counter_menu;
 static PWM_Channel channel[2];
 
@@ -51,6 +52,7 @@ void *freq_pwm_initializer(void)
 {
   current_channel = default_menu = frequency_counter_menu = 0;
   measurement_interval = 1;
+  frequency_multiplier = duty_multiplier = 0;
   ChannelInit(0);
   ChannelInit(1);
   return (void*)1;
@@ -63,7 +65,11 @@ static void ShowMenu(void)
   else
   {
     if (!cursorEnabled)
-      LED_Printf(3, 0x0C << (default_menu << 1), "C%dF DU%s", current_channel + 1, channel[current_channel].enabled ? "DI" : "En");
+      LED_Printf(3, 0x0C << (default_menu << 1), "C%dF%dD%d%s",
+                 current_channel + 1,
+                 frequency_multiplier + 1,
+                 duty_multiplier + 1,
+                 channel[current_channel].enabled ? "DI" : "En");
     else
       LED_Write_String(3, 0, "1 2 3 4 ");
   }
@@ -226,12 +232,11 @@ int freq_pwm_ui_keyboard_handler(void *config, unsigned int event)
     if (frequency_counter_menu)
       break;
     if (default_menu != 0)
-    {
       default_menu = 0;
-      ShowMenu();
-      return 1;
-    }
-    break;
+    else
+      frequency_multiplier = (frequency_multiplier + 1) & 3;
+    ShowMenu();
+    return 1;
   case KEYBOARD_EVENT_F3:
     if (cursorEnabled)
     {
@@ -249,18 +254,16 @@ int freq_pwm_ui_keyboard_handler(void *config, unsigned int event)
       frequency_counter_menu = 0;
       ShowChannel();
       ShowMenu();
-      return 1;
     }
     else
     {
       if (default_menu != 1)
-      {
         default_menu = 1;
-        ShowMenu();
-        return 1;
-      }
+      else
+        duty_multiplier = (duty_multiplier + 1) % 3;
+      ShowMenu();
     }
-    break;
+    return 1;
   case KEYBOARD_EVENT_F4:
     if (cursorEnabled)
     {
@@ -326,8 +329,116 @@ int freq_pwm_calibrate(printf_func pfunc, int argc, char** argv, void* device_co
   return 0;
 }
 
+static void ChangeDuty(int change)
+{
+  unsigned int d = channel[current_channel].duty, c;
+  if (change > 0)
+  {
+    d = (d + change) % 1000;
+    if (!d)
+      d = 1;
+  }
+  else
+  {
+    c = -change;
+    if (c >= d)
+      d = 1;
+    else
+      d -= c;
+  }
+  channel[current_channel].duty = d;
+}
+
+static void ChangeFrequency(int change)
+{
+  unsigned int f = channel[current_channel].frequency, c;
+  if (change > 0)
+  {
+    if (f < 10000)
+    {
+      f = (f + change) % 10000;
+      if (f < MINIMUM_PWM_FREQ)
+        f = MINIMUM_PWM_FREQ;
+    }
+    else if (f < 100000)
+    {
+      f = (f + change * 10) % 100000;
+      if (!f)
+        f = 10;
+    }
+    else if (f < 1000000)
+    {
+      f = (f + change * 100) % 1000000;
+      if (!f)
+        f = 100;
+    }
+    else
+    {
+      f = (f + change * 1000) % 10000000;
+      if (!f)
+        f = 1000;
+    }
+  }
+  else
+  {
+    if (f < 10000)
+      c = -change;
+    else if (f < 100000)
+      c = -change * 10;
+    else if (f < 1000000)
+      c = -change * 100;
+    else
+      c = -change * 1000;
+    if (c >= f)
+      f = 1;
+    else
+      f -= c;
+  }
+  channel[current_channel].frequency = f;
+  //printf("f = %d\n");
+}
+
 int freq_pwm_ui_encoder_handler(void *config, int counter, int button_pressed)
 {
-  printf("counter %d button %d\n", counter, button_pressed);
+  if (counter)
+  {
+    if (default_menu)
+    {
+      switch (duty_multiplier)
+      {
+        case 0:
+          ChangeDuty(counter);
+          break;
+        case 1:
+          ChangeDuty(counter * 10);
+          break;
+        case 2:
+          ChangeDuty(counter * 100);
+          break;
+      }
+    }
+    else
+    {
+      switch (frequency_multiplier)
+      {
+        case 0:
+          ChangeFrequency(counter);
+          break;
+        case 1:
+          ChangeFrequency(counter * 10);
+          break;
+        case 2:
+          ChangeFrequency(counter * 100);
+          break;
+        case 3:
+          ChangeFrequency(counter * 1000);
+          break;
+      }
+    }
+    if (channel[current_channel].enabled)
+      pwm_set_freq(current_channel, channel[current_channel].frequency, channel[current_channel].duty);
+    ShowChannel();
+    return 1;
+  }
   return 0;
 }
