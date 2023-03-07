@@ -25,10 +25,13 @@
 #include <mcp9600.h>
 //#include <stdio.h>
 
+#define ENCODER_MASK ((1 << ENCODER_A_PIN) | (1 << ENCODER_B_PIN) | (1 << ENCODER_BUTTON_PIN))
+
 #define FLASH_TARGET_OFFSET (2048 * 1024 - FLASH_SECTOR_SIZE)
 
 volatile unsigned int counter_value1, counter_value2, cap_value, cap_value_updated;
 unsigned int pwm_slice_num[2], pwm_channel[2], pwm_program_offset;
+volatile int encoder_counter;
 
 // Write `period` to the input shift register
 void pio_pwm_set_params(PIO pio, uint sm, unsigned int period, unsigned int level) {
@@ -118,6 +121,14 @@ void KbdGpioInit(void)
   gpio_pull_up(KB4_PIN);
 }
 
+static void encoder_callback(unsigned int gpio, unsigned long events)
+{
+  if (gpio_get(ENCODER_B_PIN))
+    encoder_counter--;
+  else
+    encoder_counter++;
+}
+
 void SystemInit(void)
 {
   gpio_init(PWM1_PIN);
@@ -134,6 +145,7 @@ void SystemInit(void)
   pwm_set_output_polarity(pwm_slice_num[1], false, false);
 
   counter_value1 = counter_value2 = cap_value = cap_value_updated = 0;
+  encoder_counter = 0;
 
   pio_irq_setup();
   pwm_pio_init(PWM_PIO, PWM_SM);
@@ -175,6 +187,15 @@ void SystemInit(void)
   gpio_set_function(SCL_PIN, GPIO_FUNC_I2C);
   gpio_pull_up(SDA_PIN);
   gpio_pull_up(SCL_PIN);
+
+  gpio_init_mask(ENCODER_MASK);
+  gpio_set_dir_in_masked(ENCODER_MASK);
+  gpio_set_irq_enabled_with_callback(ENCODER_A_PIN, GPIO_IRQ_EDGE_FALL, true, &encoder_callback);
+}
+
+int is_encoder_button_pressed(void)
+{
+  return gpio_get(ENCODER_BUTTON_PIN) ? 0 : 1;
 }
 
 void spi_4bit_delay(void)

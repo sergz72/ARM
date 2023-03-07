@@ -6,7 +6,7 @@
 #include <shell.h>
 
 typedef int (*ui_keyboard_handler_type)(void *config, unsigned int event);
-typedef int (*ui_encoder_handler_type)(void *config, unsigned int event, int counter);
+typedef int (*ui_encoder_handler_type)(void *config, int counter, int button_pressed);
 typedef void (*ui_init_handler_type)(void *config);
 typedef void (*ui_data_handler_type)(void* data, void *config);
 typedef int (*config_type)(printf_func pfunc, int argc, char** argv, void* device_config);

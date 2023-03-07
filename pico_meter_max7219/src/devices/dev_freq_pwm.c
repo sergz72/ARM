@@ -4,6 +4,7 @@
 #include "dev_keyboard.h"
 #include "settings.h"
 #include <stdlib.h>
+#include <stdio.h>
 
 /*
 
@@ -322,5 +323,11 @@ int freq_pwm_calibrate(printf_func pfunc, int argc, char** argv, void* device_co
     pfunc("Invalid f2\n");
     return 1;
   }
+  return 0;
+}
+
+int freq_pwm_ui_encoder_handler(void *config, int counter, int button_pressed)
+{
+  printf("counter %d button %d\n", counter, button_pressed);
   return 0;
 }

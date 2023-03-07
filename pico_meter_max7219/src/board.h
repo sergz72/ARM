@@ -83,6 +83,10 @@
 #define CAP_SM 1
 #define CAP_PIO pio1
 
+#define ENCODER_A_PIN      8
+#define ENCODER_B_PIN      7
+#define ENCODER_BUTTON_PIN 6
+
 extern volatile unsigned int cap_value, cap_value_updated;
 
 void SystemInit(void);
