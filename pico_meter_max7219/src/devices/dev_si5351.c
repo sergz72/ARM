@@ -24,7 +24,7 @@ typedef struct {
 
 static int current_channel;
 static DDS_Channel channel[3];
-static unsigned int temp_value;
+static unsigned int temp_value, encoder_pos;
 
 static void ChannelInit(int c)
 {
@@ -43,6 +43,7 @@ void* si5351_initializer(void)
     if (cfg)
     {
       current_channel = 0;
+      encoder_pos = 0;
       ChannelInit(0);
       ChannelInit(1);
       ChannelInit(2);
@@ -58,13 +59,13 @@ void* si5351_initializer(void)
 
 static void ShowMenu(void)
 {
-  LED_Printf(3, 0, "C%d%sD%3d", current_channel + 1, channel[current_channel].enabled ? "DI" : "En", channel[current_channel].divider);
+  LED_Printf(3, 0, "C%d%d%3d%s", current_channel + 1, encoder_pos + 1, channel[current_channel].divider, channel[current_channel].enabled ? "DI" : "En");
 }
 
 static void ShowChannel(int c)
 {
   unsigned int f = (c == current_channel && cursorEnabled) ? temp_value : channel[c].frequency;
-  LED_Printf(c, 0, "%8d", f);
+  LED_Printf(c, 0x12, "%08d", f);
 }
 
 void si5351_ui_init_handler(void* config)
@@ -149,7 +150,7 @@ int si5351_ui_keyboard_handler(void *config, unsigned int event)
   case KEYBOARD_EVENT_F2:
     if (!cursorEnabled)
     {
-      ToggleChannelOutput();
+      encoder_pos = (encoder_pos + 1) & 7;
       ShowMenu();
       return 1;
     }
@@ -163,6 +164,12 @@ int si5351_ui_keyboard_handler(void *config, unsigned int event)
     }
     break;
   case KEYBOARD_EVENT_F4:
+    if (!cursorEnabled)
+    {
+      ToggleChannelOutput();
+      ShowMenu();
+      return 1;
+    }
     break;
   default:
     if (!cursorEnabled)
@@ -211,4 +218,65 @@ int si5351_set_config(printf_func pfunc, int argc, char** argv, void* config)
   }
   pfunc("NULL config\n");
   return 1;
+}
+
+static int UpdateFrequency(int value)
+{
+  unsigned int f = channel[current_channel].frequency, v;
+  if (value > 0)
+  {
+    f += value;
+    if (f >= 100000000)
+      return 0;
+  }
+  else
+  {
+    v = -value;
+    if (f <= v || f - v < MINIMUM_FREQUENCY)
+      return 0;
+    f -= v;
+  }
+  channel[current_channel].frequency = f;
+  if (channel[current_channel].enabled)
+    si5351_set_freq(0, f, -900000000, current_channel, channel[current_channel].divider);
+  return 1;
+}
+
+int si5351_ui_encoder_handler(void* config, int counter, int button_pressed)
+{
+  int rc = 0;
+  if (counter)
+  {
+    switch (encoder_pos)
+    {
+    case 0:
+      rc = UpdateFrequency(counter);
+      break;
+    case 1:
+      rc = UpdateFrequency(counter * 10);
+      break;
+    case 2:
+      rc = UpdateFrequency(counter * 100);
+      break;
+    case 3:
+      rc = UpdateFrequency(counter * 1000);
+      break;
+    case 4:
+      rc = UpdateFrequency(counter * 10000);
+      break;
+    case 5:
+      rc = UpdateFrequency(counter * 100000);
+      break;
+    case 6:
+      rc = UpdateFrequency(counter * 1000000);
+      break;
+    case 7:
+      rc = UpdateFrequency(counter * 10000000);
+      break;
+    }
+    if (rc)
+      ShowChannel(current_channel);
+    return rc;
+  }
+  return 0;
 }

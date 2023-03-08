@@ -10,5 +10,6 @@ void si5351_ui_init_handler(void* config);
 int si5351_ui_keyboard_handler(void *config, unsigned int event);
 int si5351_print_config(printf_func pfunc, void* config);
 int si5351_set_config(printf_func pfunc, int argc, char** argv, void* config);
+int si5351_ui_encoder_handler(void* config, int counter, int button_pressed);
 
 #endif //STM32F401_METER_DEV_SI5351_H

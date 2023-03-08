@@ -17,6 +17,7 @@
 **Uses:**
 - 4x[MAX7219 LED board](https://www.amazon.de/gp/product/B07Z7RLGC2)
 - [4x4 Matrix Keypad](https://www.amazon.de/gp/product/B07ZSYP188)
+- EC-11 Encoder
 
 **Required MAX7219 board modifications for power line noise reduction:**
 
@@ -39,6 +40,11 @@
 **Keypad:**
 - OUT pins: GP18, GP19, GP20, GP21
 - IN pins: GP22, GP2, GP3, GP4
+
+**Encoder:**
+- A pin: GP8
+- B pin: GP7
+- Button pin: GP6
 
 **Capacitance meter:**
 - CX input: between GP11 and GND

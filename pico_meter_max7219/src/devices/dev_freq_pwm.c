@@ -8,11 +8,11 @@
 
 /*
 
-Default menu: C1F DUEn
+Default menu: C1F1D1En
 
 C1 - channel number (1/2)
-F  - frequency modify
-DU - duty modify
+F1  - frequency modify
+D1 - duty modify
 En - enable/disable
 
 Default channel data:
@@ -37,7 +37,7 @@ typedef struct {
 } PWM_Channel;
 
 static unsigned int last_counter_value1, last_counter_value2, temp_value, measurement_interval,
-                    frequency_multiplier, duty_multiplier;
+                    frequency_multiplier, duty_multiplier, frequency_range;
 static int current_channel, default_menu, frequency_counter_menu;
 static PWM_Channel channel[2];
 
@@ -51,7 +51,7 @@ static void ChannelInit(int c)
 void *freq_pwm_initializer(void)
 {
   current_channel = default_menu = frequency_counter_menu = 0;
-  measurement_interval = 1;
+  measurement_interval = frequency_range = 1;
   frequency_multiplier = duty_multiplier = 0;
   ChannelInit(0);
   ChannelInit(1);
@@ -88,20 +88,19 @@ static void ShowChannel(void)
     else
       f = temp_value;
   }
-  if (f < 10000)
+  f /= frequency_range;
+  switch (frequency_range)
+  {
+  case 1:
     kHz = ' ';
-  else if (f < 100000)
-  {
-    f /= 10;
+    break;
+  case 10:
     dots |= 2;
-  }
-  else if (f < 1000000)
-  {
-    f /= 100;
+    break;
+  case 100:
     dots |= 4;
+    break;
   }
-  else
-    f /= 1000;
   LED_Printf(2, dots, "%04d%c%03d", f, kHz, d);
 }
 
@@ -154,13 +153,17 @@ static void ToggleChannelOutput(void)
 
 static void UpdateFrequency(unsigned int coef)
 {
-  temp_value *= coef;
+  if (!temp_value)
+    temp_value = coef;
+  else
+    temp_value *= coef;
   if (temp_value < MINIMUM_PWM_FREQ)
     temp_value = MINIMUM_PWM_FREQ;
   channel[current_channel].frequency = temp_value;
   if (channel[current_channel].enabled)
     pwm_set_freq(current_channel, temp_value, channel[current_channel].duty);
   cursorEnabled = 0;
+  frequency_range = coef;
   ShowChannel();
   ShowMenu();
 }
@@ -351,51 +354,39 @@ static void ChangeDuty(int change)
 
 static void ChangeFrequency(int change)
 {
-  unsigned int f = channel[current_channel].frequency, c;
+  unsigned int f = channel[current_channel].frequency / frequency_range, c;
   if (change > 0)
   {
-    if (f < 10000)
+    f = (f + change) % 10000;
+    switch (frequency_range)
     {
-      f = (f + change) % 10000;
+    case 1:
       if (f < MINIMUM_PWM_FREQ)
         f = MINIMUM_PWM_FREQ;
-    }
-    else if (f < 100000)
-    {
-      f = (f + change * 10) % 100000;
+      break;
+    default:
       if (!f)
-        f = 10;
-    }
-    else if (f < 1000000)
-    {
-      f = (f + change * 100) % 1000000;
-      if (!f)
-        f = 100;
-    }
-    else
-    {
-      f = (f + change * 1000) % 10000000;
-      if (!f)
-        f = 1000;
+        f = 1;
     }
   }
   else
   {
-    if (f < 10000)
-      c = -change;
-    else if (f < 100000)
-      c = -change * 10;
-    else if (f < 1000000)
-      c = -change * 100;
-    else
-      c = -change * 1000;
+    c = -change;
     if (c >= f)
-      f = 1;
+    {
+      switch (frequency_range)
+      {
+      case 1:
+        f = MINIMUM_PWM_FREQ;
+        break;
+      default:
+        f = 1;
+      }
+    }
     else
       f -= c;
   }
-  channel[current_channel].frequency = f;
-  //printf("f = %d\n");
+  channel[current_channel].frequency = f * frequency_range;
 }
 
 int freq_pwm_ui_encoder_handler(void *config, int counter, int button_pressed)
