@@ -23,6 +23,9 @@
 
 ![](max7219_modifications.jpg)
 
+## [Schematic](https://github.com/sergz72/Projects/blob/master/pico_meter_max7219/pico_meter_max7219.jpg)
+## [KiCad project](https://github.com/sergz72/Projects/blob/master/pico_meter_max7219/pico_meter_max7219.kicad_pro)
+
 **Pins:**
 
 **I2C:**
