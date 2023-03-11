@@ -399,20 +399,20 @@ void freq_pwm_off(void)
   pio_sm_set_enabled(PWM_PIO, PWM_SM, false);
   pio_sm_set_enabled(COUNTER_PIO, COUNTER1_SM, false);
   pio_sm_set_enabled(COUNTER_PIO, COUNTER2_SM, false);
+  pwm_off(0);
+  pwm_off(1);
 }
 
 void pwm_on(int channel)
 {
-  gpio_set_function(PWM1_PIN, GPIO_FUNC_PWM);
-  gpio_set_function(PWM2_PIN, GPIO_FUNC_PWM);
+  gpio_set_function(channel ? PWM2_PIN : PWM1_PIN, GPIO_FUNC_PWM);
   pwm_set_enabled(pwm_slice_num[channel], true);
 }
 
 void pwm_off(int channel)
 {
   pwm_set_enabled(pwm_slice_num[channel], false);
-  gpio_init(PWM1_PIN);
-  gpio_init(PWM2_PIN);
+  gpio_init(channel ? PWM2_PIN : PWM1_PIN);
   pwm_set_counter(pwm_slice_num[channel], 0);
 }
 

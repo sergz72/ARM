@@ -88,18 +88,21 @@ static void ShowChannel(void)
     else
       f = temp_value;
   }
-  f /= frequency_range;
-  switch (frequency_range)
+  if (!cursorEnabled || (cursorEnabled && default_menu))
   {
-  case 1:
-    kHz = ' ';
-    break;
-  case 10:
-    dots |= 2;
-    break;
-  case 100:
-    dots |= 4;
-    break;
+    f /= frequency_range;
+    switch (frequency_range)
+    {
+    case 1:
+      kHz = ' ';
+      break;
+    case 10:
+      dots |= 2;
+      break;
+    case 100:
+      dots |= 4;
+      break;
+    }
   }
   LED_Printf(2, dots, "%04d%c%03d", f, kHz, d);
 }
