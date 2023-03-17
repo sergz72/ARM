@@ -26,3 +26,6 @@ Uses command line interface via USB CDC.
 - Second module DIN: GP19
 - Third module DIN: GP20
 - Fourth module DIN: GP21
+
+**SWIM:**
+- SWIM: GP22

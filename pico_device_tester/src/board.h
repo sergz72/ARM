@@ -18,7 +18,21 @@
 #define SPI3_DIO_PIN 1
 #define SPI3_CS_PIN  2
 
+#include "swim_hal.h"
 #include <hardware/gpio.h>
+#include "hardware/structs/systick.h"
+#include "pico/time.h"
+
+#define SWIM_COUNTER_MHZ 125
+#define SWIM_SET(v) gpio_set_mask(v)
+#define SWIM_CLR(v) gpio_clr_mask(v)
+#define SWIM_GET gpio_get_all()
+#define SWIM_GET_BIT(v) (v & (1<<SWIM_IN_PIN))
+#define SWIM_TIME_COUNTER systick_hw->cvr
+#define SWIM_TIME_COUNTER_STOP systick_hw->csr = 0
+#define SWIM_TIME_COUNTER_START systick_hw->rvr = 0xFFFFFF; systick_hw->cvr = 0; systick_hw->csr = 5
+#define SWIM_TIME_COUNTER_OVERLOAD (systick_hw->csr & 0x10000)
+#define SWIM_SLEEP(v) sleep_ms(v)
 
 #define SPI3_DIO_SET gpio_set_dir(SPI3_DIO_PIN, false)
 #define SPI3_DIO_CLR gpio_set_dir(SPI3_DIO_PIN, true)

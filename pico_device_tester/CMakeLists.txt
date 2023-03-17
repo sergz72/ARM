@@ -20,6 +20,7 @@ add_executable(pico_device_tester
         src/i2c_commands.c
         src/tm1638_commands.c
         src/max7219_commands.c
+        src/swim_commands.c
         src/dds_commands.c
         ../common_lib/getstring.c
         ../common_lib/shell/shell.c
@@ -30,9 +31,12 @@ add_executable(pico_device_tester
         ../common_lib/fixed_queue.c
         ../common_lib/spi_3wire_soft.c
         ../common_lib/spi_4bit_soft.c
+        ../common_lib/debugger/swim.c
+        ../common_lib/debugger/swim_handler_pi_pico.S
 )
 
-include_directories(src ../common_lib ../common_lib/rf ../common_lib/shell ../common_lib/keyboard_display ../common_lib/display)
+include_directories(src ../common_lib ../common_lib/rf ../common_lib/shell ../common_lib/keyboard_display
+        ../common_lib/display ../common_lib/debugger)
 
 target_link_libraries(pico_device_tester pico_stdlib hardware_i2c)
 

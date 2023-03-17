@@ -4,6 +4,7 @@
 #include <shell.h>
 #include <getstring.h>
 #include "i2c_commands.h"
+#include "swim_commands.h"
 #include "tm1638_commands.h"
 #include "max7219_commands.h"
 #include "dds_commands.h"
@@ -49,6 +50,7 @@ int main()
   register_tm1638_commands();
   register_dds_commands();
   register_max7219_commands();
+  register_swim_commands();
 
   getstring_init(command_line, sizeof(command_line), getch_, puts_);
 

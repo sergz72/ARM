@@ -1,0 +1,6 @@
+#ifndef PICO_DEVICE_TESTER_SWIM_COMMANDS_H
+#define PICO_DEVICE_TESTER_SWIM_COMMANDS_H
+
+void register_swim_commands(void);
+
+#endif //PICO_DEVICE_TESTER_SWIM_COMMANDS_H
