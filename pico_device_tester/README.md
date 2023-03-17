@@ -8,6 +8,8 @@ Uses command line interface via USB CDC.
 - LED/keyboard boards with TM1638 controller.
 - DDS adapters for [STM32401 Blue pill universal measuring tool](../stm32f401_meter)
 
+**Can read STM8 controllers memory using SWIM protocol**
+
 **Pins:**
 
 **I2C:**
@@ -28,4 +30,5 @@ Uses command line interface via USB CDC.
 - Fourth module DIN: GP21
 
 **SWIM:**
-- SWIM: GP22
+- SWIM_IN:  GP22 (connected to SWIM pin of STM8)
+- SWIM_OUT: GP26 (connected to SWIM pin of STM8 thru 470 Ohm resistor)
