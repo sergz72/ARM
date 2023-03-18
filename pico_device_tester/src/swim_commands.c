@@ -131,14 +131,10 @@ static int clock_set_handler(printf_func pfunc, gets_func gfunc, int argc, char 
   return 0;
 }
 
-static int write_handler(printf_func pfunc, gets_func gfunc, int argc, char **argv, void *_data)
+static int parse_address(printf_func pfunc, char *arg, unsigned int *address)
 {
-  int rc;
-  unsigned char data[20];
-  unsigned int address;
-
-  data[0] = data[1] = data[2] = 0;
-  rc = read_hex_string(argv[0], data, 3);
+  unsigned char data[3];
+  int rc = read_hex_string(arg, data, 3);
   if (rc <= 0)
   {
     pfunc("Invalid address\n");
@@ -147,15 +143,27 @@ static int write_handler(printf_func pfunc, gets_func gfunc, int argc, char **ar
   switch (rc)
   {
     case 1:
-      address = data[0];
+      *address = data[0];
       break;
     case 2:
-      address = (data[0] << 8) | data[1];
+      *address = (data[0] << 8) | data[1];
       break;
     default:
-      address = (data[0] << 16) | (data[1] << 8) | data[2];
+      *address = (data[0] << 16) | (data[1] << 8) | data[2];
       break;
   }
+  return 0;
+}
+
+static int write_handler(printf_func pfunc, gets_func gfunc, int argc, char **argv, void *_data)
+{
+  int rc;
+  unsigned char data[20];
+  unsigned int address;
+
+  if (parse_address(pfunc, argv[0], &address))
+    return 1;
+
   rc = read_hex_string(argv[1], data, sizeof data);
   if (rc <= 0)
   {
@@ -186,25 +194,9 @@ static int read_handler(printf_func pfunc, gets_func gfunc, int argc, char **arg
   unsigned char data[20];
   unsigned int address;
 
-  data[0] = data[1] = data[2] = 0;
-  rc = read_hex_string(argv[0], data, 3);
-  if (rc <= 0)
-  {
-    pfunc("Invalid address\n");
+  if (parse_address(pfunc, argv[0], &address))
     return 1;
-  }
-  switch (rc)
-  {
-    case 1:
-      address = data[0];
-      break;
-    case 2:
-      address = (data[0] << 8) | data[1];
-      break;
-    default:
-      address = (data[0] << 16) | (data[1] << 8) | data[2];
-      break;
-  }
+
   nbytes = atoi(argv[1]);
   if (nbytes <= 0 || nbytes > sizeof data)
   {

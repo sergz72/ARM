@@ -63,6 +63,11 @@ void swim_leave_critical_section(void)
   restore_interrupts(saved_ints);
 }
 
+void swim_delay(unsigned int us)
+{
+  sleep_us(us);
+}
+
 void spi3_delay(void)
 {
   sleep_us(1);

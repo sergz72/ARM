@@ -25,12 +25,12 @@
 #define SWIM_ADDR1_NO_ACK        5
 #define SWIM_ADDR2_NO_ACK        6
 #define SWIM_DATA_NO_ACK         7
-
-#define SWIM_MAX_PACKET 1100
+#define SWIM_TOO_LONG_PACKET     100000
 
 void swim_enter_critical_section(void);
 void swim_leave_critical_section(void);
 void swim_packet_handler(unsigned int clr);
+void swim_delay(unsigned int us);
 
 void swim_init(unsigned int bclock);
 unsigned int swim_enter(unsigned int *clock);

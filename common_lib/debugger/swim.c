@@ -21,9 +21,17 @@
 #define SWIM_ACTION_WAIT  12
 #define SWIM_ACTION_WAIT0 16
 
+#ifndef SWIM_MAX_RETRIES
+#define SWIM_MAX_RETRIES  10
+#endif
+
+#ifndef SWIM_MAX_PACKET
+#define SWIM_MAX_PACKET 1100
+#endif
+
 unsigned int *swim_packet_end, swim_packet[SWIM_MAX_PACKET * SWIM_PACKET_ITEMS];
 
-static unsigned int *swim_ack[SWIM_MAX_PACKET], parity, clock128, encode_counter_v, base_clock;
+static unsigned int *swim_ack[SWIM_MAX_PACKET], parity, clock128, encode_counter_v, base_clock, swim_packet_items;
 static unsigned int short_delay, long_delay, half_delay, full_delay;
 
 /*void swim_packet_handler(unsigned int clr)
@@ -56,16 +64,22 @@ static void set_high_speed(void)
 
 static unsigned int *swim_encode(unsigned int delay, unsigned int action)
 {
-  encode_counter_v -= delay;
-  *swim_packet_end++ = encode_counter_v;
-  *swim_packet_end = action;
-  return swim_packet_end++;
+  if (swim_packet_items < SWIM_MAX_PACKET)
+  {
+    swim_packet_items++;
+    encode_counter_v -= delay;
+    *swim_packet_end++ = encode_counter_v;
+    *swim_packet_end = action;
+    return swim_packet_end++;
+  }
+
+  return NULL;
 }
 
 static void swim_pulses(unsigned int delay_us)
 {
   int i;
-  delay_us *= SWIM_COUNTER_MHZ;
+  delay_us *= base_clock;
   for (i = 0; i < SWIM_ENTER_PULSES; i++)
   {
     swim_encode(delay_us, SWIM_ACTION_CLR);
@@ -85,25 +99,33 @@ unsigned int swim_get_base_clock(void)
   return base_clock;
 }
 
-static void swim_encode_bit(unsigned int bit, int last_bit)
+static int swim_encode_bit(unsigned int bit, int last_bit)
 {
   parity = parity ^ (bit ? 1 : 0);
   if (bit)
   {
-    swim_encode(short_delay, SWIM_ACTION_SET);
-    swim_encode(long_delay, last_bit ? SWIM_ACTION_WAIT : SWIM_ACTION_CLR);
+    if (!swim_encode(short_delay, SWIM_ACTION_SET))
+      return 0;
+    if (!swim_encode(long_delay, last_bit ? SWIM_ACTION_WAIT : SWIM_ACTION_CLR))
+      return 0;
   }
   else
   {
-    swim_encode(long_delay, SWIM_ACTION_SET);
-    swim_encode(short_delay, last_bit ? SWIM_ACTION_WAIT : SWIM_ACTION_CLR);
+    if (!swim_encode(long_delay, SWIM_ACTION_SET))
+      return 0;
+    if (!swim_encode(short_delay, last_bit ? SWIM_ACTION_WAIT : SWIM_ACTION_CLR))
+      return 0;
   }
+  return 1;
 }
 
 static unsigned int *swim_encode_read(int clr)
 {
   unsigned int *p = swim_encode(half_delay, SWIM_ACTION_GET);
-  swim_encode(half_delay, clr ? SWIM_ACTION_CLR : SWIM_ACTION_WAIT);
+  if (!p)
+    return NULL;
+  if (!swim_encode(half_delay, clr ? SWIM_ACTION_CLR : SWIM_ACTION_WAIT))
+    return NULL;
   return p;
 }
 
@@ -111,41 +133,65 @@ static void swim_encode_start(void)
 {
   encode_counter_v = SWIM_TIME_COUNTER_MAX;
   swim_packet_end = swim_packet;
+  swim_packet_items = 0;
 }
 
 static unsigned int *swim_encode_command(unsigned int cmd, int clr)
 {
   unsigned int *rc;
 
-  swim_encode_bit(0, 0);
+  if (!swim_encode_bit(0, 0))
+    return NULL;
   parity = 0;
-  swim_encode_bit(cmd & 4, 0);
-  swim_encode_bit(cmd & 2, 0);
-  swim_encode_bit(cmd & 1, 0);
-  swim_encode_bit(parity, 1);
+  if (!swim_encode_bit(cmd & 4, 0))
+    return NULL;
+  if (!swim_encode_bit(cmd & 2, 0))
+    return NULL;
+  if (!swim_encode_bit(cmd & 1, 0))
+    return NULL;
+  if (!swim_encode_bit(parity, 1))
+    return NULL;
   rc = swim_encode_read(0);
-  swim_encode(full_delay, clr ? SWIM_ACTION_CLR : SWIM_ACTION_WAIT);
+  if (rc)
+  {
+    if (!swim_encode(full_delay, clr ? SWIM_ACTION_CLR : SWIM_ACTION_WAIT))
+      return NULL;
+  }
   return rc;
 }
 
 static unsigned int *swim_encode_data_write(unsigned char data, int clr, int wait)
 {
   unsigned int *rc;
-  swim_encode_bit(0, 0);
+  if (!swim_encode_bit(0, 0))
+    return NULL;
   parity = 0;
-  swim_encode_bit(data & 0x80, 0);
-  swim_encode_bit(data & 0x40, 0);
-  swim_encode_bit(data & 0x20, 0);
-  swim_encode_bit(data & 0x10, 0);
-  swim_encode_bit(data & 8, 0);
-  swim_encode_bit(data & 4, 0);
-  swim_encode_bit(data & 2, 0);
-  swim_encode_bit(data & 1, 0);
-  swim_encode_bit(parity, 1);
+  if (!swim_encode_bit(data & 0x80, 0))
+    return NULL;
+  if (!swim_encode_bit(data & 0x40, 0))
+    return NULL;
+  if (!swim_encode_bit(data & 0x20, 0))
+    return NULL;
+  if (!swim_encode_bit(data & 0x10, 0))
+    return NULL;
+  if (!swim_encode_bit(data & 8, 0))
+    return NULL;
+  if (!swim_encode_bit(data & 4, 0))
+    return NULL;
+  if (!swim_encode_bit(data & 2, 0))
+    return NULL;
+  if (!swim_encode_bit(data & 1, 0))
+    return NULL;
+  if (!swim_encode_bit(parity, 1))
+    return NULL;
   if (wait)
   {
     rc = swim_encode_read(0);
-    swim_encode(full_delay, clr ? SWIM_ACTION_CLR : SWIM_ACTION_WAIT);
+    if (rc)
+    {
+      if (!swim_encode(full_delay, clr ? SWIM_ACTION_CLR : SWIM_ACTION_WAIT))
+        return NULL;
+    }
   }
   else
     rc = swim_encode_read(clr);
@@ -155,19 +201,32 @@ static unsigned int *swim_encode_data_write(unsigned char data, int clr, int wai
 static unsigned int *swim_encode_data_read(void)
 {
   unsigned int *p = swim_encode(0, SWIM_ACTION_WAIT0);
+  if (!p)
+    return NULL;
   encode_counter_v = SWIM_TIME_COUNTER_MAX;
-  swim_encode_read(0);
-  swim_encode_read(0);
-  swim_encode_read(0);
-  swim_encode_read(0);
-  swim_encode_read(0);
-  swim_encode_read(0);
-  swim_encode_read(0);
-  swim_encode_read(0);
-  swim_encode_read(0);
-  swim_encode_read(1);
+  if (!swim_encode_read(0))
+    return NULL;
+  if (!swim_encode_read(0))
+    return NULL;
+  if (!swim_encode_read(0))
+    return NULL;
+  if (!swim_encode_read(0))
+    return NULL;
+  if (!swim_encode_read(0))
+    return NULL;
+  if (!swim_encode_read(0))
+    return NULL;
+  if (!swim_encode_read(0))
+    return NULL;
+  if (!swim_encode_read(0))
+    return NULL;
+  if (!swim_encode_read(0))
+    return NULL;
+  if (!swim_encode_read(1))
+    return NULL;
   //ack
-  swim_encode_bit(1, 1);
+  if (!swim_encode_bit(1, 1))
+    return NULL;
   return p;
 }
 
@@ -183,7 +242,7 @@ unsigned int swim_srst(void)
 void swim_reset(void)
 {
   swim_encode_start();
-  swim_encode(SWIM_ENTER_DELAY1_US * SWIM_COUNTER_MHZ, SWIM_ACTION_SET);
+  swim_encode(SWIM_ENTER_DELAY1_US * base_clock, SWIM_ACTION_SET);
   swim_packet_handler(SWIM_SET_VALUE);
 }
 
@@ -195,7 +254,7 @@ unsigned int swim_enter(unsigned int *clock)
   if (!clock128)
   {
     swim_encode_start();
-    swim_encode(SWIM_ENTER_DELAY1_US * SWIM_COUNTER_MHZ, SWIM_ACTION_SET);
+    swim_encode(SWIM_ENTER_DELAY1_US * base_clock, SWIM_ACTION_SET);
     swim_pulses(SWIM_ENTER_DELAY2_US);
     swim_pulses(SWIM_ENTER_DELAY3_US);
     swim_packet_handler(SWIM_SET_VALUE);
@@ -233,16 +292,15 @@ unsigned int swim_enter(unsigned int *clock)
 
 unsigned int swim_write(unsigned int address, unsigned char length, unsigned char *values)
 {
-  unsigned int i, **ack_p = swim_ack, **p = swim_ack, *ack;
+  unsigned int i, **ack_p = swim_ack, **p = swim_ack, *ack, retry;
   swim_encode_start();
   *ack_p++ = swim_encode_command(SWIM_COMMAND_WOTF, 1);
   *ack_p++ = swim_encode_data_write(length, 1, 1);
   *ack_p++ = swim_encode_data_write(address >> 16, 1, 1);
   *ack_p++ = swim_encode_data_write((address >> 8) & 0xFF, 1, 1);
-  *ack_p++ = swim_encode_data_write(address & 0xFF, 1, 1);
-  while (length--)
-    *ack_p++ = swim_encode_data_write(*values++, length, length);
+  *ack_p++ = swim_encode_data_write(address & 0xFF, 0, 0);
   swim_packet_handler(SWIM_SET_VALUE);
+
   i = SWIM_COMMAND_NO_ACK;
   while (p < ack_p)
   {
@@ -251,6 +309,25 @@ unsigned int swim_write(unsigned int address, unsigned char length, unsigned cha
       return i;
     i++;
   }
+
+  while (length--)
+  {
+    retry = 0;
+    while (retry < SWIM_MAX_RETRIES)
+    {
+      swim_encode_start();
+      ack = swim_encode_data_write(*values++, 0, 0);
+      swim_packet_handler(SWIM_SET_VALUE);
+      if (SWIM_GET_BIT(*ack))
+        break;
+      swim_delay(50);
+      retry++;
+    }
+    if (retry == SWIM_MAX_RETRIES)
+      return i;
+    i++;
+  }
+
   return SWIM_OK;
 }
 
@@ -318,7 +395,10 @@ unsigned int swim_read(unsigned int address, unsigned char length, unsigned char
   l--;
   data_p = swim_encode_data_read();
   while (l--)
-    swim_encode_data_read();
+  {
+    if (!swim_encode_data_read())
+      return SWIM_TOO_LONG_PACKET;
+  }
   swim_packet_handler(SWIM_SET_VALUE);
   i = SWIM_COMMAND_NO_ACK;
   while (p < ack_p)
