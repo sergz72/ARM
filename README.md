@@ -9,3 +9,4 @@ For Raspberry PI Pico:
 For STM32 CPU:
 - [STM32401 Blue pill universal measuring tool](stm32f401_meter).
 - [AD9833 board adapter for universal measuring tool](stm32f0_ad9833).
+- [Electronic load](load)
