@@ -29,6 +29,7 @@ add_executable(pico_logic_probe
         ../../common_lib/display/lcd.c
         ../../common_lib/display/font.c
         ../../common_lib/display/fonts/font5.c
+        ../../common_lib/display/fonts/font12.c
         ../../common_lib/display/fonts/font24.c
 )
 

@@ -59,13 +59,12 @@ static char LABuildHexSymbol(unsigned int data0, unsigned int data1, unsigned in
 
 static void LADraw8BitHex(void)
 {
-  char v[2];
+  char v[3];
 
-  v[1] = 0;
   v[0] = LABuildHexSymbol(DATA4, DATA5, DATA6, DATA7);
-  LcdDrawText(LCD_WIDTH / 2 - courierNew24ptFontInfo.character_max_width, STATE_SIZE*5, v, &courierNew24ptFontInfo, RGB(0, 0, 255), RGB(0, 0, 0), NULL);
-  v[0] = LABuildHexSymbol(DATA0, DATA1, DATA2, DATA3);
-  LcdDrawText(LCD_WIDTH / 2, STATE_SIZE*5, v, &courierNew24ptFontInfo, RGB(0, 0, 255), RGB(0, 0, 0), NULL);
+  v[1] = LABuildHexSymbol(DATA0, DATA1, DATA2, DATA3);
+  v[2] = 0;
+  LcdDrawText(LCD_WIDTH / 2 - courierNew24ptFontInfo.character_max_width, STATE_SIZE*5, v, &courierNew24ptFontInfo, BLUE_COLOR, BLACK_COLOR, NULL);
 }
 
 static void LADrawPinNumber(unsigned int pin)

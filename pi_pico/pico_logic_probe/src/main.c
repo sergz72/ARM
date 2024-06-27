@@ -18,6 +18,7 @@ typedef struct {
   void (*lcd_init)(void);
   void (*init)(void);
   int (*gpio_callback)(unsigned int gpio, unsigned long events);
+  const char *name;
 } Mode;
 
 const Mode modes[MAX_MODE + 1] = {
@@ -27,7 +28,8 @@ const Mode modes[MAX_MODE + 1] = {
         .lcd_init = LALcdInit,
         .cpu1_task = LACPU1Task,
         .init = LAInit,
-        .gpio_callback = LAGpioCallback
+        .gpio_callback = LAGpioCallback,
+        .name = "LA"
     },
     {
         .start_events = P8StartEvents,
@@ -35,7 +37,8 @@ const Mode modes[MAX_MODE + 1] = {
         .lcd_init = P8LcdInit,
         .cpu1_task = P8CPU1Task,
         .init = P8Init,
-        .gpio_callback = P8GpioCallback
+        .gpio_callback = P8GpioCallback,
+        .name = "P8"
     }
 };
 
@@ -55,6 +58,7 @@ static void SwitchMode()
     mode = 0;
   modes[mode].init();
   LcdScreenFill(BLACK_COLOR); // clear screen
+  DrawModeName(modes[mode].name);
   modes[mode].lcd_init();
   multicore_launch_core1(modes[mode].cpu1_task);
   modes[mode].start_events();
@@ -79,6 +83,7 @@ int main()
 
   mode = MODE_LOGIC_ANALYSER;
 
+  DrawModeName(modes[mode].name);
   LALcdInit();
   multicore_launch_core1(LACPU1Task);
   LAStartEvents();

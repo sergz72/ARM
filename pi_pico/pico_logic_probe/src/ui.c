@@ -1,6 +1,7 @@
 #include "board.h"
 #include "logic_analyser/logic_analyser.h"
 #include "ui.h"
+#include <font24.h>
 
 volatile int requestToStop;
 volatile int doNotResetCPU1;
@@ -14,12 +15,12 @@ volatile int doNotResetCPU1;
     LcdDrawText(col * (f->character_max_width + f->character_spacing), y, text, f, bkColor, textColor, NULL);
   else
     LcdDrawText(col * (f->character_max_width + f->character_spacing), y, text, f, textColor, bkColor, NULL);
-}
+}*/
 
-static void DrawText(unsigned int col, unsigned int y, char *text, const FONT_INFO* f, unsigned int textColor, unsigned int bkColor)
+void DrawText(unsigned int col, unsigned int y, const char *text, const FONT_INFO* f, unsigned int textColor, unsigned int bkColor)
 {
   LcdDrawText(col * (f->character_max_width + f->character_spacing), y, text, f, textColor, bkColor, NULL);
-}*/
+}
 
 void UI_Init(void)
 {
@@ -38,4 +39,9 @@ void SafeLcdUpdate(void)
   doNotResetCPU1 = 1;
   LcdUpdate();
   doNotResetCPU1 = 0;
+}
+
+void DrawModeName(const char *name)
+{
+  LcdDrawText(0, 50, name, &courierNew24ptFontInfo, RGB(0, 0, 255), RGB(0, 0, 0), NULL);
 }
