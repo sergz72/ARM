@@ -1,95 +1,109 @@
 #include "board.h"
 #include "ui.h"
-#include <pico/multicore.h>
-#include <memory.h>
 #include "keyboard.h"
+#include "logic_analyser/logic_analyser.h"
+#include "parallel_8bit/parallel_8bit.h"
+#include <pico/multicore.h>
 
-#define MAX_COUNTER 1000
+#define MODE_LOGIC_ANALYSER 0
+#define MODE_PARALLEL_8BIT  1
+#define MAX_MODE            1
 
-static int counter, currentBuffer, up;
-static unsigned int buffer[2][MAX_COUNTER], *pbuffer;
-unsigned int pinState[32][3], v1, v2;
+static int mode;
 
-static bool repeating_timer_callback(struct repeating_timer *t)
+typedef struct {
+  void (*start_events)(void);
+  void (*cpu1_task)(void);
+  void (*stop_events)(void);
+  void (*lcd_init)(void);
+  void (*init)(void);
+  int (*gpio_callback)(unsigned int gpio, unsigned long events);
+} Mode;
+
+const Mode modes[MAX_MODE + 1] = {
+    {
+        .start_events = LAStartEvents,
+        .stop_events = LAStopEvents,
+        .lcd_init = LALcdInit,
+        .cpu1_task = LACPU1Task,
+        .init = LAInit,
+        .gpio_callback = LAGpioCallback
+    },
+    {
+        .start_events = P8StartEvents,
+        .stop_events = P8StopEvents,
+        .lcd_init = P8LcdInit,
+        .cpu1_task = P8CPU1Task,
+        .init = P8Init,
+        .gpio_callback = P8GpioCallback
+    }
+};
+
+static void SwitchMode()
 {
-  int prevBuffer;
-  *pbuffer++ = gpio_get_all();
-  counter++;
-  up = !up;
-  InputsCommand(up ? gpio_pull_up : gpio_pull_down);
-  if (counter == MAX_COUNTER)
+  modes[mode].stop_events();
+  requestToStop = 1;
+  do
   {
-    prevBuffer = currentBuffer;
-    currentBuffer = currentBuffer ? 0 : 1;
-    pbuffer = buffer[currentBuffer];
-    counter = 0;
-    multicore_fifo_push_blocking(prevBuffer);
-  }
-  return true;
+    sleep_us(10);
+  } while (doNotResetCPU1);
+  multicore_reset_core1();
+  multicore_fifo_drain();
+  requestToStop = 0;
+  mode++;
+  if (mode > MAX_MODE)
+    mode = 0;
+  modes[mode].init();
+  LcdScreenFill(BLACK_COLOR); // clear screen
+  modes[mode].lcd_init();
+  multicore_launch_core1(modes[mode].cpu1_task);
+  modes[mode].start_events();
 }
 
-static void UpdateState(unsigned int pin)
+void gpio_callback(unsigned int gpio, unsigned long events)
 {
-  unsigned int mask = 1 << pin;
-  if (v1 & mask)
-  {
-    if (v2 & mask)
-      pinState[pin][1]++; // logical 1
-    else
-      pinState[pin][2]++; // floating
-  }
-  else
-  {
-    if (!(v2 & mask))
-      pinState[pin][0]++; // logical 0
-  }
-}
 
-static void BuildState(unsigned int bufferId)
-{
-  unsigned int *p = buffer[bufferId];
-  memset(pinState, 0, sizeof(pinState));
-  for (int i = 0; i < MAX_COUNTER; i += 2)
-  {
-    v1 = *p++;
-    v2 = *p++;
-    InputsCommand(UpdateState);
-  }
-}
-
-void CPU1Task(void)
-{
-  int led_state = 0;
-  unsigned int bufferId;
-
-  while (true)
-  {
-    bufferId = multicore_fifo_pop_blocking();
-    led_state = !led_state;
-    gpio_put(PICO_DEFAULT_LED_PIN, led_state);
-    BuildState(bufferId);
-    Process_Timer_Event();
-  }
+  if (!modes[mode].gpio_callback(gpio, events))
+    keyboard_gpio_callback(gpio, events);
 }
 
 int main()
 {
   SystemInit();
 
+  gpio_set_irq_callback(gpio_callback);
+  irq_set_enabled(IO_IRQ_BANK0, true);
+
   UI_Init();
   KeyboardInit();
 
-  counter = currentBuffer = 0;
-  up = 1;
-  pbuffer = buffer[currentBuffer];
+  mode = MODE_LOGIC_ANALYSER;
 
-  multicore_launch_core1(CPU1Task);
-
-  struct repeating_timer timer;
-  add_repeating_timer_us(100, repeating_timer_callback, NULL, &timer);
+  LALcdInit();
+  multicore_launch_core1(LACPU1Task);
+  LAStartEvents();
 
   while (true)
   {
+    switch (buttonEvent)
+    {
+      case IDBUTTONB:
+        break;
+      case IDBUTTONA:
+        SwitchMode();
+        break;
+      case IDBUTTONCENTER:
+        break;
+      case IDBUTTONTOP:
+        break;
+      case IDBUTTONBOTTOM:
+        break;
+      case IDBUTTONLEFT:
+        break;
+      case IDBUTTONRIGHT:
+        break;
+    }
+    buttonEvent = IDNOEVENT;
     asm volatile ("wfi");
   }
 }

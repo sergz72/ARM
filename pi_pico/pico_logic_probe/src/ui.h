@@ -10,7 +10,10 @@
 #define IDBUTTONA 6
 #define IDBUTTONB 7
 
-void Process_Timer_Event();
+extern volatile int requestToStop;
+extern volatile int doNotResetCPU1;
+
 void UI_Init(void);
+void SafeLcdUpdate(void);
 
 #endif

@@ -2,6 +2,7 @@
 #include <pico/time.h>
 #include "hardware/spi.h"
 #include "hardware/pwm.h"
+#include "logic_analyser/logic_analyser.h"
 
 unsigned int slice_num;
 
@@ -25,23 +26,6 @@ static void InputInit(unsigned int pin)
   gpio_init(pin);
   gpio_set_dir(pin, GPIO_IN);
   gpio_pull_up(pin);
-}
-
-void InputsCommand(void (*func)(unsigned int))
-{
-  func(DATA0);
-  func(DATA1);
-  func(DATA2);
-  func(DATA3);
-  func(DATA4);
-  func(DATA5);
-  func(DATA6);
-  func(DATA7);
-  func(DATA8);
-  func(DATA9);
-  func(DATA10);
-  func(DATA11);
-  func(DATA12);
 }
 
 static void LCDInit(void)
@@ -81,6 +65,6 @@ void LEDInit(void)
 void SystemInit(void)
 {
   LCDInit();
-  InputsCommand(InputInit);
+  LAInputsCommand(InputInit);
   LEDInit();
 }

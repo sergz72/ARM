@@ -16,7 +16,7 @@ static const PinMapping pinMapping[] = {
     {KEY_LEFT, IDBUTTONTOP}, {KEY_RIGHT, IDBUTTONBOTTOM}, {KEY_A, IDBUTTONA}, {KEY_B, IDBUTTONB}
 };
 
-static void gpio_callback(unsigned int gpio, unsigned long events)
+void keyboard_gpio_callback(unsigned int gpio, unsigned long events)
 {
   int i;
   PinMapping m;
@@ -46,7 +46,7 @@ static void KeyConfig(unsigned int Pin)
   gpio_init(Pin);
   gpio_pull_up(Pin);
   gpio_set_dir(Pin, GPIO_IN);
-  gpio_set_irq_enabled_with_callback(Pin, GPIO_IRQ_EDGE_RISE | GPIO_IRQ_EDGE_FALL, true, &gpio_callback);
+  gpio_set_irq_enabled(Pin, GPIO_IRQ_EDGE_RISE | GPIO_IRQ_EDGE_FALL, true);
 }
 
 void KeyboardInit(void)

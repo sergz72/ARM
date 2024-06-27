@@ -19,6 +19,12 @@ add_executable(pico_logic_probe
         src/hal.c
         src/ui.c
         src/keyboard.c
+        src/logic_analyser/hal.c
+        src/logic_analyser/ui.c
+        src/logic_analyser/handler.c
+        src/parallel_8bit/hal.c
+        src/parallel_8bit/ui.c
+        src/parallel_8bit/handler.c
         ../../common_lib/display/lcd_st7735.c
         ../../common_lib/display/lcd.c
         ../../common_lib/display/font.c
