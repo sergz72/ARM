@@ -1,51 +1,99 @@
 #include <board.h>
 #include <i2c.h>
 
-#define TIMING_CLEAR_MASK   (0xF0FFFFFFU)  /*!< I2C TIMING clear register Mask */
-
-/**
-  * @brief  Initializes the I2C according to the specified parameters
-  *         in the I2C_InitTypeDef and initialize the associated handle.
-  * @param  hi2c Pointer to a I2C_HandleTypeDef structure that contains
-  *                the configuration information for the specified I2C.
-  * @retval HAL status
-  */
-void I2C_Init(I2C_TypeDef *instance, I2C_InitTypeDef *init)
+static int WaitOnFlagUntilTimeout(I2C_TypeDef *i2c, unsigned int flag, unsigned int state, unsigned int timeout)
 {
-  /* Configure I2Cx: Frequency range */
-  instance->TIMINGR = init->Timing & TIMING_CLEAR_MASK;
-
-  /*---------------------------- I2Cx OAR1 Configuration ---------------------*/
-  /* Disable Own Address1 before set the Own Address1 configuration */
-  instance->OAR1 &= ~I2C_OAR1_OA1EN;
-
-  /* Configure I2Cx: Own Address1 and ack own address1 mode */
-  if (init->AddressingMode == I2C_ADDRESSINGMODE_7BIT)
+  while ((i2c->ISR & flag) != state)
   {
-    instance->OAR1 = (I2C_OAR1_OA1EN | init->OwnAddress1);
-  }
-  else /* I2C_ADDRESSINGMODE_10BIT */
-  {
-    instance->OAR1 = (I2C_OAR1_OA1EN | I2C_OAR1_OA1MODE | init->OwnAddress1);
-    /*---------------------------- I2Cx CR2 Configuration ----------------------*/
-    instance->CR2 = (I2C_CR2_ADD10);
+    timeout--;
+    if (!timeout)
+      return I2C_RCTIMEOUT;
   }
 
-  /*---------------------------- I2Cx CR2 Configuration ----------------------*/
-  /* Enable the AUTOEND by default, and enable NACK (should be disable only during Slave process */
-  instance->CR2 |= (I2C_CR2_AUTOEND | I2C_CR2_NACK);
+  return I2C_RCOK;
+}
 
-  /*---------------------------- I2Cx OAR2 Configuration ---------------------*/
-  /* Disable Own Address2 before set the Own Address2 configuration */
-  instance->OAR2 &= ~I2C_DUALADDRESS_ENABLE;
+static int i2c_send(I2C_TypeDef *i2c, unsigned char *data, unsigned int count, unsigned int timeout)
+{
+  int rc;
 
-  /* Configure I2Cx: Dual mode and Own Address2 */
-  instance->OAR2 = (init->DualAddressMode | init->OwnAddress2 | (init->OwnAddress2Masks << 8));
+  while (count--)
+  {
+    while (!(i2c->ISR & I2C_ISR_TXIS))
+    {
+      if (i2c->ISR & I2C_ISR_NACKF)
+        return I2C_RCDATA_NACK;
+      timeout--;
+      if (!timeout)
+        return I2C_RCTIMEOUT;
+    }
+    i2c->TXDR = *data++;
+  }
 
-  /*---------------------------- I2Cx CR1 Configuration ----------------------*/
-  /* Configure I2Cx: Generalcall and NoStretch mode */
-  instance->CR1 = (init->GeneralCallMode | init->NoStretchMode);
+  return I2C_RCOK;
+}
 
-  /* Enable the selected I2C peripheral */
-  instance->CR1 |= I2C_CR1_PE;
+int I2CMasterTransfer(I2C_TypeDef *i2c, unsigned int address,
+                      unsigned char *commands, unsigned int commands_count,
+                      unsigned char *write_data, unsigned int write_count,
+                      unsigned char *read_data, unsigned int read_count, unsigned int timeout)
+{
+  unsigned int nwrite = write_count + commands_count;
+  unsigned int nbytes = nwrite == 0 ? read_count : nwrite;
+  unsigned int temp;
+  int rc;
+
+  if ((write_count != 0 && write_data == NULL) || (read_count != 0 && read_data == NULL) ||
+      (commands_count != 0 && commands == NULL))
+    return I2C_RCARGUMENTS_ERROR;
+
+  i2c->ICR |= 0x3F38; // clear all interrupt flags
+
+  rc = WaitOnFlagUntilTimeout(i2c, I2C_ISR_BUSY, 0, timeout);
+  if (rc != I2C_RCOK)
+    return rc;
+
+  i2c->CR2 &= ~(I2C_CR2_SADD | I2C_CR2_NBYTES | I2C_CR2_AUTOEND | I2C_CR2_RD_WRN);
+  temp = address | (nbytes << 16);
+  if (read_count == 0 || nwrite == 0)
+    temp |= I2C_CR2_AUTOEND;
+  if (nwrite == 0)
+    temp |= I2C_CR2_RD_WRN; // read request
+  i2c->CR2 |= temp;
+  i2c->CR2 |= I2C_CR2_START;//START condition generation
+
+  rc = i2c_send(i2c, commands, commands_count, timeout);
+  if (rc != I2C_RCOK)
+    return rc;
+  rc = i2c_send(i2c, write_data, write_count, timeout);
+  if (rc != I2C_RCOK)
+    return rc;
+
+  if (read_count != 0)
+  {
+    rc = WaitOnFlagUntilTimeout(i2c, I2C_ISR_TC, I2C_ISR_TC, timeout);
+    if (rc != I2C_RCOK)
+      return rc;
+
+    if (nwrite != 0)
+    {
+      i2c->CR2 &= ~I2C_CR2_NBYTES;
+      i2c->CR2 |= read_count << 16;
+      i2c->CR2 |= I2C_CR2_START | I2C_CR2_RD_WRN | I2C_CR2_AUTOEND;//START condition generation
+    }
+
+    while (read_count--)
+    {
+      rc = WaitOnFlagUntilTimeout(i2c, I2C_ISR_RXNE, I2C_ISR_RXNE, timeout);
+      if (rc != I2C_RCOK)
+        return rc;
+      *read_data++ = (unsigned char)i2c->RXDR;
+    }
+  }
+
+  temp = i2c->ISR & 0x3F10; // error flags
+  if (temp)
+    return (int)temp;
+
+  return WaitOnFlagUntilTimeout(i2c, I2C_ISR_STOPF, I2C_ISR_STOPF, timeout);
 }
