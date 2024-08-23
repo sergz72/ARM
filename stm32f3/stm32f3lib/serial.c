@@ -114,13 +114,10 @@ void serial_init(int uart_no, int uart_speed, serial_read_handler read_handler)
 			return;
   }
 
-  // 1. Enable the USART by writing the UE bit in USART_CR1 register to 1.
-  USART->CR1 |= USART_CR1_UE;
   // 2. Program the M bit in USART_CR1 to define the word length.(bit is 0 => 8bits)
   USART->CR1 &= ~USART_CR1_M;
-  // 3. Program the number of stop bits in USART_CR2. (bits are 10 => 2 stopbits)
+  // 3. Program the number of stop bits in USART_CR2. (bits are 00 => 1 stop bit)
   USART->CR2 &= ~USART_CR2_STOP;
-  USART->CR2 |= USART_CR2_STOP_1;
   // 6. Set the RE bit USART_CR1. This enables the receiver which begins searching for a
   //    start bit.
   USART->CR1 |= USART_CR1_RE;
@@ -136,6 +133,9 @@ void serial_init(int uart_no, int uart_speed, serial_read_handler read_handler)
     USART->BRR = BOARD_PCLK1 / uart_speed;
 
   SERIAL_INTERRUPT_ENABLE(uart_no);
+
+  // 1. Enable the USART by writing the UE bit in USART_CR1 register to 1.
+  USART->CR1 |= USART_CR1_UE;
 }
 
 void serial_send(int uart_no, char c)

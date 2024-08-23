@@ -95,8 +95,8 @@ unsigned int i2c_soft_tx(int channel, unsigned char d, unsigned int timeout)
   }
   if (!timeout)
     return 1;
-  b = SDA_IN(channel);          // possible ACK bit
   i2c_dly;
+  b = SDA_IN(channel);          // possible ACK bit
   SCL_LOW(channel);
 
   return b;
@@ -114,15 +114,18 @@ int i2c_soft_read(int channel, unsigned int address, unsigned char *in_data, uns
     return 1;
   }
   i2c_dly;
-  for (i = 0; i < in_data_length - 1; i++)
+  if (in_data_length > 0)
   {
-    if (i2c_soft_rx(channel, &c, 1, timeout))
+    for (i = 0; i < in_data_length - 1; i++)
+    {
+      if (i2c_soft_rx(channel, &c, 1, timeout))
+        return 1;
+      *in_data++ = c;
+    }
+    if (i2c_soft_rx(channel, &c, 0, timeout)) //we don't acknowledge the last byte.
       return 1;
-    *in_data++ = c;
+    *in_data = c;
   }
-  if (i2c_soft_rx(channel, &c, 0, timeout)) //we don't acknowledge the last byte.
-    return 1;
-  *in_data = c;
   i2c_soft_stop(channel);                 // send stop sequence
 
   return 0;
