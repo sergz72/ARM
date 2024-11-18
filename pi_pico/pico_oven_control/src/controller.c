@@ -53,7 +53,7 @@ enum OvenStatus update_status(int temperature)
           stop_program();
           return current_status;
         }
-        current_step_time = current_program_step->time;
+        current_step_time = current_program_step->time * TIMER_EVENTS_PER_SECOND;
         count_down = 0;
       }
     }
@@ -86,12 +86,12 @@ const ProgramItem *get_current_step(void)
 
 unsigned int get_current_step_time(void)
 {
-  return current_step_time;
+  return current_step_time / TIMER_EVENTS_PER_SECOND;
 }
 
 enum OvenStatus start_program(void)
 {
-  current_step_time = current_program->time;
+  current_step_time = current_program->time * TIMER_EVENTS_PER_SECOND;
   current_program_step = current_program;
   count_down = 0;
   set_status(Off);

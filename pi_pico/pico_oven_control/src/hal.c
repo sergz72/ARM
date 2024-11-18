@@ -8,6 +8,7 @@
 #define KEYBOARD_PIN_MASK ((1 << (KEYBOARD_PIN_END - KEYBOARD_PIN_START + 1)) - 1)
 
 static unsigned char i2c_buffer[1024];
+static int prev_temperature = 20;
 
 void SystemInit(void)
 {
@@ -117,13 +118,17 @@ int get_temperature(void)
 
   rc = mcp9600GetStatus(0, MCP9600_DEVICE_ID, &status);
   if (rc)
-    return rc;
+    return prev_temperature;
   if (status & MCP9600_STATUS_RANGE)
-    return 300;
+    return prev_temperature;
   if (status & MCP9600_STATUS_SHORT_CIRCUIT)
-    return 400;
+    return prev_temperature;
   rc = mcp9600GetHotJunctionTemperature(0, MCP9600_DEVICE_ID, &t);
   if (rc)
-    return rc;
-  return t / 100;
+    return prev_temperature;
+  t /= 100;
+  if (t < 15)
+    return prev_temperature;
+  prev_temperature = t;
+  return t;
 }
