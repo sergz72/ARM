@@ -39,6 +39,7 @@
 #define KB_START 0xB
 #define KB_STOP 0x7
 
+#define TIMER_EVENTS_PER_SECOND 2
 
 void delayms(unsigned int ms);
 void SystemInit(void);
