@@ -52,14 +52,12 @@ static void LogicAnalyserInit(void)
 void LogicAnalyserStop(void)
 {
   pio_sm_set_enabled(CAPTURE_PIO, CAPTURE_SM, false);
-  // Need to clear _input shift counter_, as well as FIFO, because there may be
-  // partial ISR contents left over from a previous run. sm_restart does this.
-  pio_sm_clear_fifos(CAPTURE_PIO, CAPTURE_SM);
-  pio_sm_restart(CAPTURE_PIO, CAPTURE_SM);
 }
 
 void LogicAnalyserStart(void)
 {
+  pio_sm_clear_fifos(CAPTURE_PIO, CAPTURE_SM);
+  pio_sm_restart(CAPTURE_PIO, CAPTURE_SM);
   pio_sm_set_enabled(CAPTURE_PIO, CAPTURE_SM, true);
 }
 

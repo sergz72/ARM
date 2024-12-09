@@ -7,14 +7,26 @@
 
 #define DATA_LENGTH 63000
 
+/*typedef union
+{
+  unsigned int iv;
+  unsigned char cv[4];
+} uc;*/
+
 static unsigned int data[DATA_LENGTH];
 
 static void __no_inline_not_in_flash_func(collect_data)()
 {
   unsigned int *data_p = data;
   int counter = DATA_LENGTH;
+  //uc d;
 
   LogicAnalyserStart();
+
+  /*do
+  {
+    d.iv = pio_sm_get_blocking(CAPTURE_PIO, CAPTURE_SM);
+  } while (d.cv[0] != 0xA9 && d.cv[1] != 0xA9 && d.cv[2] != 0xA9 && d.cv[3] != 0xA9);*/
 
   while (counter--)
     *data_p++ = pio_sm_get_blocking(CAPTURE_PIO, CAPTURE_SM);
