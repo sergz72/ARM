@@ -20,7 +20,7 @@ void spi_memory_wren(int channel, unsigned char command)
     spi_command(channel, command, NULL, NULL, 0, 1); // WREN
 }
 
-void address_swap(char *chars, int address_length)
+void address_swap(unsigned char *chars, int address_length)
 {
   char c0 = chars[0];
   switch (address_length)
@@ -51,8 +51,7 @@ void spi_memory_write(int channel, unsigned char command, unsigned int address, 
   addr.value = address;
   address_swap(addr.chars, address_length);
   spi_command(channel, command, addr.chars, NULL, address_length, 0);
-  while (size--)
-    spi_byte(channel, *buffer++);
+  spi_write(channel, buffer, size);
   spi_finish(); // set CS
 }
 
@@ -60,14 +59,13 @@ void spi_memory_read(int channel, unsigned char command, unsigned int address, i
                       int size, int skip)
 {
   cuint addr;
+  unsigned char skip_buffer[skip];
 
   addr.value = address;
   address_swap(addr.chars, address_length);
   spi_command(channel, command, addr.chars, NULL, address_length, 0);
-  while (skip--)
-    spi_byte(channel, 0);
-  while (size--)
-    *buffer++ = spi_byte(channel, 0);
+  spi_read(channel, skip_buffer, skip);
+  spi_read(channel, buffer, size);
 
   spi_finish(); // set CS
 }
@@ -76,12 +74,16 @@ void spi_memory_write_cb(int channel, unsigned char command, unsigned int addres
                         unsigned char (*next_byte)(void), int size)
 {
   cuint addr;
+  unsigned char c;
 
   addr.value = address;
   address_swap(addr.chars, address_length);
   spi_command(channel, command, addr.chars, NULL, address_length, 0);
   while (size--)
-    spi_byte(channel, next_byte());
+  {
+    c = next_byte();
+    spi_write(channel, &c, 1);
+  }
   spi_finish(); // set CS
 }
 
@@ -89,16 +91,17 @@ int spi_memory_read_cb(int channel, unsigned char command, unsigned int address,
                     int (*set_byte)(unsigned char), int size, int skip)
 {
   cuint addr;
+  unsigned char skip_buffer[skip], c;
   int rc = 0;
 
   addr.value = address;
   address_swap(addr.chars, address_length);
   spi_command(channel, command, addr.chars, NULL, address_length, 0);
-  while (skip--)
-    spi_byte(channel, 0);
+  spi_read(channel, skip_buffer, skip);
   while (size--)
   {
-    rc = set_byte(spi_byte(channel, 0));
+    spi_read(channel, &c, 1);
+    rc = set_byte(c);
     if (rc)
       break;
   }
