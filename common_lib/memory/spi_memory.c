@@ -10,7 +10,7 @@ unsigned int spi_memory_read_id(int channel, int address_length, unsigned char c
 {
   unsigned char data[address_length + 2];
 
-  spi_command(channel, command, data, NULL, address_length + 2, 1);
+  spi_command(channel, command, NULL, data, address_length + 2, 1);
 
   return data[address_length] | (data[address_length + 1] << 8);
 }
@@ -52,7 +52,7 @@ void spi_memory_write(int channel, unsigned char command, unsigned int address, 
   address_swap(addr.chars, address_length);
   spi_command(channel, command, addr.chars, NULL, address_length, 0);
   spi_write(channel, buffer, size);
-  spi_finish(); // set CS
+  spi_finish(channel); // set CS
 }
 
 void spi_memory_read(int channel, unsigned char command, unsigned int address, int address_length, unsigned char *buffer,
@@ -67,7 +67,7 @@ void spi_memory_read(int channel, unsigned char command, unsigned int address, i
   spi_read(channel, skip_buffer, skip);
   spi_read(channel, buffer, size);
 
-  spi_finish(); // set CS
+  spi_finish(channel); // set CS
 }
 
 void spi_memory_write_cb(int channel, unsigned char command, unsigned int address, int address_length,
@@ -84,7 +84,7 @@ void spi_memory_write_cb(int channel, unsigned char command, unsigned int addres
     c = next_byte();
     spi_write(channel, &c, 1);
   }
-  spi_finish(); // set CS
+  spi_finish(channel); // set CS
 }
 
 int spi_memory_read_cb(int channel, unsigned char command, unsigned int address, int address_length,
@@ -106,7 +106,8 @@ int spi_memory_read_cb(int channel, unsigned char command, unsigned int address,
       break;
   }
 
-  spi_finish(); // set CS
+  spi_finish(channel); // set CS
+
   return rc;
 }
 
@@ -115,19 +116,22 @@ unsigned int psram_read_id(int channel)
   return spi_memory_read_id(channel, 3, SPI_MEMORY_DEFAULT_READ_ID_COMMAND);
 }
 
-void psram_read(int channel, unsigned int address, unsigned char *buffer, int count)
+int psram_read(int channel, unsigned int address, unsigned char *buffer, int count)
 {
   spi_memory_read(channel, SPI_MEMORY_DEFAULT_READ_COMMAND, address, 3, buffer, count, 0);
+  return 0;
 }
 
-void psram_fast_read(int channel, unsigned int address, unsigned char *buffer, int count)
+int psram_fast_read(int channel, unsigned int address, unsigned char *buffer, int count)
 {
   spi_memory_read(channel, SPI_MEMORY_DEFAULT_FAST_READ_COMMAND, address, 3, buffer, count, 1);
+  return 0;
 }
 
-void psram_write(int channel, unsigned int address, unsigned char *buffer, int count)
+int psram_write(int channel, unsigned int address, unsigned char *buffer, int count)
 {
   spi_memory_write(channel, SPI_MEMORY_DEFAULT_FAST_READ_COMMAND, address, 3, buffer, count);
+  return 0;
 }
 
 int psram_read_cb(int channel, unsigned int address, int (*set_byte)(unsigned char c), int count)
@@ -140,7 +144,8 @@ int psram_fast_read_cb(int channel, unsigned int address, int (*set_byte)(unsign
   return spi_memory_read_cb(channel, SPI_MEMORY_DEFAULT_FAST_READ_COMMAND, address, 3, set_byte, count, 1);
 }
 
-void psram_write_cb(int channel, unsigned int address, unsigned char (*next_byte)(void), int count)
+int psram_write_cb(int channel, unsigned int address, unsigned char (*next_byte)(void), int count)
 {
   spi_memory_write_cb(channel, SPI_MEMORY_DEFAULT_WRITE_COMMAND, address, 3, next_byte, count);
+  return 0;
 }

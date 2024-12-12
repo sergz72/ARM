@@ -35,6 +35,7 @@ add_executable(pico_memory_tester
         ../../common_lib/read_hex_string.c
         ../../common_lib/crypto/chacha.c
         ../../common_lib/memory/spi_memory.c
+        ../../common_lib/memory/93cXX_16.c
 )
 
 include_directories(

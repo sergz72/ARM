@@ -3,7 +3,6 @@
 #include <spi_commands.h>
 #include <pico/stdio.h>
 #include <pico/time.h>
-#include <hardware/gpio.h>
 #include "getstring.h"
 #include "spi_memory_commands.h"
 #include "board.h"

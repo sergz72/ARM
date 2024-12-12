@@ -19,11 +19,11 @@ int spi_memory_read_cb(int channel, unsigned char command, unsigned int address,
                     int (*set_byte)(unsigned char), int size, int skip);
 
 unsigned int psram_read_id(int channel);
-void psram_read(int channel, unsigned int address, unsigned char *buffer, int count);
-void psram_fast_read(int channel, unsigned int address, unsigned char *buffer, int count);
-void psram_write(int channel, unsigned int address, unsigned char *buffer, int count);
+int psram_read(int channel, unsigned int address, unsigned char *buffer, int count);
+int psram_fast_read(int channel, unsigned int address, unsigned char *buffer, int count);
+int psram_write(int channel, unsigned int address, unsigned char *buffer, int count);
 int psram_read_cb(int channel, unsigned int address, int (*set_byte)(unsigned char c), int count);
 int psram_fast_read_cb(int channel, unsigned int address, int (*set_byte)(unsigned char c), int count);
-void psram_write_cb(int channel, unsigned int address, unsigned char (*next_byte)(void), int count);
+int psram_write_cb(int channel, unsigned int address, unsigned char (*next_byte)(void), int count);
 
 #endif

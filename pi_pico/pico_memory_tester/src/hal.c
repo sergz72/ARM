@@ -1,5 +1,5 @@
 #include <hardware/spi.h>
-#include <hardware/gpio.h>
+#include <pico/time.h>
 #include "board.h"
 
 unsigned int spi_clock;
@@ -21,7 +21,7 @@ void spi_trfr(int channel, int nwrite, const unsigned char *wdata, int nread, un
   spi_write_blocking(SPI_INST, wdata, nwrite);
   spi_read_blocking(SPI_INST, 0, rdata, nread);
 
-  spi_finish();
+  spi_finish(channel);
 }
 
 void spi_write(int channel, const unsigned char *data, int length)
@@ -47,12 +47,17 @@ void spi_command(int channel, unsigned char cmd, unsigned char *data_in, unsigne
     spi_write_read_blocking(SPI_INST, data_in, data_out, count);
 
   if (set_cs)
-    spi_finish();
+    spi_finish(channel);
 }
 
-void spi_finish(void)
+void spi_finish(int channel)
 {
   gpio_put(SPI_CS_PIN, 1);
+}
+
+void _93CXX_delay(void)
+{
+  sleep_us(1);
 }
 
 static void LEDInit(void)
@@ -75,4 +80,14 @@ void SystemInit(void)
   gpio_init(SPI_CS_PIN);
   gpio_put(SPI_CS_PIN, 1);
   gpio_set_dir(SPI_CS_PIN, GPIO_OUT);
+
+  gpio_init(_93CXX_DO_PIN);
+  gpio_set_dir(_93CXX_DO_PIN, GPIO_IN);
+  gpio_pull_up(_93CXX_DO_PIN);
+  gpio_init(_93CXX_DI_PIN);
+  gpio_set_dir(_93CXX_DI_PIN, GPIO_OUT);
+  gpio_init(_93CXX_CS_PIN);
+  gpio_set_dir(_93CXX_CS_PIN, GPIO_OUT);
+  gpio_init(_93CXX_CLK_PIN);
+  gpio_set_dir(_93CXX_CLK_PIN, GPIO_OUT);
 }
