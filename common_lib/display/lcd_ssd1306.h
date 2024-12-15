@@ -43,5 +43,6 @@ int SSD1306_I2C_Write(int num_bytes, unsigned char control_byte, unsigned char *
 
 void LCD_SetContrast(unsigned char contrast);
 void LcdInvertDisplay(int invert);
+void LcdPrintf(const char *format, unsigned int column, unsigned int row, const FONT_INFO *f, int white_on_black, ...);
 
 #endif /*LCD_SSD1306_H_*/
