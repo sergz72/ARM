@@ -16,7 +16,7 @@ unsigned int LcdDrawTextRight(unsigned int x, unsigned int y, char* text, const 
 void LcdRectFill(unsigned int column, unsigned int row, unsigned int dx, unsigned int dy, unsigned int color)
 {
   unsigned int xMax, yMax;
-  int lX, lY;
+  unsigned int lX, lY;
 
   xMax = column + dx - 1;
   if (xMax >= LCD_WIDTH)

@@ -2,7 +2,7 @@
 
 // modified version of https://github.com/nixberg/chacha-rng-c
 
-static void chacha_init(ChaCha *rng, size_t rounds, const uint32_t seed[8], uint64_t stream) {
+static void chacha_init(ChaCha *rng, unsigned int rounds, const uint32_t seed[8], uint64_t stream) {
     rng->state[ 0] = 0x61707865;
     rng->state[ 1] = 0x3320646e;
     rng->state[ 2] = 0x79622d32;
@@ -58,10 +58,10 @@ uint8_t chacha_u8(ChaCha *rng) {
     return chacha_u32(rng);
 }
 
-void chacha_fill_u8(ChaCha *rng, uint8_t *array, size_t count) {
-    size_t tail_count = count % 4;
+void chacha_fill_u8(ChaCha *rng, uint8_t *array, unsigned int count) {
+    unsigned int tail_count = count % 4;
 
-    for (size_t i = 0; i < (count - tail_count); i += 4) {
+    for (unsigned int i = 0; i < (count - tail_count); i += 4) {
         uint32_t word = chacha_u32(rng);
         array[i + 0] = word;
         array[i + 1] = word >> 8;
@@ -71,7 +71,7 @@ void chacha_fill_u8(ChaCha *rng, uint8_t *array, size_t count) {
 
     if (tail_count > 0) {
         uint32_t word = chacha_u32(rng);
-        for (size_t i = tail_count; i > 0; i--) {
+        for (unsigned int i = tail_count; i > 0; i--) {
             array[count - i] = word;
             word >>= 8;
         }
@@ -82,10 +82,10 @@ uint16_t chacha_u16(ChaCha *rng) {
     return chacha_u32(rng);
 }
 
-void chacha_fill_u16(ChaCha *rng, uint16_t *array, size_t count) {
-    size_t tail_count = count % 2;
+void chacha_fill_u16(ChaCha *rng, uint16_t *array, unsigned int count) {
+    unsigned int tail_count = count % 2;
 
-    for (size_t i = 0; i < (count - tail_count); i += 2) {
+    for (unsigned int i = 0; i < (count - tail_count); i += 2) {
         uint32_t word = chacha_u32(rng);
         array[i + 0] = word;
         array[i + 1] = word >> 16;
@@ -112,15 +112,15 @@ static inline int increment_counter(ChaCha *rng) {
 
 uint32_t chacha_u32(ChaCha *rng) {
     if (rng->word_index == 16) {
-        for (size_t i = 0; i < 16; i++) {
+        for (unsigned int i = 0; i < 16; i++) {
             rng->working_state[i] = rng->state[i];
         }
 
-        for (size_t i = 0; i < rng->rounds; i += 2) {
+        for (unsigned int i = 0; i < rng->rounds; i += 2) {
             double_round(rng->working_state);
         }
 
-        for (size_t i = 0; i < 16; i++) {
+        for (unsigned int i = 0; i < 16; i++) {
             rng->working_state[i] += rng->state[i];
         }
 
@@ -135,8 +135,8 @@ uint32_t chacha_u32(ChaCha *rng) {
     return result;
 }
 
-void chacha_fill_u32(ChaCha *rng, uint32_t *array, size_t count) {
-    for (size_t i = 0; i < count; i++) {
+void chacha_fill_u32(ChaCha *rng, uint32_t *array, unsigned int count) {
+    for (unsigned int i = 0; i < count; i++) {
         array[i] = chacha_u32(rng);
     }
 }
@@ -147,8 +147,8 @@ uint64_t chacha_u64(ChaCha *rng) {
     return (hi << 32) | lo;
 }
 
-void chacha_fill_u64(ChaCha *rng, uint64_t *array, size_t count) {
-    for (size_t i = 0; i < count; i++) {
+void chacha_fill_u64(ChaCha *rng, uint64_t *array, unsigned int count) {
+    for (unsigned int i = 0; i < count; i++) {
         array[i] = chacha_u64(rng);
     }
 }
@@ -157,8 +157,8 @@ float chacha_f32(ChaCha *rng) {
     return (chacha_u32(rng) >> 8) * 0x1p-24f;
 }
 
-void chacha_fill_f32(ChaCha *rng, float *array, size_t count) {
-    for (size_t i = 0; i < count; i++) {
+void chacha_fill_f32(ChaCha *rng, float *array, unsigned int count) {
+    for (unsigned int i = 0; i < count; i++) {
         array[i] = chacha_f32(rng);
     }
 }
@@ -167,8 +167,8 @@ double chacha_f64(ChaCha *rng) {
     return (chacha_u64(rng) >> 11) * 0x1p-53;
 }
 
-void chacha_fill_f64(ChaCha *rng, double *array, size_t count) {
-    for (size_t i = 0; i < count; i++) {
+void chacha_fill_f64(ChaCha *rng, double *array, unsigned int count) {
+    for (unsigned int i = 0; i < count; i++) {
         array[i] = chacha_f64(rng);
     }
 }

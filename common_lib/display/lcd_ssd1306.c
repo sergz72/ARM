@@ -251,7 +251,7 @@ void LcdPrintf(const char *format, unsigned int column, unsigned int row, const 
 {
   static char buffer[LCD_PRINTF_BUFFER_LENGTH];
   va_list vArgs;
-  int textColor, bkColor;
+  unsigned int textColor, bkColor;
 
   va_start(vArgs, white_on_black);
 #ifdef USE_VSNPRINTF

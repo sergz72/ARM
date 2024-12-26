@@ -6,8 +6,8 @@
 typedef struct {
     uint32_t state[16];
     uint32_t working_state[16];
-    size_t rounds;
-    size_t word_index;
+    unsigned int rounds;
+    unsigned int word_index;
 } ChaCha;
 
 void chacha8_init(ChaCha *rng, const uint32_t seed[8], uint64_t stream);
@@ -34,16 +34,16 @@ float chacha_f32(ChaCha *rng);
 
 double chacha_f64(ChaCha *rng);
 
-void chacha_fill_u8(ChaCha *rng, uint8_t *array, size_t count);
+void chacha_fill_u8(ChaCha *rng, uint8_t *array, unsigned int count);
 
-void chacha_fill_u16(ChaCha *rng, uint16_t *array, size_t count);
+void chacha_fill_u16(ChaCha *rng, uint16_t *array, unsigned int count);
 
-void chacha_fill_u32(ChaCha *rng, uint32_t *array, size_t count);
+void chacha_fill_u32(ChaCha *rng, uint32_t *array, unsigned int count);
 
-void chacha_fill_u64(ChaCha *rng, uint64_t *array, size_t count);
+void chacha_fill_u64(ChaCha *rng, uint64_t *array, unsigned int count);
 
-void chacha_fill_f32(ChaCha *rng, float *array, size_t count);
+void chacha_fill_f32(ChaCha *rng, float *array, unsigned int count);
 
-void chacha_fill_f64(ChaCha *rng, double *array, size_t count);
+void chacha_fill_f64(ChaCha *rng, double *array, unsigned int count);
 
 #endif /* chacha_h */
