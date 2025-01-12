@@ -26,10 +26,10 @@ esp_err_t pmu_init()
     power.setDC4Voltage(1200);   // Here is the FPGA core voltage. Careful review of the manual is required before modification.
     power.setALDO1Voltage(3300); // BANK0 area voltage
     power.setALDO2Voltage(3300); // BANK1 area voltage
-    power.setALDO3Voltage(3300); // BANK2 area voltage
+    power.setALDO3Voltage(1800); // BANK2 area voltage
     power.setALDO4Voltage(1800); // BANK3 area voltage
     power.setBLDO1Voltage(3300);
-    power.setBLDO2Voltage(3300);
+    power.setBLDO2Voltage(1800);
 
     power.enableDC4();
     power.enableALDO1();
