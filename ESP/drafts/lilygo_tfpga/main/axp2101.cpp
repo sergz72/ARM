@@ -5,6 +5,7 @@
 #include <XPowersLib.h>
 #include "pmu.h"
 
+#ifdef PMU_I2C_MASTER_NUM
 static const char *TAG = "AXP2101";
 
 static XPowersPMU power;
@@ -26,10 +27,10 @@ esp_err_t pmu_init()
     power.setDC4Voltage(1200);   // Here is the FPGA core voltage. Careful review of the manual is required before modification.
     power.setALDO1Voltage(3300); // BANK0 area voltage
     power.setALDO2Voltage(3300); // BANK1 area voltage
-    power.setALDO3Voltage(1800); // BANK2 area voltage
+    power.setALDO3Voltage(3300); // BANK2 area voltage
     power.setALDO4Voltage(1800); // BANK3 area voltage
     power.setBLDO1Voltage(3300);
-    power.setBLDO2Voltage(1800);
+    power.setBLDO2Voltage(3300);
 
     power.enableDC4();
     power.enableALDO1();
@@ -112,3 +113,4 @@ esp_err_t pmu_init()
 
     return ESP_OK;
 }
+#endif
