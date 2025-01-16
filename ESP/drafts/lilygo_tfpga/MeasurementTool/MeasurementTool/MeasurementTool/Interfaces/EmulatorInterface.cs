@@ -104,22 +104,34 @@ internal sealed class DDSEmulator(ILogger logger) : IDeviceEmulator
             case (byte)DdsCommands.EnableOutput:
                 logger.Info($"DDS enable output command channel={command[1]} enable={command[2]}");
                 return [(byte)'k'];
-            case (byte)DdsCommands.SetDdsData:
-                var data = BitConverter.ToString(command[1..]);
-                logger.Info($"Set DDS data command {data}");
+            case (byte)DdsCommands.SetFrequency:
+            {
+                using var ms = new MemoryStream(command[2..]);
+                using var br = new BinaryReader(ms);
+                var frequency = br.ReadInt64();
+                var divider = br.ReadInt16();
+                logger.Info($"DDS set frequency command channel={command[1]} frequency={frequency} divider={divider}");
                 return [(byte)'k'];
+            }
             case (byte)DdsCommands.SetAttenuator:
                 logger.Info($"DDS set attenuator command channel={command[1]} value={command[2]}");
                 return [(byte)'k'];
             case (byte)DdsCommands.SetMode:
                 logger.Info($"DDS set mode command channel={command[1]} mode={command[2]}");
                 return [(byte)'k'];
-            case (byte)DdsCommands.SetSweep:
-                var width = BitConverter.ToInt32(command[1..]);
-                logger.Info($"DDS set sweep command channel={command[1]} width={width}Hz");
+            case (byte)DdsCommands.Sweep:
+            {
+                using var ms = new MemoryStream(command[2..]);
+                using var br = new BinaryReader(ms);
+                var frequency1 = br.ReadInt64();
+                var frequency2 = br.ReadInt64();
+                var divider = br.ReadInt16();
+                var step = br.ReadInt32();
+                logger.Info($"DDS sweep command channel={command[1]} frequency1={frequency1} frequency2={frequency2} divider={divider} step={step}");
                 return [(byte)'k'];
+            }
             default:
-                logger.Error("Unexpected DDS emulator command");
+                logger.Error("Unknown DDS emulator command");
                 return [(byte)'e'];
         }
     }

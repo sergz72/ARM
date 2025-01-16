@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Data.Core.Plugins;
 using Avalonia.Markup.Xaml;
+using MeasurementTool.Devices.Controls;
 using MeasurementTool.Views;
 
 namespace MeasurementTool;
@@ -24,6 +25,7 @@ public partial class App : Application
             {
                 DataContext = new MainViewModel()
             };
+            MessageBox.MainWindow = desktop.MainWindow;
         }
         else if (ApplicationLifetime is ISingleViewApplicationLifetime singleViewPlatform)
         {

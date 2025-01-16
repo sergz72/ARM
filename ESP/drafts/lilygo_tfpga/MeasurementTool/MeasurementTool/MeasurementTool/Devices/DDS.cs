@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
+using System.Threading;
 using Avalonia.Controls;
 using Avalonia.Layout;
 using MeasurementTool.Devices.Controls;
@@ -12,13 +14,13 @@ public sealed class Dds: GenericDevice
 {
     private static readonly Dictionary<DdsType, DdsInfo> DdsInfos = new()
     {
-        { DdsType.Ad9833, new DdsInfo(mclk => mclk / 2, mclk => 1, 1, 28,
+        { DdsType.Ad9833, new DdsInfo(mclk => mclk / 2, mclk => 1, 1,
             [1,2], DdsModes.Sine|DdsModes.Square|DdsModes.Triangle)},
-        { DdsType.Ad9850, new DdsInfo(mclk => mclk / 2, mclk => 1, 1, 32,
+        { DdsType.Ad9850, new DdsInfo(mclk => mclk / 2, mclk => 1, 1,
             [1], DdsModes.Sine)},
-        { DdsType.Adf4351, new DdsInfo(mclk => 4400000000, mclk => 35000000, 1, 0,
+        { DdsType.Adf4351, new DdsInfo(mclk => 4400000000, mclk => 35000000, 1,
             [1,2,4,8,16,32,64], DdsModes.Sine)},
-        { DdsType.Si5351, new DdsInfo(mclk => 160000000, mclk => 8000, 3, 0,
+        { DdsType.Si5351, new DdsInfo(mclk => 160000000, mclk => 8000, 3,
             [1,2,4,8,16,32,64,128], DdsModes.Square)}
     };
  
@@ -33,6 +35,7 @@ public sealed class Dds: GenericDevice
     private List<DDSChannel> _channelsUi;
     private LevelMeter? _levelMeter;
     private int _channels;
+    private bool _getCapabilitiesFailed;
     
     public Dds(DeviceManager dm, byte channel) : base(dm, channel)
     {
@@ -45,13 +48,16 @@ public sealed class Dds: GenericDevice
         MaxAmplitude = 0;
         SupportedNodes = DdsModes.Sine;
         Dividers = [1];
+        _getCapabilitiesFailed = false;
     }
 
-    internal override void Init()
+    private void ProcessGetCapabilitiesResponse(byte[]? response)
     {
-        var response = Dm.SendCommand(Channel, [(byte)DdsCommands.GetCapabilities]); // get capabilities
-        if (response.Length != 11)
+        if (response is not { Length: 11 })
+        {
+            _getCapabilitiesFailed = true;
             return;
+        }
         using var stream = new MemoryStream(response);
         using var reader = new BinaryReader(stream);
         var type = (DdsType)reader.ReadInt16();
@@ -60,8 +66,8 @@ public sealed class Dds: GenericDevice
         var mClk = reader.ReadInt32();
         var maxMv = reader.ReadInt16();
         var maxAttenuator = reader.ReadByte();
-        _ddsConfig = new DdsConfig(type, minDb, maxDb, mClk, maxMv, maxAttenuator);
-        if (DdsInfos.TryGetValue(_ddsConfig.Type, out var info))
+        var ddsConfig = new DdsConfig(type, minDb, maxDb, mClk, maxMv, maxAttenuator);
+        if (DdsInfos.TryGetValue(ddsConfig.Type, out var info))
         {
             _channels = info.Channels;
             MinFrequency = info.MinFrequencyFn(mClk);
@@ -69,9 +75,14 @@ public sealed class Dds: GenericDevice
             SupportedNodes = info.SupportedModes;
             Dividers = info.Dividers;
         }
+        MaxAmplitude = ToDb(ddsConfig.MaxVoutMv);
+        MinAmplitude = MaxAmplitude - ddsConfig.MaxAttenuatorValue;
+        _ddsConfig = ddsConfig;
+    }
 
-        MaxAmplitude = ToDb(_ddsConfig.MaxVoutMv);
-        MinAmplitude = MaxAmplitude - _ddsConfig.MaxAttenuatorValue;
+    internal override void Init()
+    {
+        Dm.QueueCommand(Channel, [(byte)DdsCommands.GetCapabilities], ProcessGetCapabilitiesResponse); // get capabilities
     }
 
     private static int ToDb(int mv)
@@ -79,8 +90,14 @@ public sealed class Dds: GenericDevice
         return (int)(10 * Math.Log10((double)(mv * mv) / 50000)); // 50 Ohm
     }
 
-    internal override Control CreateUi()
+    internal override Control? CreateUi()
     {
+        while (_ddsConfig.Type == DdsType.Unknown)
+        {
+            if (_getCapabilitiesFailed)
+                return null;
+            Thread.Sleep(100);
+        }
         var panel = new StackPanel
         {
             Orientation = Orientation.Vertical,
@@ -101,11 +118,58 @@ public sealed class Dds: GenericDevice
     }
 
     internal override string GetName() => _ddsConfig.Type.ToString();
-}
 
-internal abstract class DdsHandler
-{
-    internal abstract byte[] BuildDdsData(long frequency, int divider);
+    private void CheckError(byte[]? response)
+    {
+        if (response == null)
+            return;
+        if (response.Length == 0)
+            Dm.LogError(Channel, "Empty response");
+        if (response[0] != (byte)'k')
+            Dm.LogError(Channel, Encoding.UTF8.GetString(response));
+    }
+    public void SetMode(int channel, DdsModes mode)
+    {
+        var command = new[] { (byte)DdsCommands.SetMode, (byte)channel, (byte)mode };
+        Dm.QueueCommand(Channel, command, CheckError);
+    }
+
+    public void OutputEnable(int channel, bool enable)
+    {
+        var command = new[] { (byte)DdsCommands.EnableOutput, (byte)channel, enable ? (byte)1 : (byte)0 };
+        Dm.QueueCommand(Channel, command, CheckError);
+    }
+
+    public void SetAmplitude(int channel, int amplitude)
+    {
+        var attenuator = MaxAmplitude - amplitude;
+        var command = new[] { (byte)DdsCommands.SetAttenuator, (byte)channel, (byte)attenuator };
+        Dm.QueueCommand(Channel, command, CheckError);
+    }
+
+    public void SetFrequency(int channel, long value, int divider)
+    {
+        using var ms = new MemoryStream();
+        using var bw = new BinaryWriter(ms);
+        bw.Write((byte)DdsCommands.SetFrequency);
+        bw.Write((byte)channel);
+        bw.Write(value);
+        bw.Write((short)divider);
+        Dm.QueueCommand(Channel, ms.ToArray(), CheckError);
+    }
+
+    public void SetSweep(int channel, long f1, long f2, int divider, int step)
+    {
+        using var ms = new MemoryStream();
+        using var bw = new BinaryWriter(ms);
+        bw.Write((byte)DdsCommands.Sweep);
+        bw.Write((byte)channel);
+        bw.Write(f1);
+        bw.Write(f2);
+        bw.Write((short)divider);
+        bw.Write(step);
+        Dm.QueueCommand(Channel, ms.ToArray(), CheckError);
+    }
 }
 
 [Flags]
@@ -128,21 +192,19 @@ internal enum DdsType
 internal enum DdsCommands
 {
     GetCapabilities = 'c',
-    SetDdsData = 's',
+    SetFrequency = 'f',
     SetMode = 'm',
     SetAttenuator = 'a',
     EnableOutput = 'e',
-    SetSweep = 'w'
+    Sweep = 's'
 }
 
 internal record DdsInfo(
     Func<int, long> MaxFrequencyFn,
     Func<int, long> MinFrequencyFn,
     int Channels,
-    int AccumulatorBits,
     int[] Dividers,
-    DdsModes SupportedModes,
-    Func<DDSHandler> BuildDdsHandler);
+    DdsModes SupportedModes);
 
 internal record DdsConfig(
     DdsType Type,

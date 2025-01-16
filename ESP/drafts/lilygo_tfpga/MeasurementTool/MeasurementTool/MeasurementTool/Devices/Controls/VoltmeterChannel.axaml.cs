@@ -4,9 +4,9 @@ using Avalonia.Markup.Xaml;
 
 namespace MeasurementTool.Devices.Controls;
 
-public partial class LevelMeter : UserControl
+public partial class VoltmeterChannel : UserControl
 {
-    public LevelMeter()
+    public VoltmeterChannel()
     {
         InitializeComponent();
     }

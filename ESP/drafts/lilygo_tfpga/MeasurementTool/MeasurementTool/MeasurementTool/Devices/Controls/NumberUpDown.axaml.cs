@@ -43,24 +43,28 @@ public partial class NumberUpDown : UserControl
 
     private void Up_OnClick(object? sender, RoutedEventArgs e)
     {
-        if (_value < MaxValue)
-        {
-            var args = new ValueChangeEventArgs(ValueChangeEvent, 1);
-            RaiseEvent(args);
-            if (args.Handled)
-                SetValue(_value + 1);
-        }
+        var args = new ValueChangeEventArgs(ValueChangeEvent, 1);
+        RaiseEvent(args);
+        if (args.Handled)
+            SetValue(_value < MaxValue ? _value + 1 : MinValue);
     }
 
     private void Down_OnClick(object? sender, RoutedEventArgs e)
     {
-        if (_value > MinValue)
-        {
-            var args = new ValueChangeEventArgs(ValueChangeEvent, -1);
-            RaiseEvent(args);
-            if (args.Handled)
-                SetValue(_value - 1);
-        }
+        var args = new ValueChangeEventArgs(ValueChangeEvent, -1);
+        RaiseEvent(args);
+        if (args.Handled)
+            SetValue(_value > MinValue ? _value - 1 : MaxValue);
+    }
+
+    public void Update(int delta)
+    {
+        var v = _value + delta;
+        if (v > MaxValue)
+            v = MinValue;
+        else if (v < MinValue)
+            v = MaxValue;
+        SetValue(v);
     }
 }
 

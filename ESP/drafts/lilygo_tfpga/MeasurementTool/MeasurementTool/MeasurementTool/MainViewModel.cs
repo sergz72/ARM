@@ -1,27 +1,68 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Threading;
 using Avalonia.Controls;
 using CommunityToolkit.Mvvm.ComponentModel;
 using MeasurementTool.Devices;
 using MeasurementTool.Interfaces;
+using System.Text.Json;
 
 namespace MeasurementTool;
+
+internal record Settings(string ComPortName);
 
 internal partial class MainViewModel : ObservableObject, ILogger
 { 
     [ObservableProperty] private List<LogRecord> _log = [];
+    private volatile bool _isShuttingDown;
     
     private readonly DeviceManager _deviceManager;
+    private readonly Thread _deviceThread;
+    private readonly Settings _settings;
 
     internal MainViewModel()
     {
+        if (File.Exists("settings.json"))
+        {
+            var jsonString = File.ReadAllText("settings.json");
+            _settings = JsonSerializer.Deserialize<Settings>(jsonString) ??
+                        throw new Exception("Invalid settings file");
+        }
+        else
+            _settings = new Settings("/dev/ttyUSB0");
         var iface = FindAvailableInterface();
         _deviceManager = new DeviceManager(iface, this);
+        while (!_deviceManager.InitComplete())
+            Thread.Sleep(100);
+        _deviceThread = new Thread(DeviceLoop);
+        _deviceThread.Start();
+        _isShuttingDown = false;
+    }
+
+    public void Shutdown()
+    {
+        _isShuttingDown = true;
+        _deviceThread.Join();
+        _deviceManager.Shutdown();
+    }
+
+    private void DeviceLoop()
+    {
+        while (!_isShuttingDown)
+        {
+            var start = DateTime.Now.Ticks;
+            _deviceManager.TimerEvent();
+            var end = DateTime.Now.Ticks;
+            var elapsed = (end - start) / TimeSpan.TicksPerMillisecond;
+            if (elapsed < 100)
+                Thread.Sleep(100 - (int)elapsed);
+        }
     }
 
     private IDeviceInterface FindAvailableInterface()
     {
-        var iface = SearchForComPorts();
+        var iface = InitComPort();
         if (iface == null)
         {
             Warning("No communication ports found");
@@ -31,8 +72,10 @@ internal partial class MainViewModel : ObservableObject, ILogger
         return iface;
     }
 
-    private static IDeviceInterface? SearchForComPorts()
+    private IDeviceInterface? InitComPort()
     {
+        if (File.Exists(_settings.ComPortName))
+            return new SerialInterface(_settings.ComPortName);
         return null;
     }
 
