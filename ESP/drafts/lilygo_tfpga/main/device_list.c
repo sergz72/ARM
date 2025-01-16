@@ -5,7 +5,6 @@
 #include "dev_ad9833.h"
 #include "dev_si5351.h"
 #include "dev_mcp3421.h"
-#include "dev_dds.h"
 
 const Device devices[] = {
     {

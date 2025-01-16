@@ -48,9 +48,16 @@
 #define PIN_FPGA_D3  4
 
 #define MAX_DEVICES 5
+#define SDA_PINS 1,2,3,4,5
+#define SCL_PINS 6,7,8,9,0
 #endif
 
+#define I2C_SOFT
 #define I2C_TIMEOUT 1000000
+#define i2c_dly delayus(5)
+
+#define SI5351_XTAL_FREQ                                        25000000
+#define SI5351_CHANNELS 4
 
 int I2CCheck(int idx, int device_id);
 void SCL_HIGH(int);
@@ -59,5 +66,10 @@ void SDA_HIGH(int);
 void SDA_LOW(int);
 int SDA_IN(int);
 int SCL_IN(int);
+void configure_i2c(void);
+void configure_led(void);
+void blink_led(void);
+void configure_uart(void);
+void delayus(unsigned int us);
 
 #endif
