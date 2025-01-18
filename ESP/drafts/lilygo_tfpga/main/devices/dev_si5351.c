@@ -19,7 +19,7 @@ static int si5351_command(unsigned char deviceId, unsigned char cmd, dds_cmd *co
   }
 }
 
-void* si5351_initializer(int idx)
+void* si5351_initializer(int idx, void **data)
 {
   si5351_init();
 
@@ -44,4 +44,10 @@ void* si5351_initializer(int idx)
     dds_init_channel_data(cfg);
   }
   return cfg;
+}
+
+int si5351_message_processor(int idx, void *config, void *data, unsigned char *buffer, int len)
+{
+  buffer[0] = 'e';
+  return 1;
 }

@@ -3,6 +3,7 @@
 
 #define SI5351_DEVICE_ID 0xC0
 
-void* si5351_initializer(int idx);
+void* si5351_initializer(int idx, void **data);
+int si5351_message_processor(int idx, void *config, void *data, unsigned char *buffer, int len);
 
 #endif

@@ -2,7 +2,7 @@
 #include "board.h"
 #include "device_list.h"
 
-int device_list[MAX_DEVICES];
+Device *device_list[MAX_DEVICES];
 void *device_data[MAX_DEVICES];
 void *device_config[MAX_DEVICES];
 
@@ -16,12 +16,23 @@ static int FindDeviceId(int idx)
   {
     if (I2CCheck(idx, d->device_id))
     {
-      device_config[idx] = d->initializer(idx);
+      if (!device_config[idx])
+        device_config[idx] = d->initializer(idx, &device_data[idx]);
       return d->device_id;
     }
     d++;
   }
   return 0;
+}
+
+void InitDeviceLists(void)
+{
+  for (int i = 0; i < MAX_DEVICES; i++)
+  {
+    device_list[i] = NULL;
+    device_data[i] = NULL;
+    device_config[i] = NULL;
+  }
 }
 
 void BuildDeviceList(void)
@@ -31,34 +42,20 @@ void BuildDeviceList(void)
   for (i = 0; i < MAX_DEVICES; i++)
   {
     id = FindDeviceId(i);
-    device_list[i] = id;
-  }
-}
-
-void BuildDeviceData(int step)
-{
-  int i, j, id;
-  const Device* d;
-
-  for (i = 0; i < MAX_DEVICES; i++)
-  {
-    id = device_list[i];
-    if (id)
+    if (id != 0)
     {
-      d = devices;
-      for (j = 0; j < MAX_KNOWN_DEVICES; j++)
+      const Device *d = devices;
+      for (int j = 0; j < MAX_KNOWN_DEVICES; j++)
       {
         if (d->device_id == id)
         {
-          if (d->data_collector)
-            device_data[i] = d->data_collector(i, step, device_config[i], device_data[i]);
-          else
-            device_data[i] = NULL;
+          device_list[i] = d;
+          break;
         }
         d++;
       }
     }
     else
-      device_data[i] = NULL;
+      device_list[i] = NULL;
   }
 }

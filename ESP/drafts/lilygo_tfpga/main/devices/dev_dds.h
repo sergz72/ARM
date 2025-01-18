@@ -24,5 +24,6 @@ int dds_get_config(dds_config *cfg, unsigned char deviceId, int idx);
 int dds_command(unsigned char deviceId, unsigned char cmd, dds_cmd *data, int idx);
 void dds_init_channel_data(dev_dds *ddds);
 void* dds_initializer(unsigned char deviceId, unsigned int default_frequency, int idx);
+int dds_message_processor(int idx, void *config, void *data, unsigned char *buffer, int len);
 
 #endif

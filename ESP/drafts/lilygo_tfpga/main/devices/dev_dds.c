@@ -84,3 +84,9 @@ void* dds_initializer(unsigned char deviceId, unsigned int default_frequency, in
   }
   return cfg;
 }
+
+int dds_message_processor(int idx, void *config, void *data, unsigned char *buffer, int len)
+{
+  buffer[0] = 'e';
+  return 1;
+}

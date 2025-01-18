@@ -4,6 +4,7 @@
 #define XPOWERS_CHIP_AXP2101
 #include <XPowersLib.h>
 #include "pmu.h"
+#include "board.h"
 
 #ifdef PMU_I2C_MASTER_NUM
 static const char *TAG = "AXP2101";

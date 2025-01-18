@@ -3,7 +3,7 @@
 
 #include "devices.h"
 
-#define MAX_KNOWN_DEVICES 6
+#define MAX_KNOWN_DEVICES 7
 
 extern const Device devices[];
 

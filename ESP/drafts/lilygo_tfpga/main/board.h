@@ -5,13 +5,18 @@
 #define NULL 0
 #endif
 
-#define WEMOS_S3
+#define T_FPGA
+//#define WEMOS_S3
 
 #define UART_BAUD_RATE 115200
 #define UART_BUFFER_SIZE 1024
 
 #ifdef T_FPGA
 #define PIN_BTN      0
+
+#define UART_PORT 0
+#define PIN_UART_TXD 43
+#define PIN_UART_RXD 44
 
 #define PMU_IIC_SDA  38
 #define PMU_IIC_SCL  39
@@ -28,7 +33,8 @@
 #define PIN_FPGA_D3  4
 
 #define MAX_DEVICES 5
-
+#define SDA_PINS 8,9,10,17,41
+#define SCL_PINS 48,7,12,16,42
 #endif
 #ifdef WEMOS_S3
 #define PIN_BTN      0
@@ -48,8 +54,8 @@
 #define PIN_FPGA_D3  4
 
 #define MAX_DEVICES 5
-#define SDA_PINS 1,2,3,4,5
-#define SCL_PINS 6,7,8,9,0
+#define SDA_PINS 8,9,10,17,41
+#define SCL_PINS 48,7,12,16,42
 #endif
 
 #define I2C_SOFT

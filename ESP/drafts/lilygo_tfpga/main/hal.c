@@ -9,8 +9,8 @@
 #include "led_strip.h"
 #include "dev_si5351.h"
 
-static int sda_pins[MAX_DEVICES] = {SDA_PINS};
-static int scl_pins[MAX_DEVICES] = {SCL_PINS};
+static const int sda_pins[MAX_DEVICES] = {SDA_PINS};
+static const int scl_pins[MAX_DEVICES] = {SCL_PINS};
 
 static unsigned int s_led_state;
 
@@ -85,9 +85,11 @@ void configure_i2c(void)
   for (int i = 0; i < MAX_DEVICES; i++)
   {
     int pin = sda_pins[i];
+    gpio_set_level(pin, 1);
     gpio_set_direction(pin, GPIO_MODE_INPUT_OUTPUT_OD);
     gpio_set_pull_mode(pin, GPIO_PULLUP_ONLY);
     pin = scl_pins[i];
+    gpio_set_level(pin, 1);
     gpio_set_direction(pin, GPIO_MODE_INPUT_OUTPUT_OD);
     gpio_set_pull_mode(pin, GPIO_PULLUP_ONLY);
   }
@@ -243,4 +245,19 @@ int si5351_write(int channel, unsigned char addr, unsigned char data)
 int dds_get_config(dds_config *cfg, unsigned char deviceId, int idx)
 {
   return i2c_soft_read(idx, deviceId, (unsigned char*)cfg, sizeof(dds_config), I2C_TIMEOUT);
+}
+
+int mcp9600Read16(int channel, unsigned char address, unsigned char reg, unsigned short *data)
+{
+  return inaReadRegister(channel, address, reg, data);
+}
+
+int mcp9600Read8(int channel, unsigned char address, unsigned char reg, unsigned char *data)
+{
+  return i2c_soft_command(channel, address, &reg, 1, NULL, 0, data, 1, I2C_TIMEOUT);
+}
+
+int mcp9600Write(int channel, unsigned char address, unsigned char reg, unsigned char data)
+{
+  return i2c_soft_command(channel, address, &reg, 1, &data, 1, NULL, 0, I2C_TIMEOUT);
 }

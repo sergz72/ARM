@@ -6,15 +6,17 @@
 typedef struct {
   const char *name;
   int device_id;
-  void* (*initializer)(int idx);
-  void* (*data_collector)(int idx, int step, void *config, void *data);
+  int public_id;
+  void* (*initializer)(int idx, void **data);
+  int (*timer_event)(int idx, int step, void *config, void *data, unsigned char *buffer);
+  int (*message_processor)(int idx, void *config, void *data, unsigned char *buffer, int len);
 } Device;
 
-extern int device_list[MAX_DEVICES];
+extern Device *device_list[MAX_DEVICES];
 extern void *device_data[MAX_DEVICES];
 extern void *device_config[MAX_DEVICES];
 
 void BuildDeviceList(void);
-void BuildDeviceData(int step);
+void InitDeviceLists(void);
 
 #endif

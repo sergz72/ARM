@@ -3,7 +3,7 @@
 
 #define ADS1115_DEVICE_ID 0x90
 
-void* ads1115_initializer(int idx);
-void *ads1115_data_collector(int idx, int step, void* config, void *data);
+void* ads1115_initializer(int idx, void **data);
+int ads1115_timer_event(int idx, int step, void* config, void *data, unsigned char *buffer);
 
 #endif

@@ -11,6 +11,7 @@ idf_component_register(
         "../../../ARM_CLION/common_lib/sensor/mcp3421.c"
         "../../../ARM_CLION/common_lib/sensor/ina226.c"
         "../../../ARM_CLION/common_lib/sensor/ina3221.c"
+        "../../../ARM_CLION/common_lib/sensor/mcp9600.c"
         "../../../ARM_CLION/common_lib/rf/si5351.c"
         "../../../ESP_CLION_COMMON/XPowersLib/src/XPowersLibInterface.cpp"
         "../../../ARM_CLION/common_lib/memory/24c01_16.c"
@@ -20,6 +21,7 @@ idf_component_register(
         "devices/dev_ina226.c"
         "devices/dev_ina3221.c"
         "devices/dev_mcp3421.c"
+        "devices/dev_mcp9600.c"
         "devices/dev_si5351.c"
   INCLUDE_DIRS
         "."

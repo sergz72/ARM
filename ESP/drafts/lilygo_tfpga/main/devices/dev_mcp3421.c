@@ -1,6 +1,7 @@
 #include "dev_mcp3421.h"
 #include <mcp3421.h>
 #include <stdlib.h>
+#include <string.h>
 #include "device_config.h"
 
 typedef struct {
@@ -22,7 +23,7 @@ static const MCP3421Config dcfg = {
 #define isValidCoef(x) (x >= 50000 && x <= 150000)
 #define isValidOffset(x) (x >= -50000 && x <= 50000)
 
-void* mcp3421_initializer(int idx)
+void* mcp3421_initializer(int idx, void **data)
 {
   DEV_MCP3421Config* cfg = malloc(sizeof(DEV_MCP3421Config));
   if (cfg)
@@ -37,23 +38,23 @@ void* mcp3421_initializer(int idx)
   return cfg;
 }
 
-void *mcp3421_data_collector(int idx, int step, void *config, void *prev_data)
+int mcp3421_timer_event(int idx, int step, void *config, void *data, unsigned char *buffer)
 {
   DEV_MCP3421Config* cfg = (DEV_MCP3421Config*)config;
-  DEV_MCP3421Data *data;
   int v;
 
   switch (step)
   {
     case 0:
-      prev_data = malloc(sizeof(DEV_MCP3421Data));
       mcp3421SetConfig(idx, MCP3421_DEVICE_ID, &dcfg);
       break;
     case 9:
-      data = (DEV_MCP3421Data *)prev_data;
       mcp3421Get18BitVoltage(idx, MCP3421_DEVICE_ID, &v);
-      data->voltage = (int)((long long int)v * 4096 * cfg->koef / (0x3FFFF * 100)) + cfg->offset;
+      int voltage = (int)((long long int)v * 4096 * cfg->koef / (0x3FFFF * 100)) + cfg->offset;
+      memcpy(buffer, &voltage, 4);
+      return 4;
+    default:
       break;
   }
-  return prev_data;
+  return 0;
 }

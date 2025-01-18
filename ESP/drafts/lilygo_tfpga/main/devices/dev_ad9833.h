@@ -3,6 +3,6 @@
 
 #define AD9833_DEVICE_ID 2
 
-void* ad9833_initializer(int idx);
+void* ad9833_initializer(int idx, void **data);
 
 #endif

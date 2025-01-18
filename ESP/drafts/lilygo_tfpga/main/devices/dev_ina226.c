@@ -2,6 +2,7 @@
 #include <stddef.h>
 #include <ina226.h>
 #include <stdlib.h>
+#include <string.h>
 
 static const INA226Config dcfg = {
   .vshct = INA_VSHCT_1100,
@@ -10,37 +11,36 @@ static const INA226Config dcfg = {
   .mode = INA_MODE_SHUNT_BUS_TRIG
 };
 
-void* ina226_initializer(int idx)
+void* ina226_initializer(int idx, void **data)
 {
   DEV_INA226Config* cfg = malloc(sizeof(DEV_INA226Config));
   if (cfg)
     cfg->r = 100; //mOhm
+  *data = malloc(sizeof(DEV_INA226Data));
   return cfg;
 }
 
-void *ina226_data_collector(int idx, int step, void *config, void *prev_data)
+int ina226_timer_event(int idx, int step, void *config, void *data, unsigned char *buffer)
 {
   int rc;
-  DEV_INA226Data *data;
-  DEV_INA226Config* cfg;
+  DEV_INA226Data *ddata = (DEV_INA226Data*)data;
+  DEV_INA226Config* cfg = (DEV_INA226Config*)config;
 
+  if (step == 8)
+    ina226SetConfig(idx, INA226_DEVICE_ID, &dcfg);
   if (step != 9)
-    return prev_data;
+    return 0;
 
-  cfg = (DEV_INA226Config*)config;
-  data = malloc(sizeof(DEV_INA226Data));
   if (data)
   {
-    rc = ina226GetBusVoltage(idx, INA226_DEVICE_ID, &data->voltage);
+    rc = ina226GetBusVoltage(idx, INA226_DEVICE_ID, &ddata->voltage);
     if (rc)
-      data->voltage = 0;
-    rc = ina226GetShuntCurrent(idx, INA226_DEVICE_ID, cfg->r, &data->current);
+      ddata->voltage = 0;
+    rc = ina226GetShuntCurrent(idx, INA226_DEVICE_ID, cfg->r, &ddata->current);
     if (rc)
-      data->current = 0;
-    data->current /= 100;
-    data->power = abs(data->current) / 10 * abs(data->voltage) / 1000;
-    data->main_power = data->other_power = 0;
+      ddata->current = 0;
+    memcpy(buffer, ddata, 8);
+    return 8;
   }
-  ina226SetConfig(idx, INA226_DEVICE_ID, &dcfg);
-  return data;
+  return 0;
 }

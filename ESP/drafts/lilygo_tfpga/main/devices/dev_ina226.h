@@ -3,7 +3,6 @@
 
 typedef struct {
   int current, voltage;
-  unsigned int power, main_power, other_power;
 } DEV_INA226Data;
 
 typedef struct {
@@ -12,8 +11,8 @@ typedef struct {
 
 #define INA226_DEVICE_ID 0x80
 
-void* ina226_initializer(int idx);
-void *ina226_data_collector(int idx, int step, void* config, void *data);
+void* ina226_initializer(int idx, void **data);
+int ina226_timer_event(int idx, int step, void* config, void *data, unsigned char *buffer);
 
 #endif
 

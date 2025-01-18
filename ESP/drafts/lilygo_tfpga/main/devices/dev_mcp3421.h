@@ -3,8 +3,8 @@
 
 #define MCP3421_DEVICE_ID 0xD0
 
-void* mcp3421_initializer(int idx);
-void *mcp3421_data_collector(int idx, int step, void* config, void *data);
+void* mcp3421_initializer(int idx, void **data);
+int mcp3421_timer_event(int idx, int step, void* config, void *data, unsigned char *buffer);
 
 #endif
 
