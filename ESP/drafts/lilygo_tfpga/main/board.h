@@ -34,7 +34,7 @@
 
 #define MAX_DEVICES 5
 #define SDA_PINS 8,9,10,17,41
-#define SCL_PINS 48,7,12,16,42
+#define SCL_PINS 47,7,12,16,42
 #endif
 #ifdef WEMOS_S3
 #define PIN_BTN      0

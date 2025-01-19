@@ -10,6 +10,7 @@ extern esp_err_t pmu_i2c_init(void);
 
 static const char *TAG = "main";
 static const char error_ = 'e';
+static const char ok_ = 'k';
 
 static unsigned char uart_buffer[UART_BUFFER_SIZE];
 static Device *current_channel;
@@ -29,6 +30,33 @@ static void error(unsigned long ms)
 static void error_response(void)
 {
   uart_write_bytes(UART_PORT, &error_, 1);
+}
+
+static void ok_response(void)
+{
+  uart_write_bytes(UART_PORT, &ok_, 1);
+}
+
+//#define I2C_TEST
+static int i2c_test(unsigned char c)
+{
+  switch (c)
+  {
+    case '1':
+      SCL_HIGH(3);
+      return 1;
+    case '2':
+      SCL_LOW(3);
+      return 1;
+    case '3':
+      SDA_HIGH(3);
+      return 1;
+    case '4':
+      SDA_LOW(3);
+      return 1;
+    default:
+      return 0;
+  }
 }
 
 static void device_list_response()
@@ -58,11 +86,12 @@ static void timer_event(void)
     {
       if (dd->timer_event)
       {
-        len += dd->timer_event(i, id, device_config[i], &device_data[i], p + 1);
-        if (len)
+        int elen = dd->timer_event(i, id, device_config[i], device_data[i], p + 1);
+        if (elen)
         {
           *p++ = (unsigned char)i;
-          p += len;
+          p += elen;
+          len += elen + 1;
         }
       }
     }
@@ -141,6 +170,10 @@ void app_main(void)
           else
             timer_event();
         }
+#ifdef I2C_TEST
+        else if (i2c_test(c))
+          ok_response();
+#endif
         else if (c < MAX_DEVICES) // channel message
         {
           if (len < 2)

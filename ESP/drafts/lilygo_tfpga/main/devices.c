@@ -1,12 +1,17 @@
 #include "devices.h"
+
+#include <esp_log.h>
+
 #include "board.h"
 #include "device_list.h"
+
+static const char *TAG = "devices";
 
 Device *device_list[MAX_DEVICES];
 void *device_data[MAX_DEVICES];
 void *device_config[MAX_DEVICES];
 
-static int FindDeviceId(int idx)
+static const Device* FindDeviceId(int idx)
 {
   int i;
   const Device* d;
@@ -14,11 +19,13 @@ static int FindDeviceId(int idx)
   d = devices;
   for (i = 0; i < MAX_KNOWN_DEVICES; i++)
   {
-    if (I2CCheck(idx, d->device_id))
+    int rc = I2CCheck(idx, d->device_id);
+    //ESP_LOGI(TAG, "I2CCheck %d %d rc %d", idx, d->device_id, rc);
+    if (rc)
     {
       if (!device_config[idx])
         device_config[idx] = d->initializer(idx, &device_data[idx]);
-      return d->device_id;
+      return d;
     }
     d++;
   }
@@ -37,24 +44,14 @@ void InitDeviceLists(void)
 
 void BuildDeviceList(void)
 {
-  int i, id;
+  int i;
+  const Device *d;
 
   for (i = 0; i < MAX_DEVICES; i++)
   {
-    id = FindDeviceId(i);
-    if (id != 0)
-    {
-      const Device *d = devices;
-      for (int j = 0; j < MAX_KNOWN_DEVICES; j++)
-      {
-        if (d->device_id == id)
-        {
-          device_list[i] = d;
-          break;
-        }
-        d++;
-      }
-    }
+    d = FindDeviceId(i);
+    if (d)
+      device_list[i] = d;
     else
       device_list[i] = NULL;
   }
