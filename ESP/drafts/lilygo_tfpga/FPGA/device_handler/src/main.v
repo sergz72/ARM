@@ -18,7 +18,7 @@ module main
     inout wire scl3
 );
     wire do1, do2, do3;
-    wire sda1_oe, sda2_oe, dsa3_oe, scl1_oe, scl2_oe, scl3_oe;
+    wire sda1_oe, sda2_oe, sda3_oe, scl1_oe, scl2_oe, scl3_oe;
     wire [5:0] module1_oe, module2_oe, module3_oe;
     wire [5:0] module1_out, module2_out, module3_out;
 
@@ -51,7 +51,7 @@ module main
                             .module_out(module1_out), .module_oe(module1_oe), .sda_in(sda1), .scl_in(scl1), .sda_oe(sda1_oe), .scl_oe(scl1_oe));
     device_handler device2(.clk(clk), .nreset(nreset), .di(di), .do(do2), .sclk(sclk), .ncs(!ncs1 | ncs2), .module_in(module2_io),
                             .module_out(module2_out), .module_oe(module2_oe), .sda_in(sda2), .scl_in(scl2), .sda_oe(sda2_oe), .scl_oe(scl2_oe));
-    device_handler device3(.clk(clk), .nreset(nreset), .di(di), .do(do3), .sclk(sclk), .ncs(ncs1 | !ncs2), .module_in({module3_io, 3'b0}),
+    device_handler device3(.clk(clk), .nreset(nreset), .di(di), .do(do3), .sclk(sclk), .ncs(ncs1 | !ncs2), .module_in({module3_io, 4'b0}),
                             .module_out(module3_out), .module_oe(module3_oe), .sda_in(sda3), .scl_in(scl3), .sda_oe(sda3_oe), .scl_oe(scl3_oe));
 
 endmodule
