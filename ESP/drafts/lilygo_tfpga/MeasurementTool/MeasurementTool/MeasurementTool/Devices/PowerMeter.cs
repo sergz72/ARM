@@ -6,7 +6,7 @@ public class PowerMeter: GenericDevice
 {
     private int _channels;
 
-    public PowerMeter(DeviceManager dm, byte channel) : base(dm, channel)
+    public PowerMeter(DeviceManager dm, byte[] config, byte channel) : base(dm, channel)
     {
         _channels = 0;
     }
@@ -20,9 +20,4 @@ public class PowerMeter: GenericDevice
     {
         throw new System.NotImplementedException();
     }
-}
-
-internal enum PowerMeterCommands
-{
-    GetCapabilities = 'c'
 }

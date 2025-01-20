@@ -1,25 +1,29 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using MeasurementTool.Devices;
+using MeasurementTool.Interfaces.Emulators;
 
 namespace MeasurementTool.Interfaces;
 
 public class EmulatorInterface: IDeviceInterface
 {
     private const int MaxChannels = 10;
+    public const int MaxEventId = 9;
 
     private readonly Dictionary<byte, IDeviceEmulator> _devices;
     private readonly ILogger _logger;
+    private int _eventId, _id;
 
     internal EmulatorInterface(ILogger logger)
     {
         _logger = logger;
         _devices = new Dictionary<byte, IDeviceEmulator>
         {
-            { 1, new DDSEmulator(logger) }
+            { 0, new DdsEmulator(logger) },
+            { 1, new MeterEmulator(logger) }
         };
+        _eventId = 0;
     }
 
     public byte[] SendCommand(byte[] command)
@@ -28,7 +32,7 @@ public class EmulatorInterface: IDeviceInterface
         switch (cmd)
         {
             case (byte)'n': return BuildEnumerationResponse();
-            case (byte)'t': return TimeEvent(command[1]);
+            case (byte)'t': return TimeEvent();
             default:
                 if (cmd < MaxChannels && _devices.TryGetValue(cmd, out var device))
                     return device.Command(command[1..]);
@@ -40,106 +44,67 @@ public class EmulatorInterface: IDeviceInterface
     private byte[] BuildEnumerationResponse()
     {
         return Enumerable.Range(0, MaxChannels)
-            .SelectMany(v => BitConverter.GetBytes(BuildEnumerationResponse((byte)v)))
+            .SelectMany(v => BuildEnumerationResponse((byte)v))
             .ToArray();
     }
 
-    private short BuildEnumerationResponse(byte channel)
+    private byte[] BuildEnumerationResponse(byte channel)
     {
         if (_devices.TryGetValue(channel, out var device))
-            return device.GetId();
-        return 0;
+        {
+            var config = device.BuildConfiguration();
+            var response = new List<byte>();
+            var l = config.Length + 1;
+            response.Add((byte)(l & 0xFF));
+            response.Add((byte)((l>>8) & 0xFF));
+            response.Add(device.GetId());
+            response.AddRange(config);
+            return response.ToArray();
+        }
+        return [0, 0];
     }
     
-    private byte[] TimeEvent(int id)
+    private byte[] TimeEvent()
     {
-        return _devices
-            .SelectMany(kvp => BuildTimeEventResponse(kvp.Key, kvp.Value.TimeEvent(id)))
+        _id = _eventId;
+        var rc = _devices
+            .SelectMany(kvp => BuildTimeEventResponse(kvp.Key, kvp.Value.TimeEvent(GetEventId())))
             .ToArray();
+        if (_eventId == MaxEventId)
+            _eventId = 0;
+        else
+            _eventId++;
+        return rc;
+    }
+
+    private int GetEventId()
+    {
+        var rc = _id;
+        if (_id == MaxEventId)
+            _id = 0;
+        else
+            _id++;
+        return rc;
     }
 
     private static byte[] BuildTimeEventResponse(byte channel, byte[] response)
     {
         if (response.Length == 0)
             return response;
-        var result = new byte[response.Length + 1];
+        var result = new byte[response.Length + 3];
         result[0] = channel;
-        response.CopyTo(result, 1);
+        result[1] = (byte)(response.Length & 0xFF);
+        result[2] = (byte)((response.Length >> 8) & 0xFF);
+        response.CopyTo(result, 3);
         return result;
     }
 }
 
 internal interface IDeviceEmulator
 {
+    byte[] BuildConfiguration();
     byte[] Command(byte[] command);
     byte[] TimeEvent(int id);
 
-    short GetId();
-}
-
-internal sealed class DDSEmulator(ILogger logger) : IDeviceEmulator
-{
-    private static void BuildSi5351Capabilities(BinaryWriter bw)
-    {
-        bw.Write((short)DdsType.Si5351);
-        bw.Write((byte)0); //minDb
-        bw.Write((byte)0); //maxDb
-        bw.Write(27000000); //mClk
-        bw.Write((short)3300); //maxMv
-        bw.Write((byte)0); //maxAttenuator
-    }
-    
-    public byte[] Command(byte[] command)
-    {
-        switch (command[0])
-        {
-            case (byte)DdsCommands.GetCapabilities:
-            {
-                logger.Info($"DDS get capabilities command");
-                using var ms = new MemoryStream();
-                using var bw = new BinaryWriter(ms);
-                BuildSi5351Capabilities(bw);
-                return ms.ToArray();
-            }
-            case (byte)DdsCommands.EnableOutput:
-                logger.Info($"DDS enable output command channel={command[1]} enable={command[2]}");
-                return [(byte)'k'];
-            case (byte)DdsCommands.SetFrequency:
-            {
-                using var ms = new MemoryStream(command[2..]);
-                using var br = new BinaryReader(ms);
-                var frequency = br.ReadInt64();
-                var divider = br.ReadInt16();
-                logger.Info($"DDS set frequency command channel={command[1]} frequency={frequency} divider={divider}");
-                return [(byte)'k'];
-            }
-            case (byte)DdsCommands.SetAttenuator:
-                logger.Info($"DDS set attenuator command channel={command[1]} value={command[2]}");
-                return [(byte)'k'];
-            case (byte)DdsCommands.SetMode:
-                logger.Info($"DDS set mode command channel={command[1]} mode={command[2]}");
-                return [(byte)'k'];
-            case (byte)DdsCommands.Sweep:
-            {
-                using var ms = new MemoryStream(command[2..]);
-                using var br = new BinaryReader(ms);
-                var frequency1 = br.ReadInt64();
-                var frequency2 = br.ReadInt64();
-                var divider = br.ReadInt16();
-                var step = br.ReadInt32();
-                logger.Info($"DDS sweep command channel={command[1]} frequency1={frequency1} frequency2={frequency2} divider={divider} step={step}");
-                return [(byte)'k'];
-            }
-            default:
-                logger.Error("Unknown DDS emulator command");
-                return [(byte)'e'];
-        }
-    }
-
-    public byte[] TimeEvent(int id)
-    {
-        return [];
-    }
-
-    public short GetId() => 1;
+    byte GetId();
 }

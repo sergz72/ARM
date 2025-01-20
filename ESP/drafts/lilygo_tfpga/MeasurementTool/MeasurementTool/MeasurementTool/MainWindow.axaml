@@ -4,7 +4,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:measurementTool="clr-namespace:MeasurementTool"
         mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
-        x:Class="MeasurementTool.Views.MainWindow"
+        x:Class="MeasurementTool.MainWindow"
         Icon="/Assets/avalonia-logo.ico"
         SizeToContent="WidthAndHeight"
         WindowStartupLocation="CenterScreen"

@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Threading;
 using Avalonia.Controls;
 using Avalonia.Layout;
 using MeasurementTool.Devices.Controls;
@@ -23,42 +22,25 @@ public sealed class Dds: GenericDevice
         { DdsType.Si5351, new DdsInfo(mclk => 160000000, mclk => 8000, 3,
             [1,2,4,8,16,32,64,128], DdsModes.Square)}
     };
- 
-    public long MinFrequency { get; private set; }
-    public long MaxFrequency { get; private set; }
-    public int MinAmplitude { get; private set; }
-    public int MaxAmplitude { get; private set; }
-    public DdsModes SupportedNodes { get; private set; }
-    public int[] Dividers { get; private set; }
 
-    private DdsConfig _ddsConfig;
+    public readonly long MinFrequency;
+    public readonly long MaxFrequency;
+    public readonly int MinAmplitude;
+    public readonly int MaxAmplitude;
+    public readonly DdsModes SupportedNodes;
+    public readonly int[] Dividers;
+    private readonly int _channels;
+    private readonly DdsConfig _ddsConfig;
+
     private List<DDSChannel> _channelsUi;
     private LevelMeter? _levelMeter;
-    private int _channels;
-    private bool _getCapabilitiesFailed;
     
-    public Dds(DeviceManager dm, byte channel) : base(dm, channel)
+    public Dds(DeviceManager dm, byte[] config, byte channel) : base(dm, channel)
     {
-        _ddsConfig = new DdsConfig(DdsType.Unknown, 0, 0, 0, 0, 0);
+        if (config.Length != 11)
+            throw new ArgumentException($"DDS channel {channel}: Invalid config length: {config.Length}");
         _channelsUi = [];
-        _channels = 0;
-        MinFrequency = 0;
-        MaxFrequency = 0;
-        MinAmplitude = 0;
-        MaxAmplitude = 0;
-        SupportedNodes = DdsModes.Sine;
-        Dividers = [1];
-        _getCapabilitiesFailed = false;
-    }
-
-    private void ProcessGetCapabilitiesResponse(byte[]? response)
-    {
-        if (response is not { Length: 11 })
-        {
-            _getCapabilitiesFailed = true;
-            return;
-        }
-        using var stream = new MemoryStream(response);
+        using var stream = new MemoryStream(config);
         using var reader = new BinaryReader(stream);
         var type = (DdsType)reader.ReadInt16();
         var minDb = reader.ReadSByte();
@@ -75,14 +57,11 @@ public sealed class Dds: GenericDevice
             SupportedNodes = info.SupportedModes;
             Dividers = info.Dividers;
         }
+        else
+            throw new ArgumentException($"DDS channel {channel}: Unknown DDS type: {type}");
         MaxAmplitude = ToDb(ddsConfig.MaxVoutMv);
         MinAmplitude = MaxAmplitude - ddsConfig.MaxAttenuatorValue;
         _ddsConfig = ddsConfig;
-    }
-
-    internal override void Init()
-    {
-        Dm.QueueCommand(Channel, [(byte)DdsCommands.GetCapabilities], ProcessGetCapabilitiesResponse); // get capabilities
     }
 
     private static int ToDb(int mv)
@@ -92,15 +71,10 @@ public sealed class Dds: GenericDevice
 
     internal override Control? CreateUi()
     {
-        while (_ddsConfig.Type == DdsType.Unknown)
-        {
-            if (_getCapabilitiesFailed)
-                return null;
-            Thread.Sleep(100);
-        }
         var panel = new StackPanel
         {
             Orientation = Orientation.Vertical,
+            Spacing = 3
         };
         _channelsUi = CreateChannelsUi();
         panel.Children.AddRange(_channelsUi);
@@ -191,7 +165,6 @@ internal enum DdsType
 
 internal enum DdsCommands
 {
-    GetCapabilities = 'c',
     SetFrequency = 'f',
     SetMode = 'm',
     SetAttenuator = 'a',

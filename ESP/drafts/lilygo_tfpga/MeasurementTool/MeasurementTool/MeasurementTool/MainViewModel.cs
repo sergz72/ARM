@@ -30,7 +30,7 @@ internal partial class MainViewModel : ObservableObject, ILogger
                         throw new Exception("Invalid settings file");
         }
         else
-            _settings = new Settings("/dev/ttyUSB0");
+            _settings = new Settings("/dev/ttyACM1");
         var iface = FindAvailableInterface();
         _deviceManager = new DeviceManager(iface, this);
         while (!_deviceManager.InitComplete())

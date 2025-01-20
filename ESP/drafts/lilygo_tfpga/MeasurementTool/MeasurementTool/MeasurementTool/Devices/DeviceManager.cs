@@ -21,16 +21,12 @@ public abstract class GenericDevice
         Channel = channel;
     }
 
-    internal virtual void Init()
-    {
-    }
-
     internal virtual void ParseResponse(byte[] data)
     {
         Dm.LogError(Channel, "Unexpected response from device");
     }
 
-    internal virtual void TimerEvent(int eventId)
+    internal virtual void TimerEvent()
     {
     }
     
@@ -51,12 +47,9 @@ internal record Message(byte[] Data, Action<byte[]?> Handler);
 
 public sealed class DeviceManager
 {
-    private const int MaxEvents = 10;
-
     private readonly IDeviceInterface _deviceInterface;
     private Dictionary<int, GenericDevice>? _channelToDevice;
     private readonly ILogger _logger;
-    private int _eventId;
     private readonly Queue<Message> _messages;
     private readonly Thread _messageThread;
     private volatile bool _isShuttingDown;
@@ -65,7 +58,6 @@ public sealed class DeviceManager
     {
         _deviceInterface = di;
         _logger = logger;
-        _eventId = 0;
         _messages = new Queue<Message>();
         _isShuttingDown = false;
         _messageThread = new Thread(ProcessMessages);
@@ -118,13 +110,9 @@ public sealed class DeviceManager
             return;
         while (_messages.Count > 0)
             Thread.Sleep(10);
-        QueueCommand("t" + _eventId, ParseDeviceResponses);
-        if (_eventId == MaxEvents - 1)
-            _eventId = 0;
-        else
-            _eventId++;
+        QueueCommand("t", ParseDeviceResponses);
         foreach (var device in _channelToDevice.Values)
-            device.TimerEvent(_eventId);
+            device.TimerEvent();
     }
 
     internal void LogError(byte channel, string message)
@@ -186,23 +174,35 @@ public sealed class DeviceManager
         byte channel = 0;
         while (stream.Position < stream.Length)
         {
-            var deviceId = br.ReadInt16();
-            if (deviceId != 0)
+            var length = br.ReadInt16();
+            if (length > 0)
             {
+                var deviceId = br.ReadByte();
+                var config = br.ReadBytes(length - 1);
                 GenericDevice? device = null;
-                switch (deviceId)
+                try
                 {
-                    case 1:
-                        device = new Dds(this, channel);
-                        break;
-                    default:
-                        _logger.Error("Unknown device id " + deviceId);
-                        break;
+                    switch ((DeviceType)deviceId)
+                    {
+                        case DeviceType.Dds:
+                            device = new Dds(this, config, channel);
+                            break;
+                        case DeviceType.Meter:
+                            device = new Meter(this, config, channel);
+                            break;
+                        case DeviceType.PowerMeter:
+                            device = new PowerMeter(this, config, channel);
+                            break;
+                        default:
+                            _logger.Error("Unknown device id " + deviceId);
+                            break;
+                    }
+                    if (device != null)
+                        channelToDevice.Add(channel, device);
                 }
-                if (device != null)
+                catch (Exception e)
                 {
-                    channelToDevice.Add(channel, device);
-                    device.Init();
+                    _logger.Error(e.Message);
                 }
             }
             channel++;
@@ -219,4 +219,12 @@ public sealed class DeviceManager
     {
         return _channelToDevice != null;
     }
+}
+
+internal enum DeviceType
+{
+    Dds = 1,
+    Meter,
+    PowerMeter,
+    Pwm
 }

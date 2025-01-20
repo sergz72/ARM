@@ -1,7 +1,7 @@
 using System;
 using Avalonia.Controls;
 
-namespace MeasurementTool.Views;
+namespace MeasurementTool;
 
 public partial class MainWindow : Window
 {

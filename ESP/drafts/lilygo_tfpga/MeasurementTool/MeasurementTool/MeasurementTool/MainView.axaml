@@ -9,6 +9,6 @@
     <DockPanel x:Name="MainPanel">
         <ListBox DockPanel.Dock="Bottom" Height="100" FontSize="14"
                  ItemsSource="{Binding Log}"/>
-        <StackPanel x:Name="DevicePanel"/>
+        <StackPanel x:Name="DevicePanel" Spacing="3"/>
     </DockPanel>
 </UserControl>
