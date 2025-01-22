@@ -4,9 +4,6 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:controls="clr-namespace:MeasurementTool.Devices.Controls"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
-             x:Class="MeasurementTool.Devices.Controls.MeterChannel">
-    <StackPanel Orientation="Horizontal" Spacing="3" Height="40">
-        <StackPanel x:Name="ValuePanel" Orientation="Horizontal" Spacing="3"/>
-        <Label x:Name="UnitsLabel"/>
-    </StackPanel>
+             x:Class="MeasurementTool.Devices.Controls.PowerMeterChannel">
+    <WrapPanel x:Name="ValuePanel"/>
 </UserControl>

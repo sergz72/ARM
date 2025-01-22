@@ -36,7 +36,6 @@ internal partial class MainViewModel : ObservableObject, ILogger
         while (!_deviceManager.InitComplete())
             Thread.Sleep(100);
         _deviceThread = new Thread(DeviceLoop);
-        _deviceThread.Start();
         _isShuttingDown = false;
     }
 
@@ -79,8 +78,13 @@ internal partial class MainViewModel : ObservableObject, ILogger
         return null;
     }
 
-    internal Control[] CreateUi() => _deviceManager.CreateUi();
-    
+    internal Control[] CreateUi()
+    {
+        var result = _deviceManager.CreateUi();
+        _deviceThread.Start();
+        return result;
+    }
+
     public void Error(string deviceName, int channel, string message)
     {
         Log.Add(new LogRecord(DateTime.Now, LogLevel.Error, deviceName, channel, message));

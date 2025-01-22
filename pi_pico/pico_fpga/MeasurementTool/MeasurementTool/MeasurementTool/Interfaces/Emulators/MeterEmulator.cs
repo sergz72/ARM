@@ -37,9 +37,7 @@ internal sealed class MeterEmulator(ILogger logger) : IDeviceEmulator
     public byte[] TimeEvent(int id)
     {
         if (id == EmulatorInterface.MaxEventId)
-        {
-            
-        }
+            return [0, 4, 0, 5, 0, 6, 0, 7];
         return [];
     }
 
