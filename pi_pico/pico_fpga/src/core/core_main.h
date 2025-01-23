@@ -1,0 +1,35 @@
+#ifndef CORE_MAIN_H
+#define CORE_MAIN_H
+
+#define I2C_SOFT
+#define I2C_TIMEOUT 1000000
+#define i2c_dly delay_us(5)
+
+#define SI5351_XTAL_FREQ 25000000
+#define SI5351_CHANNELS 4
+
+int I2CCheck(int idx, int device_id);
+void SCL_HIGH(int);
+void SCL_LOW(int);
+void SDA_HIGH(int);
+void SDA_LOW(int);
+int SDA_IN(int);
+int SCL_IN(int);
+void configure_i2c(void);
+void configure_ports(void);
+void blink_led(void);
+void configure_logger(void);
+void configure_spi(void);
+void main_comm_port_write_bytes(const unsigned char *data, int len);
+int main_comm_port_read_bytes(unsigned char *buffer, int buffer_size);
+unsigned long long int time_us(void);
+void delay_us(unsigned int us);
+void core_main(void);
+void release_reset(void);
+void change_channel(int);
+void SPI_3BIT_DATA_SET(unsigned int data);
+unsigned int spi3_data_get(void);
+
+#define SPI_3BIT_DATA_GET spi3_data_get()
+
+#endif

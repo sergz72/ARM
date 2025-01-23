@@ -1,0 +1,184 @@
+#include "board.h"
+#include "devices.h"
+
+#define COMM_BUFFER_SIZE 1024
+
+static const unsigned char error_ = 'e';
+static const unsigned char ok_ = 'k';
+
+static unsigned char comm_buffer[COMM_BUFFER_SIZE];
+static Device *current_channel;
+static int timer_event_id;
+
+static void error_response(void)
+{
+  main_comm_port_write_bytes(&error_, 1);
+}
+
+static void ok_response(void)
+{
+  main_comm_port_write_bytes(&ok_, 1);
+}
+
+static void device_list_response()
+{
+  Device **d = device_list;
+  int idx = 0;
+  for (int i = 0; i < MAX_DEVICES; i++)
+  {
+    Device *dd = *d++;
+    if (dd == NULL)
+    {
+      comm_buffer[idx++] = 0;
+      comm_buffer[idx++] = 0;
+      continue;
+    }
+    comm_buffer[idx+2] = (unsigned char)dd->public_id;
+    int len = dd->save_config ? dd->save_config(&comm_buffer[idx+3]) + 1 : 1;
+    comm_buffer[idx] = len & 0xff;
+    comm_buffer[idx+1] = (len >> 8) & 0xff;
+    idx += len + 2;
+  }
+  main_comm_port_write_bytes(comm_buffer, idx);
+}
+
+static void timer_event(void)
+{
+  comm_buffer[0] = 'k';
+  int len = 1;
+  unsigned char *p = comm_buffer + 1;
+
+  Device **d = device_list;
+  int id = timer_event_id;
+  for (int i = 0; i < MAX_DEVICES; i++)
+  {
+    Device *dd = *d;
+    if (dd)
+    {
+      if (dd->timer_event)
+      {
+        change_channel(i);
+        int elen = dd->timer_event(i, id, device_config[i], device_data[i], p + 1);
+        if (elen)
+        {
+          *p++ = (unsigned char)i;
+          p += elen;
+          len += elen + 1;
+        }
+      }
+    }
+    if (id == 9)
+      id = 0;
+    else
+      id++;
+    d++;
+  }
+  main_comm_port_write_bytes(comm_buffer, len);
+  if (timer_event_id == 9)
+    timer_event_id = 0;
+  else
+    timer_event_id++;
+}
+
+void core_main(void)
+{
+  configure_i2c();
+  configure_ports();
+  configure_logger();
+  configure_spi();
+
+  delay_us(1000000); // 1 second delay
+  release_reset();
+
+  InitDeviceLists();
+
+  current_channel = NULL;
+
+  timer_event_id = 0;
+
+  unsigned char c = 0;
+
+  unsigned int delay_id = 0;
+
+  for (;;)
+  {
+    unsigned long long int start_time = time_us();
+    int len = main_comm_port_read_bytes(comm_buffer, COMM_BUFFER_SIZE);
+    if (len > 0)
+    {
+      if (current_channel)
+      {
+        int response_length = current_channel->message_processor(c, device_config[c], device_data[c],
+                                                                 comm_buffer, len);
+        if (response_length)
+        {
+          main_comm_port_write_bytes(comm_buffer, response_length);
+          current_channel = NULL;
+        }
+      }
+      else
+      {
+        c = comm_buffer[0];
+        if (c == 'n')
+        {
+          if (len == 1)
+          {
+            BuildDeviceList();
+            device_list_response();
+          }
+          else
+            error_response();
+        }
+        else if (c == 't') // timer event
+        {
+          if (len != 1)
+            error_response();
+          else
+            timer_event();
+        }
+        else if (c < MAX_DEVICES) // channel message
+        {
+          current_channel = device_list[c];
+          if (!current_channel)
+            error_response();
+          else
+          {
+            if (!current_channel->message_processor)
+            {
+              current_channel = NULL;
+              error_response();
+            }
+            else
+            {
+              change_channel(c);
+              if (len > 1)
+              {
+                int response_length = current_channel->message_processor(c, device_config[c], device_data[c],
+                                                                         comm_buffer + 1, len - 1);
+                if (response_length)
+                {
+                  main_comm_port_write_bytes(comm_buffer + 1, response_length);
+                  current_channel = NULL;
+                }
+              }
+            }
+          }
+        }
+        else
+          error_response();
+      }
+    }
+    else
+    {
+      unsigned long long int diff = time_us() - start_time;
+      if (diff < 10000)
+        delay_us(10000 - diff);
+      delay_id++;
+      if (delay_id == 100)
+      {
+        delay_id = 0;
+        blink_led();
+      }
+    }
+  }
+}
