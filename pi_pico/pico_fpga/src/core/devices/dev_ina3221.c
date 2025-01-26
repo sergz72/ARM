@@ -21,10 +21,10 @@ static const INA3221Config dcfg = {
 
 static const PowerMeterConfig config = {
   .channels = 3,
-  .voltage_resolution = 2,
+  .voltage_resolution = 4,
   .voltage_value_type = VALUE_TYPE_MILLIS,
   .voltage_numbers_before_point = 2,
-  .current_resolution = 2,
+  .current_resolution = 4,
   .current_value_type = VALUE_TYPE_MICROS,
   .current_numbers_before_point = 1
 };

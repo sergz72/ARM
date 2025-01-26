@@ -2,7 +2,7 @@
 #define _DEV_INA226_H_
 
 typedef struct {
-  int current, voltage;
+  int voltage, current;
 } DEV_INA226Data;
 
 typedef struct {
