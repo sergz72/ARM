@@ -130,6 +130,12 @@ public sealed class DeviceManager
         using var br = new BinaryReader(stream);
         try
         {
+            var status = (char)br.ReadByte();
+            if (status != 'k')
+            {
+                _logger.Error($"Non-ok status code from device: {status}");
+                return;
+            }
             while (stream.Position < stream.Length)
             {
                 int channel = br.ReadByte();

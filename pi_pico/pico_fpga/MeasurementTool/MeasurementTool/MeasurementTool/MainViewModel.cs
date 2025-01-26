@@ -10,7 +10,7 @@ using System.Text.Json;
 
 namespace MeasurementTool;
 
-internal record Settings(string ComPortName);
+internal record Settings(string ComPortName, int BaudRate);
 
 internal partial class MainViewModel : ObservableObject, ILogger
 { 
@@ -30,7 +30,7 @@ internal partial class MainViewModel : ObservableObject, ILogger
                         throw new Exception("Invalid settings file");
         }
         else
-            _settings = new Settings("/dev/ttyACM1");
+            _settings = new Settings("/dev/ttyACM0", 115200);
         var iface = FindAvailableInterface();
         _deviceManager = new DeviceManager(iface, this);
         while (!_deviceManager.InitComplete())
@@ -74,7 +74,7 @@ internal partial class MainViewModel : ObservableObject, ILogger
     private IDeviceInterface? InitComPort()
     {
         if (File.Exists(_settings.ComPortName))
-            return new SerialInterface(_settings.ComPortName);
+            return new SerialInterface(_settings.ComPortName, _settings.BaudRate);
         return null;
     }
 

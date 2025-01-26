@@ -69,12 +69,13 @@ public class EmulatorInterface: IDeviceInterface
         _id = _eventId;
         var rc = _devices
             .SelectMany(kvp => BuildTimeEventResponse(kvp.Key, kvp.Value.TimeEvent(GetEventId())))
-            .ToArray();
+            .ToList();
+        rc.Insert(0, (byte)'k');
         if (_eventId == MaxEventId)
             _eventId = 0;
         else
             _eventId++;
-        return rc;
+        return rc.ToArray();
     }
 
     private int GetEventId()
