@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.IO;
 using System.Threading;
 using Avalonia.Controls;
@@ -14,7 +15,7 @@ internal record Settings(string ComPortName, int BaudRate);
 
 internal partial class MainViewModel : ObservableObject, ILogger
 { 
-    [ObservableProperty] private List<LogRecord> _log = [];
+    [ObservableProperty] private ObservableCollection<LogRecord> _log = [];
     private volatile bool _isShuttingDown;
     
     private readonly DeviceManager _deviceManager;
