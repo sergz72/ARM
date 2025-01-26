@@ -59,7 +59,7 @@ int mcp3421_timer_event(int idx, int step, void *config, void *data, unsigned ch
       break;
     case 9:
       mcp3421Get18BitVoltage(idx, MCP3421_DEVICE_ID, &v);
-      int voltage = (int)((long long int)v * 4096 * cfg->koef / (0x3FFFF * 100)) + cfg->offset;
+      int voltage = (int)((long long int)v * 4096 * cfg->koef / (0x3FFFF * 10)) + cfg->offset;
       memcpy(buffer, &voltage, 4);
       return 4;
     default:

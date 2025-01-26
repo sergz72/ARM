@@ -4924,6 +4924,16 @@
 		)
 		(uuid "06887eb5-a844-4a52-81a5-2fe08404c13c")
 	)
+	(label "SCL4"
+		(at 191.77 124.46 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "110dac80-51a2-46ea-b653-676952775247")
+	)
 	(label "F3"
 		(at 95.25 104.14 0)
 		(effects
@@ -5024,7 +5034,7 @@
 		)
 		(uuid "2d3fd17f-1357-49ce-825a-0ce76fb85a8a")
 	)
-	(label "SDI0"
+	(label "SDI1"
 		(at 109.22 78.74 0)
 		(effects
 			(font
@@ -5044,7 +5054,7 @@
 		)
 		(uuid "357af088-d542-493e-bb0e-f8e174cad2f0")
 	)
-	(label "MOD_ID2"
+	(label "MOD_ID0"
 		(at 101.6 101.6 0)
 		(effects
 			(font
@@ -5083,6 +5093,16 @@
 			(justify left bottom)
 		)
 		(uuid "3fa34ae4-e800-4246-968a-0585b637d813")
+	)
+	(label "SDA4"
+		(at 170.18 124.46 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "3ff0f254-385b-4799-883f-3b53bdac7a4b")
 	)
 	(label "K2"
 		(at 95.25 88.9 0)
@@ -5224,6 +5244,16 @@
 		)
 		(uuid "7936cb0f-a4bc-414e-9958-c5d257620650")
 	)
+	(label "SCL5"
+		(at 191.77 58.42 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "8047fc5e-1fc3-4654-9eee-f5c698414a20")
+	)
 	(label "B1"
 		(at 95.25 109.22 0)
 		(effects
@@ -5244,7 +5274,7 @@
 		)
 		(uuid "81bc1cfe-1c38-43a9-88bc-1caa026ebb33")
 	)
-	(label "SDO1"
+	(label "SDO0"
 		(at 110.49 86.36 0)
 		(effects
 			(font
@@ -5254,7 +5284,7 @@
 		)
 		(uuid "8661da4b-b1c0-4afa-a43d-7e67770c0027")
 	)
-	(label "SDO0"
+	(label "SDO1"
 		(at 109.22 83.82 0)
 		(effects
 			(font
@@ -5394,6 +5424,16 @@
 		)
 		(uuid "afacda76-c8af-4492-8a07-943cfbb72053")
 	)
+	(label "SDA5"
+		(at 171.45 58.42 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "afe4ae55-15e5-45cb-84c5-3c65b1eb4fdd")
+	)
 	(label "18"
 		(at 153.67 66.04 0)
 		(effects
@@ -5454,7 +5494,7 @@
 		)
 		(uuid "bd291b66-7836-4f33-b91c-6e4dc2f21d47")
 	)
-	(label "MOD_ID0"
+	(label "MOD_ID2"
 		(at 101.6 96.52 0)
 		(effects
 			(font
@@ -5514,7 +5554,7 @@
 		)
 		(uuid "d3a96c71-b0dc-4635-bbae-45fe0c0baefe")
 	)
-	(label "SDI1"
+	(label "SDI0"
 		(at 109.22 81.28 0)
 		(effects
 			(font

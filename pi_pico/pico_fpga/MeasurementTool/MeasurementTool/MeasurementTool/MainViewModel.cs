@@ -78,7 +78,7 @@ internal partial class MainViewModel : ObservableObject, ILogger
         return null;
     }
 
-    internal Control[] CreateUi()
+    internal DeviceControl[] CreateUi()
     {
         var result = _deviceManager.CreateUi();
         _deviceThread.Start();

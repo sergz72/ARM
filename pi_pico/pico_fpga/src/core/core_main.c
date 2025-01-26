@@ -58,12 +58,14 @@ static void timer_event(void)
       if (dd->timer_event)
       {
         change_channel(i);
-        int elen = dd->timer_event(i, id, device_config[i], device_data[i], p + 1);
+        int elen = dd->timer_event(i, id, device_config[i], device_data[i], p + 3);
         if (elen)
         {
           *p++ = (unsigned char)i;
+          *p++ = elen & 0xFF;
+          *p++ = (elen >> 8) & 0xFF;
           p += elen;
-          len += elen + 1;
+          len += elen + 3;
         }
       }
     }

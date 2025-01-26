@@ -93,14 +93,13 @@ public sealed class DeviceManager
         }
     }
 
-    public Control[] CreateUi()
+    public DeviceControl[] CreateUi()
     {
         if (_channelToDevice == null)
             return [];
         return _channelToDevice.Values
-            .Select(d => d.CreateUi())
-            .Where(ui => ui != null)
-            .Select(ui => ui!)
+            .Select(d => new DeviceControl(d.CreateUi(), d.GetName()))
+            .Where(dc => dc.DControl != null)
             .ToArray();
     }
 
@@ -234,3 +233,5 @@ internal enum DeviceType
     PowerMeter,
     Pwm
 }
+
+public record DeviceControl(Control? DControl, string Name);
