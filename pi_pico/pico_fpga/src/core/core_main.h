@@ -27,9 +27,5 @@ void delay_us(unsigned int us);
 void core_main(void);
 void release_reset(void);
 void change_channel(int);
-void SPI_3BIT_DATA_SET(unsigned int data);
-unsigned int spi3_data_get(void);
-
-#define SPI_3BIT_DATA_GET spi3_data_get()
 
 #endif

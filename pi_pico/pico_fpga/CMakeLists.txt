@@ -23,7 +23,7 @@ add_executable(pico_fpga
         src/core/core_main.c
         src/hal.c
         ../../common_lib/i2c_soft.c
-        ../../common_lib/spi_3bit_soft.c
+        ../../common_lib/spi_2bit_soft.c
         ../../common_lib/sensor/ads1115.c
         ../../common_lib/sensor/mcp3421.c
         ../../common_lib/sensor/ina226.c

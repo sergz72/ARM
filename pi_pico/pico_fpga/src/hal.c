@@ -13,7 +13,6 @@ static bool led_state;
 
 void configure_ports(void)
 {
-  //todo
   gpio_init(PIN_RESET);
   gpio_set_dir(PIN_RESET, GPIO_OUT);
   gpio_init(PIN_LED);
@@ -52,15 +51,13 @@ void configure_spi(void)
   gpio_set_dir(PIN_SDI0, GPIO_IN);
   gpio_init(PIN_SDI1);
   gpio_set_dir(PIN_SDI1, GPIO_IN);
-  gpio_init(PIN_SDI2);
-  gpio_set_dir(PIN_SDI2, GPIO_IN);
+  gpio_pull_up(PIN_SDI0);
+  gpio_pull_up(PIN_SDI1);
 
   gpio_init(PIN_SDO0);
   gpio_set_dir(PIN_SDO0, GPIO_OUT);
   gpio_init(PIN_SDO1);
   gpio_set_dir(PIN_SDO1, GPIO_OUT);
-  gpio_init(PIN_SDO2);
-  gpio_set_dir(PIN_SDO2, GPIO_OUT);
 }
 
 void configure_i2c(void)
@@ -69,11 +66,27 @@ void configure_i2c(void)
   gpio_init(PIN_I2C_SCL_OE);
   gpio_init(PIN_I2C_SDA_IN);
   gpio_init(PIN_I2C_SCL_IN);
+  gpio_init(PIN_SDA4);
+  gpio_init(PIN_SCL4);
+  gpio_init(PIN_SDA5);
+  gpio_init(PIN_SCL5);
   i2c_soft_init(0);
+  gpio_put(PIN_SCL4, false);
+  gpio_put(PIN_SDA4, false);
+  gpio_put(PIN_SCL5, false);
+  gpio_put(PIN_SDA5, false);
+  i2c_soft_init(4);
+  i2c_soft_init(5);
   gpio_set_dir(PIN_I2C_SDA_OE, GPIO_OUT);
   gpio_set_dir(PIN_I2C_SCL_OE, GPIO_OUT);
   gpio_set_dir(PIN_I2C_SDA_IN, GPIO_IN);
   gpio_set_dir(PIN_I2C_SCL_IN, GPIO_IN);
+  gpio_pull_up(PIN_SDA4);
+  gpio_pull_up(PIN_SCL4);
+  gpio_pull_up(PIN_SDA5);
+  gpio_pull_up(PIN_SCL5);
+  gpio_pull_up(PIN_I2C_SDA_IN);
+  gpio_pull_up(PIN_I2C_SCL_IN);
 }
 
 void change_channel(int channel)
@@ -83,51 +96,108 @@ void change_channel(int channel)
   gpio_put(PIN_DEVICE_ID2, channel & 4);
 }
 
-void SPI_3BIT_DATA_SET(unsigned int data)
+void SPI_2BIT_DATA_SET(unsigned int data)
 {
   gpio_put(PIN_SDO0, data & 0x20000000);
   gpio_put(PIN_SDO1, data & 0x40000000);
-  gpio_put(PIN_SDO2, data & 0x80000000);
 }
 
-unsigned int spi3_data_get(void)
+unsigned int spi2_data_get(void)
 {
   unsigned int data = gpio_get(PIN_SDI0) ? 1 : 0;
   if (gpio_get(PIN_SDI1))
     data |= 2;
-  if (gpio_get(PIN_SDI2))
-    data |= 4;
   return data;
 }
 
 void SCL_HIGH(int channel)
 {
-  gpio_put(PIN_I2C_SCL_OE, true);
+  switch (channel)
+  {
+    case 4:
+      gpio_set_dir(PIN_SCL4, GPIO_IN);
+      break;
+    case 5:
+      gpio_set_dir(PIN_SCL5, GPIO_IN);
+      break;
+    default:
+      gpio_put(PIN_I2C_SCL_OE, true);
+      break;
+  }
 }
 
 void SCL_LOW(int channel)
 {
-  gpio_put(PIN_I2C_SCL_OE, false);
+  switch (channel)
+  {
+    case 4:
+      gpio_set_dir(PIN_SCL4, GPIO_OUT);
+      break;
+    case 5:
+      gpio_set_dir(PIN_SCL5, GPIO_OUT);
+      break;
+    default:
+      gpio_put(PIN_I2C_SCL_OE, false);
+      break;
+  }
 }
 
 void SDA_HIGH(int channel)
 {
-  gpio_put(PIN_I2C_SDA_OE, true);
+  switch (channel)
+  {
+    case 4:
+      gpio_set_dir(PIN_SDA4, GPIO_IN);
+    break;
+    case 5:
+      gpio_set_dir(PIN_SDA5, GPIO_IN);
+    break;
+    default:
+      gpio_put(PIN_I2C_SDA_OE, true);
+    break;
+  }
 }
 
 void SDA_LOW(int channel)
 {
-  gpio_put(PIN_I2C_SDA_OE, false);
+  switch (channel)
+  {
+    case 4:
+      gpio_set_dir(PIN_SDA4, GPIO_OUT);
+    break;
+    case 5:
+      gpio_set_dir(PIN_SDA5, GPIO_OUT);
+    break;
+    default:
+      gpio_put(PIN_I2C_SDA_OE, false);
+    break;
+  }
 }
 
 int SDA_IN(int channel)
 {
-  return gpio_get(PIN_I2C_SDA_IN);
+  switch (channel)
+  {
+    case 4:
+      return gpio_get(PIN_SDA4);
+    case 5:
+      return gpio_get(PIN_SDA5);
+    default:
+      return gpio_get(PIN_I2C_SDA_IN);
+  }
 }
 
 int SCL_IN(int channel)
 {
-  return gpio_get(PIN_I2C_SCL_IN);
+  switch (channel)
+  {
+    case 4:
+      return gpio_get(PIN_SCL4);
+    case 5:
+      return gpio_get(PIN_SCL5);
+    default:
+      return gpio_get(PIN_I2C_SCL_IN);
+  }
 }
 
 int I2C_SendAddress(int idx, int address)
