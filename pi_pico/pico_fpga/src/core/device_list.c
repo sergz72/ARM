@@ -7,11 +7,13 @@
 #include "dev_mcp3421.h"
 #include "dev_mcp9600.h"
 #include "dev_dds.h"
+#include "dev_internal_frequency_meter.h"
+#include "dev_internal_pwm.h"
 
 #define PUBLIC_ID_DDS 1
-#define PUBLIC_ID_VOLTMETER 2
+#define PUBLIC_ID_METER 2
 #define PUBLIC_ID_POWER_METER 3
-#define PUBLIC_ID_THERMOMETER 4
+#define PUBLIC_ID_PWM 4
 
 const Device devices[] = {
     {
@@ -35,7 +37,7 @@ const Device devices[] = {
     {
         .name = "ads1115",
         .device_id = ADS1115_DEVICE_ID,
-        .public_id = PUBLIC_ID_VOLTMETER,
+        .public_id = PUBLIC_ID_METER,
         .initializer = ads1115_initializer,
         .timer_event = ads1115_timer_event,
         .message_processor = NULL,
@@ -44,7 +46,7 @@ const Device devices[] = {
     {
         .name = "mcp3421",
         .device_id = MCP3421_DEVICE_ID,
-        .public_id = PUBLIC_ID_VOLTMETER,
+        .public_id = PUBLIC_ID_METER,
         .initializer = mcp3421_initializer,
         .timer_event = mcp3421_timer_event,
         .message_processor = NULL,
@@ -71,10 +73,28 @@ const Device devices[] = {
     {
         .name = "mcp9600",
         .device_id = MCP9600_DEVICE_ID,
-        .public_id = MCP9600_DEVICE_ID,
+        .public_id = PUBLIC_ID_METER,
         .initializer = mcp9600_initializer,
         .timer_event = mcp9600_timer_event,
         .message_processor = NULL,
         .save_config = mcp9600_save_config
+    },
+    {
+        .name = "Internal PWM",
+        .device_id = INTERNAL_PWM_DEVICE_ID,
+        .public_id = PUBLIC_ID_PWM,
+        .initializer = internal_pwm_initializer,
+        .timer_event = internal_pwm_timer_event,
+        .message_processor = pwm_message_processor,
+        .save_config = internal_pwm_save_config
+    },
+    {
+        .name = "Internal Frequency meter",
+        .device_id = INTERNAL_FREQUENCY_METER_DEVICE_ID,
+        .public_id = PUBLIC_ID_METER,
+        .initializer = internal_frequency_meter_initializer,
+        .timer_event = internal_frequency_meter_timer_event,
+        .message_processor = NULL,
+        .save_config = internal_frequency_meter_save_config
     }
 };

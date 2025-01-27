@@ -149,6 +149,11 @@ void core_main(void)
           else
             timer_event();
         }
+        else if (c == 's') // eeprom save
+        {
+          //todo
+          error_response();
+        }
         else if (c < MAX_DEVICES) // channel message
         {
           current_channel = device_list[c];
