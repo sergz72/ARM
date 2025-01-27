@@ -6,12 +6,12 @@
 #include <string.h>
 
 static const DdsConfig config = {
-  .type = DDS_AD9833,
+  .type = DDS_SI5351,
   .min_db = 0,
   .max_db = 0,
   .max_mv = 3300,
-  .max_attenuator = 40,
-  .mclk = 25000000
+  .max_attenuator = 0,
+  .mclk = SI5351_XTAL_FREQ
 };
 
 static int si5351_command(unsigned char deviceId, unsigned char cmd, dds_cmd *command, int idx)
@@ -40,9 +40,7 @@ void* si5351_initializer(int idx, void **data)
   if (cfg)
   {
     cfg->deviceId = SI5351_DEVICE_ID;
-    cfg->current_channel = 0;
     cfg->command = si5351_command;
-    cfg->default_frequency = 1000000;
     cfg->cfg.max_frequency = 112500000;
     cfg->cfg.min_frequency = 2500;
     cfg->cfg.channels = 3;
@@ -52,15 +50,8 @@ void* si5351_initializer(int idx, void **data)
     cfg->cfg.supported_modes = (1 << DDS_MODE_SQUARE);
     cfg->cfg.accumulator_bits = 0;
     cfg->cfg.mclk_MHz = 0;
-    dds_init_channel_data(cfg);
   }
   return cfg;
-}
-
-int si5351_message_processor(int idx, void *config, void *data, unsigned char *buffer, int len)
-{
-  buffer[0] = 'e';
-  return 1;
 }
 
 int si5351_save_config(void *buffer)

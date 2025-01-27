@@ -27,5 +27,6 @@ void delay_us(unsigned int us);
 void core_main(void);
 void release_reset(void);
 void change_channel(int);
+int get_interrupt_pin_level(void);
 
 #endif

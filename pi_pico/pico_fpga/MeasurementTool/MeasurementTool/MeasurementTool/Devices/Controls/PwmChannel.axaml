@@ -1,0 +1,39 @@
+﻿<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d"
+             xmlns:c="clr-namespace:MeasurementTool.Devices.Controls"
+             x:Class="MeasurementTool.Devices.Controls.PwmChannel">
+    <Grid RowDefinitions="Auto,*" ColumnDefinitions="Auto,Auto,Auto,*">
+        <Label Grid.Row="1" x:Name="ChannelNumber" Content="CH1" VerticalAlignment="Center"/>
+        <Label Content="Frequency" HorizontalAlignment="Center" Grid.Column="1" Grid.Row="0"/>
+        <StackPanel Orientation="Horizontal" Grid.Column="1" Grid.Row="1">
+            <c:NumberUpDown x:Name="Freq10M"/>
+            <c:NumberUpDown x:Name="Freq1M"/>
+            <Label Content="M" VerticalAlignment="Center"/>
+            <c:NumberUpDown x:Name="Freq100K"/>
+            <c:NumberUpDown x:Name="Freq10K"/>
+            <c:NumberUpDown x:Name="Freq1K"/>
+            <Label Content="K" VerticalAlignment="Center"/>
+            <c:NumberUpDown x:Name="Freq100"/>
+            <c:NumberUpDown x:Name="Freq10"/>
+            <c:NumberUpDown x:Name="Freq1"/>
+            <Label Content="Hz" VerticalAlignment="Center"/>
+        </StackPanel>
+        <Label Content="Duty" HorizontalAlignment="Center" Grid.Column="2" Grid.Row="0"/>
+        <StackPanel Orientation="Horizontal" Grid.Column="2" Grid.Row="1">
+            <c:NumberUpDown x:Name="Duty10"/>
+            <c:NumberUpDown x:Name="Duty1"/>
+            <Label Content="." VerticalAlignment="Center"/>
+            <c:NumberUpDown x:Name="Dutyp1"/>
+            <Label Content="%" VerticalAlignment="Center"/>
+        </StackPanel>
+        <CheckBox x:Name="OutputEnable" Grid.Column="3" Grid.Row="0" Click="OutputEnable_OnClick">Output enable</CheckBox>
+        <Grid Grid.Column="3" Grid.Row="1" RowDefinitions="Auto,*" ColumnDefinitions="*">
+            <CheckBox x:Name="SetOnChange" IsChecked="True">Set on change</CheckBox>
+            <Button Grid.Row="1" Content="Apply" VerticalAlignment="Stretch" HorizontalAlignment="Stretch"
+                    VerticalContentAlignment="Center" HorizontalContentAlignment="Center" Click="Apply_OnClick"/>
+        </Grid>
+    </Grid>
+</UserControl>

@@ -65,7 +65,7 @@ const Device devices[] = {
         .public_id = PUBLIC_ID_DDS,
         .initializer = si5351_initializer,
         .timer_event = NULL,
-        .message_processor = si5351_message_processor,
+        .message_processor = dds_message_processor,
         .save_config = si5351_save_config
     },
     {

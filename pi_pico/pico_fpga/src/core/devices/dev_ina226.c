@@ -31,7 +31,7 @@ void* ina226_initializer(int idx, void **data)
   return cfg;
 }
 
-int ina226_timer_event(int idx, int step, void *config, void *data, unsigned char *buffer)
+int ina226_timer_event(int idx, int step, void *config, void *data, int interrupt, unsigned char *buffer)
 {
   int rc;
   DEV_INA226Data *ddata = (DEV_INA226Data*)data;

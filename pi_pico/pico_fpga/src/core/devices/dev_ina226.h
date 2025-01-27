@@ -12,7 +12,7 @@ typedef struct {
 #define INA226_DEVICE_ID 0x80
 
 void* ina226_initializer(int idx, void **data);
-int ina226_timer_event(int idx, int step, void* config, void *data, unsigned char *buffer);
+int ina226_timer_event(int idx, int step, void* config, void *data, int interrupt, unsigned char *buffer);
 int ina226_save_config(void *buffer);
 
 #endif

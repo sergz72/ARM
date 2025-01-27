@@ -97,8 +97,8 @@ public sealed class DeviceManager
     {
         if (_channelToDevice == null)
             return [];
-        return _channelToDevice.Values
-            .Select(d => new DeviceControl(d.CreateUi(), d.GetName()))
+        return _channelToDevice
+            .Select(cd => new DeviceControl(cd.Value.CreateUi(), cd.Key, cd.Value.GetName()))
             .Where(dc => dc.DControl != null)
             .ToArray();
     }
@@ -198,6 +198,9 @@ public sealed class DeviceManager
                         case DeviceType.PowerMeter:
                             device = new PowerMeter(this, config, channel);
                             break;
+                        case DeviceType.Pwm:
+                            device = new Pwm(this, config, channel);
+                            break;
                         default:
                             _logger.Error("Unknown device id " + deviceId);
                             break;
@@ -234,4 +237,4 @@ internal enum DeviceType
     Pwm
 }
 
-public record DeviceControl(Control? DControl, string Name);
+public record DeviceControl(Control? DControl, int Channel, string Name);

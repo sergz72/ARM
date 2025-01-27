@@ -29,6 +29,7 @@
 #define PIN_SDI1        9
 #define PIN_SDO0        6
 #define PIN_SDO1        7
+#define PIN_INTERRUPT   2
 
 #define PIN_SDA4 27
 #define PIN_SCL4 26

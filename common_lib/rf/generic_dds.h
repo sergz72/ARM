@@ -10,13 +10,15 @@
 #define DDS_COMMAND_SET_MODE           3
 #define DDS_COMMAND_SET_ATTENUATOR     4
 #define DDS_COMMAND_ENABLE_OUTPUT      5
+#define DDS_COMMAND_SWEEP              6
+#define DDS_COMMAND_SWEEP_CODES        7
 
 typedef struct __attribute__((__packed__)) {
-  unsigned long  max_frequency;
-  unsigned long  min_frequency;
+  unsigned long long int max_frequency;
+  unsigned long long int min_frequency;
   unsigned short mclk_MHz;
   unsigned short max_vout_mV;
-  unsigned short max_attenuator_value;
+  unsigned char  max_attenuator_value;
   unsigned char  channels;
   unsigned char  accumulator_bits;
   unsigned char  out_square_divider_bits;
@@ -32,17 +34,19 @@ typedef struct {
 } dds_set_mode_command;
 
 typedef struct {
-  unsigned long frequency;
+  unsigned long long int frequency;
   unsigned short divider;
 } dds_set_frequency_command;
 
 typedef struct {
-  unsigned long frequency_code;
+  unsigned long long int frequency;
+  unsigned int step;
+  unsigned short points;
   unsigned short divider;
-} dds_set_frequency_code_command;
+} dds_sweep_command;
 
 typedef struct {
-  unsigned short attenuator_value;
+  unsigned char attenuator_value;
 } dds_set_attenuator_command;
 
 typedef struct {
@@ -51,8 +55,8 @@ typedef struct {
     dds_enable_output_command enable_command;
     dds_set_mode_command set_mode_command;
     dds_set_frequency_command set_frequency_command;
-    dds_set_frequency_code_command set_frequency_code_command;
     dds_set_attenuator_command set_attenuator_command;
+    dds_sweep_command sweep_command;
   };
 } dds_cmd;
 
@@ -63,23 +67,26 @@ typedef struct __attribute__((__packed__)) {
 } dds_cmd3;
 
 typedef struct __attribute__((__packed__)) {
-  unsigned char command;
-  unsigned char channel;
-  unsigned short parameter;
-} dds_cmd4;
+  unsigned char  command;
+  unsigned char  channel;
+  unsigned long long int freq;
+  unsigned short div;
+} dds_cmd12;
 
 typedef struct __attribute__((__packed__)) {
   unsigned char  command;
   unsigned char  channel;
-  unsigned long  freq;
+  unsigned long long int freq;
+  unsigned int step;
+  unsigned int points;
   unsigned short div;
-} dds_cmd8;
+} dds_cmd20;
 
 typedef union __attribute__((__packed__)) {
-    unsigned char bytes[8];
+    unsigned char bytes[20];
     dds_cmd3 c3;
-    dds_cmd4 c4;
-    dds_cmd8 c8;
+    dds_cmd12 c12;
+    dds_cmd20 c20;
 } dds_i2c_command;
 
 #endif

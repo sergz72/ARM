@@ -14,13 +14,13 @@ public sealed class Dds: GenericDevice
     private static readonly Dictionary<DdsType, DdsInfo> DdsInfos = new()
     {
         { DdsType.Ad9833, new DdsInfo(mclk => mclk / 2, mclk => 1, 1,
-            [1,2], DdsModes.Sine|DdsModes.Square|DdsModes.Triangle)},
+            [1,2], DdsModes.Sine|DdsModes.Square|DdsModes.Triangle, 20)},
         { DdsType.Ad9850, new DdsInfo(mclk => mclk / 2, mclk => 1, 1,
-            [1], DdsModes.Sine)},
+            [1], DdsModes.Sine, 32)},
         { DdsType.Adf4351, new DdsInfo(mclk => 4400000000, mclk => 35000000, 1,
-            [1,2,4,8,16,32,64], DdsModes.Sine)},
+            [1,2,4,8,16,32,64], DdsModes.Sine, 0)},
         { DdsType.Si5351, new DdsInfo(mclk => 160000000, mclk => 8000, 3,
-            [1,2,4,8,16,32,64,128], DdsModes.Square)}
+            [1,2,4,8,16,32,64,128], DdsModes.Square, 0)}
     };
 
     public readonly long MinFrequency;
@@ -30,14 +30,18 @@ public sealed class Dds: GenericDevice
     public readonly DdsModes SupportedNodes;
     public readonly int[] Dividers;
     private readonly int _channels;
+    private readonly int _accumulatorBits;
+    private readonly bool _sendCodes;
     private readonly DdsConfig _ddsConfig;
 
     private List<DDSChannel> _channelsUi;
     private LevelMeter? _levelMeter;
+    private long _sweepF1;
+    private int _sweepStep;
     
     public Dds(DeviceManager dm, byte[] config, byte channel) : base(dm, channel)
     {
-        if (config.Length != 11)
+        if (config.Length != 15)
             throw new ArgumentException($"DDS channel {channel}: Invalid config length: {config.Length}");
         _channelsUi = [];
         using var stream = new MemoryStream(config);
@@ -45,7 +49,7 @@ public sealed class Dds: GenericDevice
         var type = (DdsType)reader.ReadInt16();
         var minDb = reader.ReadSByte();
         var maxDb = reader.ReadSByte();
-        var mClk = reader.ReadInt32();
+        var mClk = reader.ReadInt64();
         var maxMv = reader.ReadInt16();
         var maxAttenuator = reader.ReadByte();
         var ddsConfig = new DdsConfig(type, minDb, maxDb, mClk, maxMv, maxAttenuator);
@@ -56,6 +60,8 @@ public sealed class Dds: GenericDevice
             MaxFrequency = info.MaxFrequencyFn(mClk);
             SupportedNodes = info.SupportedModes;
             Dividers = info.Dividers;
+            _accumulatorBits = info.AccumulatorBits;
+            _sendCodes = _accumulatorBits > 0;
         }
         else
             throw new ArgumentException($"DDS channel {channel}: Unknown DDS type: {type}");
@@ -121,27 +127,40 @@ public sealed class Dds: GenericDevice
         Dm.QueueCommand(Channel, command, CheckError);
     }
 
+    private long CalculateFrequencyCode(long value)
+    {
+        return (value << _accumulatorBits) / _ddsConfig.Mclk;
+    }
+    
     public void SetFrequency(int channel, long value, int divider)
     {
         using var ms = new MemoryStream();
         using var bw = new BinaryWriter(ms);
-        bw.Write((byte)DdsCommands.SetFrequency);
+        bw.Write(_sendCodes ? (byte)DdsCommands.SetFrequencyCode : (byte)DdsCommands.SetFrequency);
         bw.Write((byte)channel);
-        bw.Write(value);
+        bw.Write(_sendCodes ? CalculateFrequencyCode(value) : value);
         bw.Write((short)divider);
         Dm.QueueCommand(Channel, ms.ToArray(), CheckError);
     }
 
-    public void SetSweep(int channel, long f1, long f2, int divider, int step)
+    private int CalculateStep(long f1, long width, int numPoints)
+    {
+        var code2 = CalculateFrequencyCode(f1 + width);
+        return (int)((code2 - _sweepF1) / numPoints);
+    }
+    
+    public void SetSweep(int channel, long f1, int divider, int step, int numPoints)
     {
         using var ms = new MemoryStream();
         using var bw = new BinaryWriter(ms);
-        bw.Write((byte)DdsCommands.Sweep);
+        bw.Write(_sendCodes ? (byte)DdsCommands.SweepCodes : (byte)DdsCommands.Sweep);
         bw.Write((byte)channel);
-        bw.Write(f1);
-        bw.Write(f2);
+        _sweepF1 = _sendCodes ? CalculateFrequencyCode(f1) : f1;
+        bw.Write(_sweepF1);
         bw.Write((short)divider);
-        bw.Write(step);
+        _sweepStep = _sendCodes ? CalculateStep(f1, (long)step * (numPoints - 1), numPoints) : step;
+        bw.Write(_sweepStep);
+        bw.Write((short)numPoints);
         Dm.QueueCommand(Channel, ms.ToArray(), CheckError);
     }
 }
@@ -166,23 +185,26 @@ internal enum DdsType
 internal enum DdsCommands
 {
     SetFrequency = 'f',
+    SetFrequencyCode = 'c',
     SetMode = 'm',
     SetAttenuator = 'a',
     EnableOutput = 'e',
-    Sweep = 's'
+    Sweep = 's',
+    SweepCodes = 'd'
 }
 
 internal record DdsInfo(
-    Func<int, long> MaxFrequencyFn,
-    Func<int, long> MinFrequencyFn,
+    Func<long, long> MaxFrequencyFn,
+    Func<long, long> MinFrequencyFn,
     int Channels,
     int[] Dividers,
-    DdsModes SupportedModes);
+    DdsModes SupportedModes,
+    int AccumulatorBits);
 
 internal record DdsConfig(
     DdsType Type,
     int LevelMeterMinDb,
     int LevelMeterMaxDb,
-    int Mclk,
+    long Mclk,
     int MaxVoutMv,
     int MaxAttenuatorValue);

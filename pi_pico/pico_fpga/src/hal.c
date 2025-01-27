@@ -23,6 +23,9 @@ void configure_ports(void)
   gpio_set_dir(PIN_DEVICE_ID1, GPIO_OUT);
   gpio_init(PIN_DEVICE_ID2);
   gpio_set_dir(PIN_DEVICE_ID2, GPIO_OUT);
+  gpio_init(PIN_INTERRUPT);
+  gpio_set_dir(PIN_SCLK, GPIO_IN);
+  gpio_pull_up(PIN_INTERRUPT);
 
   led_state = false;
 }
@@ -282,23 +285,17 @@ int dds_command(unsigned char deviceId, unsigned char cmd, dds_cmd *data, int id
       return i2c_soft_command(idx, deviceId, (unsigned char*)&c, 3,
                               NULL, 0, NULL, 0, I2C_TIMEOUT);
     case DDS_COMMAND_SET_ATTENUATOR:
-      c.c4.command = cmd;
-      c.c4.channel = data->channel;
-      c.c4.parameter = data->set_attenuator_command.attenuator_value;
-      return i2c_soft_command(idx, deviceId, (unsigned char*)&c, 4,
+      c.c3.command = cmd;
+      c.c3.channel = data->channel;
+      c.c3.parameter = data->set_attenuator_command.attenuator_value;
+      return i2c_soft_command(idx, deviceId, (unsigned char*)&c, 3,
                               NULL, 0, NULL, 0, I2C_TIMEOUT);
     case DDS_COMMAND_SET_FREQUENCY:
-      c.c8.command = cmd;
-      c.c8.channel = data->channel;
-      c.c8.freq = data->set_frequency_command.frequency;
-      c.c8.div = data->set_frequency_command.divider;
-      return i2c_soft_command(idx, deviceId, (unsigned char*)&c, 8,
-                              NULL, 0, NULL, 0, I2C_TIMEOUT);
     case DDS_COMMAND_SET_FREQUENCY_CODE:
-      c.c8.command = cmd;
-      c.c8.channel = data->channel;
-      c.c8.freq = data->set_frequency_code_command.frequency_code;
-      c.c8.div = data->set_frequency_code_command.divider;
+      c.c12.command = cmd;
+      c.c12.channel = data->channel;
+      c.c12.freq = data->set_frequency_command.frequency;
+      c.c12.div = data->set_frequency_command.divider;
       return i2c_soft_command(idx, deviceId, (unsigned char*)&c, 8,
                               NULL, 0, NULL, 0, I2C_TIMEOUT);
     case DDS_COMMAND_SET_MODE:
@@ -306,6 +303,16 @@ int dds_command(unsigned char deviceId, unsigned char cmd, dds_cmd *data, int id
       c.c3.channel = data->channel;
       c.c3.parameter = data->set_mode_command.mode;
       return i2c_soft_command(idx, deviceId, (unsigned char*)&c, 3,
+                              NULL, 0, NULL, 0, I2C_TIMEOUT);
+    case DDS_COMMAND_SWEEP:
+    case DDS_COMMAND_SWEEP_CODES:
+      c.c20.command = cmd;
+      c.c20.channel = data->channel;
+      c.c20.freq = data->sweep_command.frequency;
+      c.c20.step = data->sweep_command.step;
+      c.c20.points = data->sweep_command.points;
+      c.c20.div = data->sweep_command.divider;
+      return i2c_soft_command(idx, deviceId, (unsigned char*)&c, 8,
                               NULL, 0, NULL, 0, I2C_TIMEOUT);
     default:
       return 1;
@@ -364,4 +371,9 @@ int main_comm_port_read_bytes(unsigned char *buffer, int buffer_size)
 void release_reset(void)
 {
   gpio_put(PIN_RESET, true);
+}
+
+int get_interrupt_pin_level(void)
+{
+  return gpio_get(PIN_INTERRUPT);
 }

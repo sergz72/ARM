@@ -20,8 +20,8 @@ public class EmulatorInterface: IDeviceInterface
         _logger = logger;
         _devices = new Dictionary<byte, IDeviceEmulator>
         {
-            { 0, new DdsEmulator(logger) },
-            { 1, new MeterEmulator(logger) }
+            { 1, new DdsEmulator(logger) },
+            { 2, new MeterEmulator(logger) }
         };
         _eventId = 0;
     }

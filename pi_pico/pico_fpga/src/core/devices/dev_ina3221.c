@@ -48,7 +48,7 @@ static void collect_channel_data(int idx, int channel, int r, DEV_INA226Data *da
     data->current = 0;
 }
 
-int ina3221_timer_event(int idx, int step, void* config, void *data, unsigned char *buffer)
+int ina3221_timer_event(int idx, int step, void* config, void *data, int interrupt, unsigned char *buffer)
 {
   INA3221Data *ddata = (INA3221Data*)data;
   DEV_INA226Config* cfg = (DEV_INA226Config*)config;

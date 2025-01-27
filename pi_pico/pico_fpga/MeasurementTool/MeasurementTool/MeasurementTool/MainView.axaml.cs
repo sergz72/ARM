@@ -22,13 +22,14 @@ public partial class MainView : UserControl
         }        
     }
 
-    private Control BuildChannelControl(DeviceControl control, int n)
+    private Control BuildChannelControl(DeviceControl control)
     {
         var panel = new StackPanel
         {
             Orientation = Orientation.Vertical
         };
-        panel.Children.Add(new Label{Content = $"Channel {n}: {control.Name}", HorizontalAlignment = HorizontalAlignment.Center});
+        panel.Children.Add(new Label{Content = $"Channel {control.Channel}: {control.Name}",
+                                        HorizontalAlignment = HorizontalAlignment.Center});
         panel.Children.Add(control.DControl!);
         return panel;
     }

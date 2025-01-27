@@ -24,7 +24,7 @@ typedef struct {
   int public_id;
   void* (*initializer)(int idx, void **data);
   int (*save_config)(void *buffer);
-  int (*timer_event)(int idx, int step, void *config, void *data, unsigned char *buffer);
+  int (*timer_event)(int idx, int step, void *config, void *data, int interrupt, unsigned char *buffer);
   int (*message_processor)(int idx, void *config, void *data, unsigned char *buffer, int len);
 } Device;
 

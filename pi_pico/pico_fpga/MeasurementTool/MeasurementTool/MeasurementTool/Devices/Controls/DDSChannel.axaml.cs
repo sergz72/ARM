@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Threading.Tasks;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 
@@ -74,12 +73,6 @@ public partial class DDSChannel : UserControl
         var (width, step) = ParseSweepString();
         if (width == 0 || step == 0)
             return false;
-        width /= 2;
-        if (width == 0 || step > width / 50)
-            throw new Exception("Invalid width");
-        var steps = width / step;
-        if (steps > 500)
-            throw new Exception("Invalid step");
         var freq = _frequencyManager.Value;
         var f1 = freq - width;
         var f2 = freq + width;
@@ -89,7 +82,13 @@ public partial class DDSChannel : UserControl
             f2 = _dds.MaxFrequency;
         if (f2 <= f1)
             throw new Exception("Invalid frequency/width");
-        _dds.SetSweep(_channel, f1, f2, (int)(Divider.SelectedItem ?? 1), (int)step);
+        width = (f2 - f1) / 2;
+        if (width == 0 || step > width / 50)
+            throw new Exception("Invalid width");
+        var steps = width / step;
+        if (steps > 500)
+            throw new Exception("Invalid step");
+        _dds.SetSweep(_channel, f1, (int)(Divider.SelectedItem ?? 1), (int)step, (int)steps);
         return true;
     }
 

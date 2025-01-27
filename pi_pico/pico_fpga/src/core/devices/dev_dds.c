@@ -1,6 +1,7 @@
 #include <malloc.h>
 #include "dev_dds.h"
 
+#include <devices.h>
 #include <string.h>
 
 static unsigned char last_command;
@@ -8,69 +9,7 @@ static unsigned char command_buffer[10];
 static unsigned char *command_buffer_p;
 static int bytes_expected;
 
-static unsigned int calculateFrequencyCode(unsigned int frequency, unsigned int mclk_MHz, unsigned int accumulator_bits)
-{
-  return ((unsigned long long int)frequency << accumulator_bits) / (mclk_MHz * 1000000);
-}
-
-static void updateFrequency(dev_dds* config, int idx)
-{
-  dds_cmd command;
-  dds_channel* c = &config->channel_data[config->current_channel];
-  if (c->enabled)
-  {
-    command.channel = config->current_channel;
-    if (config->cfg.accumulator_bits)
-    {
-      command.set_frequency_code_command.frequency_code = calculateFrequencyCode(c->frequency, config->cfg.mclk_MHz, config->cfg.accumulator_bits);
-      command.set_frequency_code_command.divider = c->output_divider_value;
-      config->command(config->deviceId, DDS_COMMAND_SET_FREQUENCY_CODE, &command, idx);
-    }
-    else
-    {
-      command.set_frequency_command.frequency = c->frequency;
-      command.set_frequency_command.divider = c->output_divider_value;
-      config->command(config->deviceId, DDS_COMMAND_SET_FREQUENCY, &command, idx);
-    }
-  }
-}
-
-static unsigned short calculateAttenuatorValue(unsigned short voltage, dds_config* cfg)
-{
-  return (unsigned short)((unsigned int)voltage * cfg->max_attenuator_value / cfg->max_vout_mV);
-}
-
-static void updateAttenuator(dev_dds* config, int idx)
-{
-  dds_cmd command;
-  dds_channel* c = &config->channel_data[config->current_channel];
-  if (c->enabled)
-  {
-    command.channel = config->current_channel;
-    command.set_attenuator_command.attenuator_value = calculateAttenuatorValue(c->output_voltage, &config->cfg);
-    config->command(config->deviceId, DDS_COMMAND_SET_ATTENUATOR, &command, idx);
-  }
-}
-
-void dds_init_channel_data(dev_dds *ddds)
-{
-  int i;
-
-  ddds->channel_data = malloc(sizeof(dds_channel) * ddds->cfg.channels);
-  if (ddds->channel_data)
-  {
-    for (i = 0; i < ddds->cfg.channels; i++)
-    {
-      ddds->channel_data[i].frequency = ddds->default_frequency;
-      ddds->channel_data[i].mode = 0;//todo find_next_mode(0, ddds->cfg.supported_modes);
-      ddds->channel_data[i].enabled = 0;
-      ddds->channel_data[i].output_voltage = ddds->cfg.max_vout_mV;
-      ddds->channel_data[i].output_divider_value = 1;
-    }
-  }
-}
-
-void* dds_initializer(unsigned char deviceId, unsigned int default_frequency, int idx)
+void* dds_initializer(unsigned char deviceId, int idx)
 {
   int rc;
   dev_dds *cfg = malloc(sizeof(dev_dds));
@@ -83,11 +22,7 @@ void* dds_initializer(unsigned char deviceId, unsigned int default_frequency, in
       return NULL;
     }
     cfg->deviceId = deviceId;
-    cfg->current_channel = 0;
     cfg->command = dds_command;
-    cfg->default_frequency = default_frequency;
-
-    dds_init_channel_data(cfg);
   }
 
   bytes_expected = 0;
@@ -96,43 +31,60 @@ void* dds_initializer(unsigned char deviceId, unsigned int default_frequency, in
   return cfg;
 }
 
-static int exec_command(unsigned char *buffer)
+static int exec_command(const dev_dds *config, int idx, unsigned char *buffer)
 {
-  bytes_expected = 0;
-  command_buffer_p = command_buffer;
+  dds_cmd command;
+  int rc = 1;
 
+  command.channel = *buffer++;
   switch (last_command)
   {
     case 'f': // set frequency
-      //todo
+    case 'c': // set frequency code
+      memcpy(&command.set_frequency_command.frequency, buffer, 8);
+      buffer += 8;
+      memcpy(&command.set_frequency_command.divider, buffer, 2);
+      rc = config->command(config->deviceId, last_command == 'f' ? DDS_COMMAND_SET_FREQUENCY : DDS_COMMAND_SET_FREQUENCY_CODE, &command, idx);
       break;
     case 'm': // set mode
-      //todo
+      command.set_mode_command.mode = buffer[1];
+      rc = config->command(config->deviceId, DDS_COMMAND_SET_MODE, &command, idx);
       break;
     case 'a': // set attenuator
-      //todo
+      command.set_attenuator_command.attenuator_value = buffer[1];
+      rc = config->command(config->deviceId, DDS_COMMAND_SET_ATTENUATOR, &command, idx);
       break;
     case 'e': // enable output
-      //todo
+      command.enable_command.enable = buffer[1];
+      rc = config->command(config->deviceId, DDS_COMMAND_ENABLE_OUTPUT, &command, idx);
       break;
     case 's': // sweep
-      //todo
+    case 'd': // sweep codes
+      memcpy(&command.sweep_command.frequency, buffer, 8);
+      buffer += 8;
+      memcpy(&command.sweep_command.step, buffer, 4);
+      buffer += 4;
+      memcpy(&command.sweep_command.points, buffer, 2);
+      buffer += 2;
+      memcpy(&command.sweep_command.divider, buffer, 2);
+      rc = config->command(config->deviceId, last_command == 's' ? DDS_COMMAND_SWEEP : DDS_COMMAND_SWEEP_CODES, &command, idx);
       break;
     default:
-      buffer[0] = 'e';
-      return 1;
+      break;
   }
-  buffer[0] = 'k';
+  buffer[0] = rc ? 'e' : 'k';
   return 1;
 }
 
 int dds_message_processor(int idx, void *config, void *data, unsigned char *buffer, int len)
 {
+  const dev_dds *dconfig = (const dev_dds*)config;
+
   if (bytes_expected)
   {
     memcpy(command_buffer_p, buffer, len);
     if (len >= bytes_expected)
-      return exec_command(buffer);
+      return exec_command(dconfig, idx, buffer);
     command_buffer_p += len;
     bytes_expected -= len;
     return 0;
@@ -144,7 +96,7 @@ int dds_message_processor(int idx, void *config, void *data, unsigned char *buff
   switch (last_command)
   {
     case 'f': // set frequency
-      bytes_expected = len >= 7 ? 0 : 7 - len;
+      bytes_expected = len >= 11 ? 0 : 11 - len;
       break;
     case 'm': // set mode
     case 'a': // set attenuator
@@ -152,13 +104,13 @@ int dds_message_processor(int idx, void *config, void *data, unsigned char *buff
       bytes_expected = len >= 2 ? 0 : 2 - len;
       break;
     case 's': // sweep
-      bytes_expected = len >= 15 ? 0 : 15 - len;
+      bytes_expected = len >= 17 ? 0 : 17 - len;
       break;
     default:
       buffer[0] = 'e';
       return 1;
   }
   if (!bytes_expected)
-    return exec_command(buffer);
+    return exec_command(config, idx, buffer);
   return 0;
 }

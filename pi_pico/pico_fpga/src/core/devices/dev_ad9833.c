@@ -14,7 +14,7 @@ static const DdsConfig config = {
 
 void* ad9833_initializer(int idx, void **data)
 {
-  return dds_initializer(AD9833_DEVICE_ID, 1000000, idx);
+  return dds_initializer(AD9833_DEVICE_ID, idx);
 }
 
 int ad9833_save_config(void *buffer)

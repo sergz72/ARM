@@ -49,7 +49,7 @@ void* mcp9600_initializer(int idx, void **data)
   return NULL;
 }
 
-int mcp9600_timer_event(int idx, int step, void *config, void *data, unsigned char *buffer)
+int mcp9600_timer_event(int idx, int step, void *config, void *data, int interrupt, unsigned char *buffer)
 {
   DEV_MCP9600Data d;
   unsigned char status;

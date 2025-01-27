@@ -47,7 +47,7 @@ void* mcp3421_initializer(int idx, void **data)
   return cfg;
 }
 
-int mcp3421_timer_event(int idx, int step, void *config, void *data, unsigned char *buffer)
+int mcp3421_timer_event(int idx, int step, void *config, void *data, int interrupt, unsigned char *buffer)
 {
   DEV_MCP3421Config* cfg = (DEV_MCP3421Config*)config;
   int v;
