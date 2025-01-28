@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Linq;
+using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Interactivity;
 using Avalonia.Layout;
 using MeasurementTool.Devices;
 
@@ -32,5 +34,15 @@ public partial class MainView : UserControl
                                         HorizontalAlignment = HorizontalAlignment.Center});
         panel.Children.Add(control.DControl!);
         return panel;
+    }
+
+    private void EepromRead_OnClick(object? sender, RoutedEventArgs e)
+    {
+        EepromWindow.Show(false);
+    }
+
+    private void EepromWrite_OnClick(object? sender, RoutedEventArgs e)
+    {
+        EepromWindow.Show(true);
     }
 }

@@ -10,7 +10,7 @@ typedef union
   unsigned short size;
   unsigned char device_id;
   unsigned char data;
-} eeprom_save_command;
+} eeprom_command;
 
 static const unsigned char error_ = 'e';
 static const unsigned char ok_ = 'k';
@@ -19,11 +19,11 @@ static unsigned char comm_buffer[COMM_BUFFER_SIZE];
 
 static union
 {
-  eeprom_save_command command;
+  eeprom_command command;
   unsigned char buffer[COMM_BUFFER_SIZE];
-} eeprom_save_command_buffer;
+} eeprom_command_buffer;
 
-static unsigned char *eeprom_save_command_buffer_p;
+static unsigned char *eeprom_command_buffer_p;
 static Device *current_channel;
 static int timer_event_id;
 
@@ -110,28 +110,50 @@ static void timer_event(void)
     timer_event_id++;
 }
 
-void build_eeprom_save_command(unsigned char *buffer, int len)
+void build_eeprom_write_command(unsigned char *buffer, int len)
 {
-  memcpy(eeprom_save_command_buffer_p, buffer, len);
-  eeprom_save_command_buffer_p += len;
-  int l = eeprom_save_command_buffer_p - eeprom_save_command_buffer.buffer;
+  memcpy(eeprom_command_buffer_p, buffer, len);
+  eeprom_command_buffer_p += len;
+  int l = eeprom_command_buffer_p - eeprom_command_buffer.buffer;
   if (l >= 3)
   {
-    if (eeprom_save_command_buffer.command.device_id >= MAX_DEVICES)
+    if (eeprom_command_buffer.command.device_id >= MAX_DEVICES)
     {
-      eeprom_save_command_buffer_p = NULL;
+      eeprom_command_buffer_p = NULL;
       error_response();
       return;
     }
-    if (l >= eeprom_save_command_buffer.command.size)
+    if (l >= eeprom_command_buffer.command.size)
     {
-      if (_24C01_16_write(eeprom_save_command_buffer.command.device_id, _24C01_16_address(0), 0,
-                      &eeprom_save_command_buffer.command.data, eeprom_save_command_buffer.command.size - 1, I2C_TIMEOUT))
+      if (_24C01_16_write(eeprom_command_buffer.command.device_id, _24C01_16_address(0), 0,
+                      &eeprom_command_buffer.command.data, eeprom_command_buffer.command.size - 1, I2C_TIMEOUT))
         error_response();
       else
         ok_response();
-      eeprom_save_command_buffer_p = NULL;
+      eeprom_command_buffer_p = NULL;
     }
+  }
+}
+
+void build_eeprom_read_command(unsigned char *buffer, int len)
+{
+  memcpy(eeprom_command_buffer_p, buffer, len);
+  eeprom_command_buffer_p += len;
+  int l = eeprom_command_buffer_p - eeprom_command_buffer.buffer;
+  if (l >= 3)
+  {
+    if (eeprom_command_buffer.command.device_id >= MAX_DEVICES)
+    {
+      eeprom_command_buffer_p = NULL;
+      error_response();
+      return;
+    }
+    if (_24C01_16_read(eeprom_command_buffer.command.device_id, _24C01_16_address(0), 0,
+                    &eeprom_command_buffer.command.data, eeprom_command_buffer.command.size, I2C_TIMEOUT))
+      error_response();
+    else
+      main_comm_port_write_bytes(&eeprom_command_buffer.command.data, eeprom_command_buffer.command.size);
+    eeprom_command_buffer_p = NULL;
   }
 }
 
@@ -155,7 +177,7 @@ void core_main(void)
 
   unsigned int delay_id = 0;
 
-  eeprom_save_command_buffer_p = NULL;
+  eeprom_command_buffer_p = NULL;
 
   for (;;)
   {
@@ -163,8 +185,13 @@ void core_main(void)
     int len = main_comm_port_read_bytes(comm_buffer, COMM_BUFFER_SIZE);
     if (len > 0)
     {
-      if (eeprom_save_command_buffer_p)
-        build_eeprom_save_command(comm_buffer, len);
+      if (eeprom_command_buffer_p)
+      {
+        if (c == 's')
+          build_eeprom_write_command(comm_buffer, len);
+        else
+          build_eeprom_read_command(comm_buffer, len);
+      }
       else if (current_channel)
       {
         int response_length = current_channel->message_processor(c, device_config[c], device_data[c],
@@ -195,10 +222,15 @@ void core_main(void)
           else
             timer_event();
         }
-        else if (c == 's') // eeprom save
+        else if (c == 'w') // eeprom write
         {
-          eeprom_save_command_buffer_p = eeprom_save_command_buffer.buffer;
-          build_eeprom_save_command(comm_buffer + 1, len - 1);
+          eeprom_command_buffer_p = eeprom_command_buffer.buffer;
+          build_eeprom_write_command(comm_buffer + 1, len - 1);
+        }
+        else if (c == 'r') // eeprom read
+        {
+          eeprom_command_buffer_p = eeprom_command_buffer.buffer;
+          build_eeprom_read_command(comm_buffer + 1, len - 1);
         }
         else if (c < MAX_DEVICES) // channel message
         {

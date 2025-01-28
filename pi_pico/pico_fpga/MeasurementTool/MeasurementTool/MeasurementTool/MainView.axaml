@@ -7,6 +7,12 @@
              x:DataType="measurementTool:MainViewModel"
              x:Class="MeasurementTool.MainView">
     <DockPanel x:Name="MainPanel">
+        <Menu DockPanel.Dock="Top">
+            <MenuItem Header="EEPROM">
+                <MenuItem Header="Read" Click="EepromRead_OnClick"/>
+                <MenuItem Header="Write" Click="EepromWrite_OnClick"/>
+            </MenuItem>
+        </Menu>
         <ListBox DockPanel.Dock="Bottom" Height="100" FontSize="14"
                  ItemsSource="{Binding Log}"/>
         <StackPanel x:Name="DevicePanel" Spacing="3"/>

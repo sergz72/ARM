@@ -25,6 +25,7 @@ public partial class App : Application
                 DataContext = new MainViewModel()
             };
             MessageBox.MainWindow = desktop.MainWindow;
+            EepromWindow.MainWindow = desktop.MainWindow;
         }
         else if (ApplicationLifetime is ISingleViewApplicationLifetime singleViewPlatform)
         {
