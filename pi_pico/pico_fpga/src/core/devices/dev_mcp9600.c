@@ -84,7 +84,7 @@ int mcp9600_message_processor(unsigned char *buffer, int len)
   return 1;
 }
 
-int mcp9600_save_config(void *buffer)
+int mcp9600_save_config(int idx, void *buffer)
 {
   return BuildMeterConfig(buffer, &config, "MCP9600");
 }

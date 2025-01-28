@@ -7,8 +7,7 @@
 #include "dev_mcp3421.h"
 #include "dev_mcp9600.h"
 #include "dev_dds.h"
-#include "dev_internal_frequency_meter.h"
-#include "dev_internal_pwm.h"
+#include "dev_pwm.h"
 
 #define PUBLIC_ID_DDS 1
 #define PUBLIC_ID_METER 2
@@ -78,23 +77,6 @@ const Device devices[] = {
         .timer_event = mcp9600_timer_event,
         .message_processor = NULL,
         .save_config = mcp9600_save_config
-    },
-    {
-        .name = "Internal PWM",
-        .device_id = INTERNAL_PWM_DEVICE_ID,
-        .public_id = PUBLIC_ID_PWM,
-        .initializer = internal_pwm_initializer,
-        .timer_event = internal_pwm_timer_event,
-        .message_processor = pwm_message_processor,
-        .save_config = internal_pwm_save_config
-    },
-    {
-        .name = "Internal Frequency meter",
-        .device_id = INTERNAL_FREQUENCY_METER_DEVICE_ID,
-        .public_id = PUBLIC_ID_METER,
-        .initializer = internal_frequency_meter_initializer,
-        .timer_event = internal_frequency_meter_timer_event,
-        .message_processor = NULL,
-        .save_config = internal_frequency_meter_save_config
     }
+    INTERNAL_DEVICES
 };

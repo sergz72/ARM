@@ -7,8 +7,7 @@
 
 static const DdsConfig config = {
   .type = DDS_SI5351,
-  .min_db = 0,
-  .max_db = 0,
+  .level_meter_type = LEVEL_METER_NONE,
   .max_mv = 3300,
   .max_attenuator = 0,
   .mclk = SI5351_XTAL_FREQ
@@ -54,7 +53,7 @@ void* si5351_initializer(int idx, void **data)
   return cfg;
 }
 
-int si5351_save_config(void *buffer)
+int si5351_save_config(int idx, void *buffer)
 {
   memcpy(buffer, &config, sizeof(DdsConfig));
   return sizeof(DdsConfig);

@@ -1,12 +1,29 @@
+#include <string.h>
 #include "board.h"
 #include "devices.h"
+#include <24c01_16.h>
 
 #define COMM_BUFFER_SIZE 1024
+
+typedef union
+{
+  unsigned short size;
+  unsigned char device_id;
+  unsigned char data;
+} eeprom_save_command;
 
 static const unsigned char error_ = 'e';
 static const unsigned char ok_ = 'k';
 
 static unsigned char comm_buffer[COMM_BUFFER_SIZE];
+
+static union
+{
+  eeprom_save_command command;
+  unsigned char buffer[COMM_BUFFER_SIZE];
+} eeprom_save_command_buffer;
+
+static unsigned char *eeprom_save_command_buffer_p;
 static Device *current_channel;
 static int timer_event_id;
 
@@ -34,7 +51,7 @@ static void device_list_response()
       continue;
     }
     comm_buffer[idx+2] = (unsigned char)dd->public_id;
-    int len = dd->save_config ? dd->save_config(&comm_buffer[idx+3]) + 1 : 1;
+    int len = dd->save_config ? dd->save_config(i, &comm_buffer[idx+3]) + 1 : 1;
     comm_buffer[idx] = len & 0xff;
     comm_buffer[idx+1] = (len >> 8) & 0xff;
     idx += len + 2;
@@ -93,6 +110,31 @@ static void timer_event(void)
     timer_event_id++;
 }
 
+void build_eeprom_save_command(unsigned char *buffer, int len)
+{
+  memcpy(eeprom_save_command_buffer_p, buffer, len);
+  eeprom_save_command_buffer_p += len;
+  int l = eeprom_save_command_buffer_p - eeprom_save_command_buffer.buffer;
+  if (l >= 3)
+  {
+    if (eeprom_save_command_buffer.command.device_id >= MAX_DEVICES)
+    {
+      eeprom_save_command_buffer_p = NULL;
+      error_response();
+      return;
+    }
+    if (l >= eeprom_save_command_buffer.command.size)
+    {
+      if (_24C01_16_write(eeprom_save_command_buffer.command.device_id, _24C01_16_address(0), 0,
+                      &eeprom_save_command_buffer.command.data, eeprom_save_command_buffer.command.size - 1, I2C_TIMEOUT))
+        error_response();
+      else
+        ok_response();
+      eeprom_save_command_buffer_p = NULL;
+    }
+  }
+}
+
 void core_main(void)
 {
   configure_i2c();
@@ -113,13 +155,17 @@ void core_main(void)
 
   unsigned int delay_id = 0;
 
+  eeprom_save_command_buffer_p = NULL;
+
   for (;;)
   {
     unsigned long long int start_time = time_us();
     int len = main_comm_port_read_bytes(comm_buffer, COMM_BUFFER_SIZE);
     if (len > 0)
     {
-      if (current_channel)
+      if (eeprom_save_command_buffer_p)
+        build_eeprom_save_command(comm_buffer, len);
+      else if (current_channel)
       {
         int response_length = current_channel->message_processor(c, device_config[c], device_data[c],
                                                                  comm_buffer, len);
@@ -151,8 +197,8 @@ void core_main(void)
         }
         else if (c == 's') // eeprom save
         {
-          //todo
-          error_response();
+          eeprom_save_command_buffer_p = eeprom_save_command_buffer.buffer;
+          build_eeprom_save_command(comm_buffer + 1, len - 1);
         }
         else if (c < MAX_DEVICES) // channel message
         {

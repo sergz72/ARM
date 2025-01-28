@@ -5,7 +5,7 @@
 
 void* mcp3421_initializer(int idx, void **data);
 int mcp3421_timer_event(int idx, int step, void* config, void *data, int interrupt, unsigned char *buffer);
-int mcp3421_save_config(void *buffer);
+int mcp3421_save_config(int idx, void *buffer);
 
 #endif
 

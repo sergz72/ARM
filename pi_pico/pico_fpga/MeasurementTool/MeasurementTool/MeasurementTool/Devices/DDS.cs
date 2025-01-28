@@ -99,15 +99,6 @@ public sealed class Dds: GenericDevice
 
     internal override string GetName() => _ddsConfig.Type.ToString();
 
-    private void CheckError(byte[]? response)
-    {
-        if (response == null)
-            return;
-        if (response.Length == 0)
-            Dm.LogError(Channel, "Empty response");
-        if (response[0] != (byte)'k')
-            Dm.LogError(Channel, Encoding.UTF8.GetString(response));
-    }
     public void SetMode(int channel, DdsModes mode)
     {
         var command = new[] { (byte)DdsCommands.SetMode, (byte)channel, (byte)mode };

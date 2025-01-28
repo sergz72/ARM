@@ -30,13 +30,13 @@ public partial class PwmChannel : UserControl
     private void DutyManagerOnValueChanged(object? sender, RoutedEventArgs e)
     {
         if (OutputEnable.IsChecked == true && SetOnChange.IsChecked == true)
-            _pwm.SetDuty(_channel, _dutyManager.Value);
+            (_frequencyManager.Value, _dutyManager.Value) = _pwm.SetFrequencyAndDuty(_channel, _frequencyManager.Value, _dutyManager.Value);
     }
 
     private void FrequencyManagerOnValueChanged(object? sender, RoutedEventArgs e)
     {
         if (OutputEnable.IsChecked == true && SetOnChange.IsChecked == true)
-            _pwm.SetFrequency(_channel, _frequencyManager.Value);
+            (_frequencyManager.Value, _dutyManager.Value) = _pwm.SetFrequencyAndDuty(_channel, _frequencyManager.Value, _dutyManager.Value);
     }
     
     private void Apply_OnClick(object? sender, RoutedEventArgs e)
@@ -47,8 +47,7 @@ public partial class PwmChannel : UserControl
         {
             try
             {
-                _pwm.SetFrequency(_channel, _frequencyManager.Value);
-                _pwm.SetDuty(_channel, _dutyManager.Value);
+                (_frequencyManager.Value, _dutyManager.Value) = _pwm.SetFrequencyAndDuty(_channel, _frequencyManager.Value, _dutyManager.Value);
                 _pwm.OutputEnable(_channel, true);
             }
             catch (Exception ex)

@@ -39,24 +39,31 @@ add_executable(pico_fpga
         src/core/devices/dev_mcp3421.c
         src/core/devices/dev_mcp9600.c
         src/core/devices/dev_si5351.c
+        src/core/devices/dev_pwm.c
+        src/internal_devices/dev_internal_pwm.c
+        src/internal_devices/dev_internal_frequency_meter.c
 )
 
 include_directories(
         src 
         src/core
         src/core/devices
+        src/internal_devices
         ../../common_lib
         ../../common_lib/rf
         ../../common_lib/memory
         ../../common_lib/sensor
 )
 
-target_link_libraries(pico_fpga pico_stdlib)
+target_link_libraries(pico_fpga pico_stdlib hardware_pio)
 
 # enable usb output, disable uart output
 pico_enable_stdio_usb(pico_fpga 1)
 pico_enable_stdio_uart(pico_fpga 0)
 
 pico_add_extra_outputs(pico_fpga)
+
+pico_generate_pio_header(pico_fpga ${CMAKE_CURRENT_LIST_DIR}/src/pwm.pio OUTPUT_DIR ${CMAKE_CURRENT_LIST_DIR}/src/generated)
+pico_generate_pio_header(pico_fpga ${CMAKE_CURRENT_LIST_DIR}/src/counter.pio OUTPUT_DIR ${CMAKE_CURRENT_LIST_DIR}/src/generated)
 
 add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD COMMAND size ${PROJECT_NAME}.elf)

@@ -5,6 +5,6 @@
 
 void* ads1115_initializer(int idx, void **data);
 int ads1115_timer_event(int idx, int step, void* config, void *data, int interrupt, unsigned char *buffer);
-int ads1115_save_config(void *buffer);
+int ads1115_save_config(int idx, void *buffer);
 
 #endif

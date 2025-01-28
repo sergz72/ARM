@@ -4,6 +4,6 @@
 #define AD9833_DEVICE_ID 2
 
 void* ad9833_initializer(int idx, void **data);
-int ad9833_save_config(void *buffer);
+int ad9833_save_config(int idx, void *buffer);
 
 #endif

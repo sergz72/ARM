@@ -70,7 +70,7 @@ int ina3221_timer_event(int idx, int step, void* config, void *data, int interru
   return 0;
 }
 
-int ina3221_save_config(void *buffer)
+int ina3221_save_config(int idx, void *buffer)
 {
   return BuildPowerMeterConfig(buffer, &config, "INA3221");
 }

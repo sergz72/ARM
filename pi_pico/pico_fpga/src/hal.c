@@ -5,11 +5,153 @@
 #include <ads1115.h>
 #include <generic_dds.h>
 #include <stdio.h>
+#include <hardware/clocks.h>
+#include <hardware/pio.h>
 #include <pico/stdio.h>
 #include "dev_si5351.h"
 #include <pico/time.h>
+#include <pwm.pio.h>
+#include <counter.pio.h>
+
+#define PWM_PIO pio0
+#define GATE_SM 0
+#define PWM4_0_SM 1
+#define PWM5_0_SM 2
+#define PWM5_1_SM 3
+#define COUNTER_PIO pio1
 
 static bool led_state;
+static int pwm_program_offset, counter_program_offset;
+
+// Write `period` to the input shift register
+void pio_pwm_set_params(PIO pio, uint sm, unsigned int period, unsigned int level) {
+  pio_sm_set_enabled(pio, sm, false);
+  pio_sm_put_blocking(pio, sm, period);
+  pio_sm_exec(pio, sm, pio_encode_pull(false, false));
+  pio_sm_exec(pio, sm, pio_encode_out(pio_isr, 32));
+  pio_sm_exec(pio, sm, pio_encode_jmp(pwm_program_offset));
+  pio_sm_set_enabled(pio, sm, true);
+  pio_sm_put_blocking(pio, sm, level);
+}
+
+void counter_pio_init(unsigned int sm, unsigned int pin)
+{
+  counter_program_init(COUNTER_PIO, sm, counter_program_offset, pin, PIN_GATE);
+  pio_sm_put_blocking(COUNTER_PIO, sm, UINT32_MAX);
+  pio_sm_exec(COUNTER_PIO, sm, pio_encode_pull(false, false));
+}
+
+int counter_get(int module_id, int pin_id)
+{
+  int value = -1;
+  unsigned int sm;
+
+  switch (module_id)
+  {
+    case 4:
+      if (pin_id == 0)
+        sm = COUNTER4_0_SM;
+      else
+        return value;
+      break;
+    case 5:
+      sm = pin_id == 0 ? COUNTER5_0_SM : COUNTER5_1_SM;
+      break;
+    default:
+      return value;
+  }
+  while (pio_sm_get_rx_fifo_level(COUNTER_PIO, sm))
+    value = UINT32_MAX - pio_sm_get(COUNTER_PIO, sm);
+  return value;
+}
+
+void counter_enable(int module_id)
+{
+  switch (module_id)
+  {
+    case 4:
+      pio_sm_set_enabled(COUNTER_PIO, COUNTER4_0_SM, true);
+      break;
+    case 5:
+      pio_sm_set_enabled(COUNTER_PIO, COUNTER5_0_SM, true);
+      pio_sm_set_enabled(COUNTER_PIO, COUNTER5_1_SM, true);
+      break;
+    default:
+      break;
+  }
+}
+
+int pwm_enable(int module_id, int pin_id, int enable)
+{
+  switch (module_id)
+  {
+    case 4:
+      if (pin_id == 0)
+      {
+        if (enable)
+          pwm_program_init(PWM_PIO, PWM4_0_SM, pwm_program_offset, PIN_4_0);
+        pio_sm_set_enabled(PWM_PIO, PWM4_0_SM, enable);
+        if (!enable)
+          gpio_init(PIN_4_0);
+      }
+      else
+        return 1;
+      break;
+    case 5:
+      if (pin_id == 0)
+      {
+        if (enable)
+          pwm_program_init(PWM_PIO, PWM5_0_SM, pwm_program_offset, PIN_5_0);
+        pio_sm_set_enabled(PWM_PIO, PWM5_0_SM, enable);
+        if (!enable)
+          gpio_init(PIN_5_0);
+      }
+      else
+      {
+        if (enable)
+          pwm_program_init(PWM_PIO, PWM5_1_SM, pwm_program_offset, PIN_5_1);
+        pio_sm_set_enabled(PWM_PIO, PWM5_1_SM, enable);
+        if (!enable)
+          gpio_init(PIN_5_1);
+      }
+      break;
+    default:
+      return 1;
+  }
+  return 0;
+}
+
+int pwm_set_frequency_and_duty(int module_id, int pin_id, unsigned int frequency, unsigned int duty)
+{
+  switch (module_id)
+  {
+    case 4:
+      if (pin_id == 0)
+        pio_pwm_set_params(PWM_PIO, PWM4_0_SM, frequency, duty);
+      else
+        return 1;
+      break;
+    case 5:
+      if (pin_id == 0)
+        pio_pwm_set_params(PWM_PIO, PWM5_0_SM, frequency, duty);
+      else
+        pio_pwm_set_params(PWM_PIO, PWM5_1_SM, frequency, duty);
+      break;
+    default:
+      return 1;
+  }
+  return 0;
+}
+
+static void configure_gate_pin(void)
+{
+  pwm_program_init(PWM_PIO, GATE_SM, pwm_program_offset, PIN_GATE);
+  unsigned int period = clock_get_hz(clk_sys) / 3;
+  // level = 1% of period
+  unsigned int l = period / 100;
+  // 1 second gate low (3 cycles pio program length) period = 125000000 / 3
+  pio_pwm_set_params(PWM_PIO, GATE_SM, period + l, l);
+}
 
 void configure_ports(void)
 {
@@ -26,6 +168,10 @@ void configure_ports(void)
   gpio_init(PIN_INTERRUPT);
   gpio_set_dir(PIN_SCLK, GPIO_IN);
   gpio_pull_up(PIN_INTERRUPT);
+
+  pwm_program_offset = pio_add_program(PWM_PIO, &pwm_program);
+  configure_gate_pin();
+  counter_program_offset = pio_add_program(COUNTER_PIO, &counter_program);
 
   led_state = false;
 }

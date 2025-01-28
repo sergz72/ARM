@@ -84,7 +84,10 @@ int dds_message_processor(int idx, void *config, void *data, unsigned char *buff
   {
     memcpy(command_buffer_p, buffer, len);
     if (len >= bytes_expected)
-      return exec_command(dconfig, idx, buffer);
+    {
+      command_buffer_p = command_buffer;
+      return exec_command(dconfig, idx, command_buffer);
+    }
     command_buffer_p += len;
     bytes_expected -= len;
     return 0;

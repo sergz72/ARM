@@ -56,7 +56,7 @@ int ina226_timer_event(int idx, int step, void *config, void *data, int interrup
   return 0;
 }
 
-int ina226_save_config(void *buffer)
+int ina226_save_config(int idx, void *buffer)
 {
   return BuildPowerMeterConfig(buffer, &config, "INA226");
 }

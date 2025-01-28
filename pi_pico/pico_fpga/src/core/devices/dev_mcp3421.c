@@ -68,7 +68,7 @@ int mcp3421_timer_event(int idx, int step, void *config, void *data, int interru
   return 0;
 }
 
-int mcp3421_save_config(void *buffer)
+int mcp3421_save_config(int idx, void *buffer)
 {
   return BuildMeterConfig(buffer, &config, "MCP3421");
 }

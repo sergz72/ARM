@@ -8,13 +8,14 @@ using MeasurementTool.Devices.Controls;
 
 namespace MeasurementTool.Devices;
 
-public class Pwm: GenericDevice
+public sealed class Pwm: GenericDevice
 {
     private List<PwmChannel> _channelsUi;
     private readonly int _channels;
-    internal readonly bool DdsClock;
+    private readonly bool _ddsClock;
+    private readonly int _bits;
+
     internal readonly int MClk;
-    internal readonly int Bits;
     
     public Pwm(DeviceManager dm, byte[] config, byte channel) : base(dm, channel)
     {
@@ -25,8 +26,8 @@ public class Pwm: GenericDevice
         using var reader = new BinaryReader(stream);
         MClk = reader.ReadInt32();
         _channels = reader.ReadByte();
-        DdsClock = reader.ReadByte() != 0;
-        Bits = reader.ReadByte();
+        _ddsClock = reader.ReadByte() != 0;
+        _bits = reader.ReadByte();
     }
 
     internal override Control? CreateUi()
@@ -53,16 +54,49 @@ public class Pwm: GenericDevice
 
     public void OutputEnable(int channel, bool enable)
     {
-        //todo
+        var command = new[] { (byte)PwmCommands.EnableOutput, (byte)channel, enable ? (byte)1 : (byte)0 };
+        Dm.QueueCommand(Channel, command, CheckError);
     }
 
-    public void SetDuty(int channel, long value)
+    public (long, long) SetFrequencyAndDuty(int channel, long frequency, long duty)
     {
-        //todo
+        using var ms = new MemoryStream();
+        using var bw = new BinaryWriter(ms);
+        bw.Write((byte)PwmCommands.SetFrequency);
+        bw.Write((byte)channel);
+        var c = CalculateClock(frequency, duty);
+        bw.Write(c);
+        var (fc, f) = CalculateFrequencyCode(c, (int)frequency);
+        bw.Write(fc);
+        var (dc, d) = CalculateDutyCode(f, (int)duty);
+        bw.Write(dc);
+        Dm.QueueCommand(Channel, ms.ToArray(), CheckError);
+        return (f, d);
     }
 
-    public void SetFrequency(int channel, long value)
+    private int CalculateClock(long frequency, long duty)
     {
         //todo
+        return MClk;
     }
+
+    private (int, int) CalculateDutyCode(int f, int duty)
+    {
+        var code = (long)f * duty / 1000;
+        var d = code * 1000 / f;
+        return ((int)code, (int)d);
+    }
+
+    private (int, int) CalculateFrequencyCode(int clock, int frequency)
+    {
+        var code = MClk / frequency;
+        var f = code == 0 ? 0 : MClk / code;
+        return (code, f);
+    }
+}
+
+internal enum PwmCommands
+{
+    SetFrequency = 'f',
+    EnableOutput = 'e'
 }

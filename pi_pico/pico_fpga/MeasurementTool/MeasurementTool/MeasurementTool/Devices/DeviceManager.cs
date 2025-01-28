@@ -33,6 +33,16 @@ public abstract class GenericDevice
     internal abstract Control? CreateUi();
 
     internal abstract string GetName();
+    
+    protected void CheckError(byte[]? response)
+    {
+        if (response == null)
+            return;
+        if (response.Length == 0)
+            Dm.LogError(Channel, "Empty response");
+        if (response[0] != (byte)'k')
+            Dm.LogError(Channel, Encoding.UTF8.GetString(response));
+    }
 }
 
 public interface ILogger

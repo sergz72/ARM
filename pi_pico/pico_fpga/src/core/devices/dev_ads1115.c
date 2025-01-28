@@ -61,7 +61,7 @@ static const ADS1115Config dcfg[4] = {
 
 static const MeterConfig config = {
   .channels = 4,
-  .resolution = 2, // 16 bit
+  .resolution = 4, // 16 bit
   .measure_type = MEASURE_TYPE_VOLTS,
   .value_type = VALUE_TYPE_MICROS,
   .numbers_before_point = 2
@@ -118,15 +118,15 @@ int ads1115_timer_event(int idx, int step, void* config, void *data, int interru
       break;
     case 9:
       getResult(idx, 3, cfg->divider[3], ddata);
-      memcpy(buffer, ddata->voltage, 8);
-      return 8;
+      memcpy(buffer, ddata->voltage, 16);
+      return 16;
     default:
       break;
   }
   return 0;
 }
 
-int ads1115_save_config(void *buffer)
+int ads1115_save_config(int idx, void *buffer)
 {
   return BuildMeterConfig(buffer, &config, "ADS1115");
 }

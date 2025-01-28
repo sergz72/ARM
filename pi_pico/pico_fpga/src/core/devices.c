@@ -86,3 +86,11 @@ int BuildPowerMeterConfig(void *buffer, const PowerMeterConfig *config, const ch
   memcpy(buffer + sizeof(PowerMeterConfig), name, l);
   return l + sizeof(PowerMeterConfig);
 }
+
+int BuildPWMConfig(void *buffer, const PWMConfig *config, const char *name)
+{
+  memcpy(buffer, config, sizeof(PWMConfig));
+  int l = strlen(name);
+  memcpy(buffer + sizeof(PWMConfig), name, l);
+  return l + sizeof(PWMConfig);
+}
