@@ -4,7 +4,7 @@
 #include <string.h>
 
 static unsigned char last_command;
-static unsigned char command_buffer[10];
+static unsigned char command_buffer[20];
 static unsigned char *command_buffer_p;
 static int bytes_expected;
 
@@ -16,25 +16,34 @@ void pwm_initializer(void)
 
 static int exec_command(dev_pwm *dev, void *data, int idx, unsigned char *buffer)
 {
+  command_buffer_p = command_buffer;
+
   int rc = 1;
-  int channel = *buffer++;
+  int channel = *command_buffer_p++;
   unsigned int frequency, duty;
 
   switch (last_command)
   {
     case 'f': // set frequency
-      memcpy(&frequency, buffer, 4);
-      buffer += 4;
-      memcpy(&duty, buffer, 4);
-      rc = dev->set_frequency_and_duty(idx, dev->cfg, data, channel, frequency, duty);
+      command_buffer_p += 4;
+      memcpy(&frequency, command_buffer_p, 4);
+      command_buffer_p += 4;
+      memcpy(&duty, command_buffer_p, 4);
+      rc = dev->set_frequency_and_duty(idx, dev->cfg, data, channel, frequency, duty) ? 3 : 0;
       break;
     case 'e': // enable output
-      rc = dev->enable_output(idx, dev->cfg, data, channel, *buffer);
+      rc = dev->enable_output(idx, dev->cfg, data, channel, *command_buffer_p) ? 2 : 0;
       break;
     default:
       break;
   }
-  buffer[0] = rc ? 'e' : 'k';
+  if (rc)
+  {
+    buffer[0] = 'e';
+    buffer[1] = rc + '0';
+    return 2;
+  }
+  buffer[0] = 'k';
   return 1;
 }
 
@@ -46,14 +55,12 @@ int pwm_message_processor(int idx, void *config, void *data, unsigned char *buff
   {
     memcpy(command_buffer_p, buffer, len);
     if (len >= bytes_expected)
-    {
-      command_buffer_p = command_buffer;
-      return exec_command(dev, data, idx, command_buffer);
-    }
+      return exec_command(dev, data, idx, buffer);
     command_buffer_p += len;
     bytes_expected -= len;
     return 0;
   }
+  command_buffer_p = command_buffer;
   last_command = buffer[0];
   len--;
   memcpy(command_buffer_p, buffer + 1, len);
@@ -61,14 +68,15 @@ int pwm_message_processor(int idx, void *config, void *data, unsigned char *buff
   switch (last_command)
   {
     case 'f': // set frequency
-      bytes_expected = len >= 8 ? 0 : 8 - len;
+      bytes_expected = len >= 13 ? 0 : 13 - len;
       break;
     case 'e': // enable output
       bytes_expected = len >= 2 ? 0 : 2 - len;
       break;
     default:
       buffer[0] = 'e';
-      return 1;
+      buffer[1] = '0';
+      return 2;
   }
   if (!bytes_expected)
     return exec_command(dev, data, idx, buffer);

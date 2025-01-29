@@ -67,9 +67,12 @@ public partial class EepromWindow : Window
     private void ResponseHandler(byte[]? data)
     {
         var s = data is { Length: > 0 } ? BitConverter.ToString(data) : string.Empty;
+        var sc = data is { Length: > 0 } ?
+            new string(data.Select(b => b is >= 0x20 and <= 0x7F ? (char)b : '?').ToArray()) : string.Empty;
         Dispatcher.UIThread.InvokeAsync(() =>
         {
             TbResponse.Text = s;
+            TbResponseChars.Text = sc;
         });
     }
     

@@ -30,9 +30,9 @@ static const Device* FindDeviceId(int idx)
     }
     d++;
   }
-  int rc = I2CCheck(idx, _24C01_16_address(0));
-  if (rc && !_24C01_16_read(idx, _24C01_16_address(0), 0, (unsigned char*)&d_id, 4, I2C_TIMEOUT))
+  if (!_24C01_16_read(idx, _24C01_16_address(0), 0, (unsigned char*)&d_id, 4, I2C_TIMEOUT))
   {
+    d = devices;
     for (i = 0; i < MAX_KNOWN_DEVICES; i++)
     {
       if (d->device_id > 255 && d->device_id == d_id)
@@ -41,6 +41,7 @@ static const Device* FindDeviceId(int idx)
           device_config[idx] = d->initializer(idx, &device_data[idx]);
         return d;
       }
+      d++;
     }
   }
   return 0;

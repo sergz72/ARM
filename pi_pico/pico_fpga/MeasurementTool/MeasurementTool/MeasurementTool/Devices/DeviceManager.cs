@@ -191,7 +191,7 @@ public sealed class DeviceManager
         using var br = new BinaryReader(stream);
         var channelToDevice = new Dictionary<int, GenericDevice>();
         byte channel = 0;
-        MaxDeviceId = 0;
+        MaxDeviceId = -1;
         while (stream.Position < stream.Length)
         {
             MaxDeviceId++;

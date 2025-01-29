@@ -85,6 +85,8 @@ unsigned int spi2_data_get(void);
 #define COUNTER5_0_SM 1
 #define COUNTER5_1_SM 2
 
+#define INTERNAL_DEVICES_COUNT 2
+
 int counter_get(int module_id, int pin_id);
 void counter_enable(int module_id);
 void counter_pio_init(unsigned int sm, unsigned int pin);

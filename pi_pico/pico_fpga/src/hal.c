@@ -22,6 +22,8 @@
 
 static bool led_state;
 static int pwm_program_offset, counter_program_offset;
+static unsigned int pwm_frequency_40, pwm_frequency_50, pwm_frequency_51;
+static unsigned int pwm_duty_40, pwm_duty_50, pwm_duty_51;
 
 // Write `period` to the input shift register
 void pio_pwm_set_params(PIO pio, uint sm, unsigned int period, unsigned int level) {
@@ -89,10 +91,15 @@ int pwm_enable(int module_id, int pin_id, int enable)
       if (pin_id == 0)
       {
         if (enable)
+        {
           pwm_program_init(PWM_PIO, PWM4_0_SM, pwm_program_offset, PIN_4_0);
-        pio_sm_set_enabled(PWM_PIO, PWM4_0_SM, enable);
-        if (!enable)
+          pwm_set_frequency_and_duty(module_id, pin_id, pwm_frequency_40, pwm_duty_40);
+        }
+        else
+        {
+          pio_sm_set_enabled(PWM_PIO, PWM4_0_SM, false);
           gpio_init(PIN_4_0);
+        }
       }
       else
         return 1;
@@ -101,18 +108,28 @@ int pwm_enable(int module_id, int pin_id, int enable)
       if (pin_id == 0)
       {
         if (enable)
+        {
           pwm_program_init(PWM_PIO, PWM5_0_SM, pwm_program_offset, PIN_5_0);
-        pio_sm_set_enabled(PWM_PIO, PWM5_0_SM, enable);
-        if (!enable)
+          pwm_set_frequency_and_duty(module_id, pin_id, pwm_frequency_50, pwm_duty_50);
+        }
+        else
+        {
+          pio_sm_set_enabled(PWM_PIO, PWM5_0_SM, false);
           gpio_init(PIN_5_0);
+        }
       }
       else
       {
         if (enable)
+        {
           pwm_program_init(PWM_PIO, PWM5_1_SM, pwm_program_offset, PIN_5_1);
-        pio_sm_set_enabled(PWM_PIO, PWM5_1_SM, enable);
-        if (!enable)
+          pwm_set_frequency_and_duty(module_id, pin_id, pwm_frequency_51, pwm_duty_51);
+        }
+        else
+        {
+          pio_sm_set_enabled(PWM_PIO, PWM5_1_SM, false);
           gpio_init(PIN_5_1);
+        }
       }
       break;
     default:
@@ -127,15 +144,27 @@ int pwm_set_frequency_and_duty(int module_id, int pin_id, unsigned int frequency
   {
     case 4:
       if (pin_id == 0)
+      {
+        pwm_frequency_40 = frequency;
+        pwm_duty_40 = duty;
         pio_pwm_set_params(PWM_PIO, PWM4_0_SM, frequency, duty);
+      }
       else
         return 1;
       break;
     case 5:
       if (pin_id == 0)
+      {
+        pwm_frequency_50 = frequency;
+        pwm_duty_50 = duty;
         pio_pwm_set_params(PWM_PIO, PWM5_0_SM, frequency, duty);
+      }
       else
+      {
+        pwm_frequency_51 = frequency;
+        pwm_duty_51 = duty;
         pio_pwm_set_params(PWM_PIO, PWM5_1_SM, frequency, duty);
+      }
       break;
     default:
       return 1;

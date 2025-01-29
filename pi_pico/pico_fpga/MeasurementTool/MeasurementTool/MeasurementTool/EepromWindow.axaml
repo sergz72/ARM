@@ -23,6 +23,7 @@
         <TextBox x:Name="TbData" Height="100" TextChanged="TbData_OnTextChanged"/>
         <Label Content="Response"/>
         <TextBox x:Name="TbResponse" Height="100" IsReadOnly="True"/>
+        <TextBox x:Name="TbResponseChars" Height="20" IsReadOnly="True"/>
         </StackPanel>
     </DockPanel>
 </Window>

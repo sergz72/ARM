@@ -5,7 +5,7 @@
 
 #define COMM_BUFFER_SIZE 1024
 
-typedef union
+typedef struct
 {
   unsigned short size;
   unsigned char device_id;
@@ -127,7 +127,7 @@ void build_eeprom_write_command(unsigned char *buffer, int len)
     {
       if (_24C01_16_write(eeprom_command_buffer.command.device_id, _24C01_16_address(0), 0,
                       &eeprom_command_buffer.command.data, eeprom_command_buffer.command.size - 1, I2C_TIMEOUT))
-        error_response();
+        main_comm_port_write_bytes("we", 2);
       else
         ok_response();
       eeprom_command_buffer_p = NULL;
@@ -150,7 +150,7 @@ void build_eeprom_read_command(unsigned char *buffer, int len)
     }
     if (_24C01_16_read(eeprom_command_buffer.command.device_id, _24C01_16_address(0), 0,
                     &eeprom_command_buffer.command.data, eeprom_command_buffer.command.size, I2C_TIMEOUT))
-      error_response();
+      main_comm_port_write_bytes("re", 2);
     else
       main_comm_port_write_bytes(&eeprom_command_buffer.command.data, eeprom_command_buffer.command.size);
     eeprom_command_buffer_p = NULL;
