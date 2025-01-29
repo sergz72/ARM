@@ -36,13 +36,19 @@ public partial class MainView : UserControl
         return panel;
     }
 
-    private void EepromRead_OnClick(object? sender, RoutedEventArgs e)
+    private void Eeprom_OnClick(object? sender, RoutedEventArgs e)
     {
-        EepromWindow.Show(false);
+        if (DataContext is MainViewModel vm)
+        {
+            EepromWindow.Show(vm.DeviceManager);
+        }
     }
 
-    private void EepromWrite_OnClick(object? sender, RoutedEventArgs e)
+    private void Log_OnPropertyChanged(object? sender, AvaloniaPropertyChangedEventArgs e)
     {
-        EepromWindow.Show(true);
+        if (LbLog.Scroll is ScrollViewer sv)
+        {
+            sv.ScrollToEnd();
+        }
     }
 }

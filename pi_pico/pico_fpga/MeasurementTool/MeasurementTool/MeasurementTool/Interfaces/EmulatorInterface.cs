@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using MeasurementTool.Devices;
@@ -36,7 +37,7 @@ public class EmulatorInterface: IDeviceInterface
             default:
                 if (cmd < MaxChannels && _devices.TryGetValue(cmd, out var device))
                     return device.Command(command[1..]);
-                _logger.Error("Invalid command " + cmd);
+                _logger.Error("Invalid command " + BitConverter.ToString(command));
                 return [(byte)'e'];
         }
     }

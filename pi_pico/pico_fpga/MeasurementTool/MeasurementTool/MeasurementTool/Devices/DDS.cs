@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using Avalonia.Controls;
 using Avalonia.Layout;
+using Avalonia.Media;
 using MeasurementTool.Devices.Controls;
 
 namespace MeasurementTool.Devices;
@@ -47,12 +48,11 @@ public sealed class Dds: GenericDevice
         using var stream = new MemoryStream(config);
         using var reader = new BinaryReader(stream);
         var type = (DdsType)reader.ReadInt16();
-        var minDb = reader.ReadSByte();
-        var maxDb = reader.ReadSByte();
+        var meterType = (MeterType)reader.ReadInt16();
         var mClk = reader.ReadInt64();
         var maxMv = reader.ReadInt16();
         var maxAttenuator = reader.ReadByte();
-        var ddsConfig = new DdsConfig(type, minDb, maxDb, mClk, maxMv, maxAttenuator);
+        var ddsConfig = new DdsConfig(type, meterType, mClk, maxMv, maxAttenuator);
         if (DdsInfos.TryGetValue(ddsConfig.Type, out var info))
         {
             _channels = info.Channels;
@@ -84,9 +84,9 @@ public sealed class Dds: GenericDevice
         };
         _channelsUi = CreateChannelsUi();
         panel.Children.AddRange(_channelsUi);
-        if (_ddsConfig.LevelMeterMaxDb != _ddsConfig.LevelMeterMinDb)
+        if (_ddsConfig.MeterType != MeterType.None)
         {
-            _levelMeter = new LevelMeter();
+            _levelMeter = new LevelMeter(_ddsConfig.MeterType){Height = 200, HorizontalAlignment = HorizontalAlignment.Stretch};
             panel.Children.Add(_levelMeter);
         }
         return panel;
@@ -134,14 +134,16 @@ public sealed class Dds: GenericDevice
         Dm.QueueCommand(Channel, ms.ToArray(), CheckError);
     }
 
-    private int CalculateStep(long f1, long width, int numPoints)
+    private int CalculateStep(long f2, int numPoints)
     {
-        var code2 = CalculateFrequencyCode(f1 + width);
+        var code2 = CalculateFrequencyCode(f2);
         return (int)((code2 - _sweepF1) / numPoints);
     }
     
     public void SetSweep(int channel, long f1, int divider, int step, int numPoints)
     {
+        var f2 = f1 + (long)step * (numPoints - 1);
+        _levelMeter?.SetF(f1, f2);
         using var ms = new MemoryStream();
         using var bw = new BinaryWriter(ms);
         bw.Write(_sendCodes ? (byte)DdsCommands.SweepCodes : (byte)DdsCommands.Sweep);
@@ -149,10 +151,21 @@ public sealed class Dds: GenericDevice
         _sweepF1 = _sendCodes ? CalculateFrequencyCode(f1) : f1;
         bw.Write(_sweepF1);
         bw.Write((short)divider);
-        _sweepStep = _sendCodes ? CalculateStep(f1, (long)step * (numPoints - 1), numPoints) : step;
+        _sweepStep = _sendCodes ? CalculateStep(f2, numPoints) : step;
         bw.Write(_sweepStep);
         bw.Write((short)numPoints);
         Dm.QueueCommand(Channel, ms.ToArray(), CheckError);
+    }
+
+    internal override void ParseResponse(byte[] data)
+    {
+        if (_levelMeter != null && data.Length > 0 && data.Length % 2 == 0)
+        {
+            var points = Enumerable.Range(0, data.Length / 2)
+                .Select(p => BitConverter.ToInt16(data, p * 2))
+                .ToArray();
+            _levelMeter.Data = points;
+        }
     }
 }
 
@@ -171,6 +184,12 @@ internal enum DdsType
     Ad9850,
     Adf4351,
     Si5351
+}
+
+public enum MeterType
+{
+    None,
+    Ad8307
 }
 
 internal enum DdsCommands
@@ -194,8 +213,7 @@ internal record DdsInfo(
 
 internal record DdsConfig(
     DdsType Type,
-    int LevelMeterMinDb,
-    int LevelMeterMaxDb,
+    MeterType MeterType,
     long Mclk,
     int MaxVoutMv,
     int MaxAttenuatorValue);

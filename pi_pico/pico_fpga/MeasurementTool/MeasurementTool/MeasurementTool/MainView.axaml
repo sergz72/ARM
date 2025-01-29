@@ -8,13 +8,10 @@
              x:Class="MeasurementTool.MainView">
     <DockPanel x:Name="MainPanel">
         <Menu DockPanel.Dock="Top">
-            <MenuItem Header="EEPROM">
-                <MenuItem Header="Read" Click="EepromRead_OnClick"/>
-                <MenuItem Header="Write" Click="EepromWrite_OnClick"/>
-            </MenuItem>
+            <MenuItem Header="EEPROM" Click="Eeprom_OnClick"/>
         </Menu>
-        <ListBox DockPanel.Dock="Bottom" Height="100" FontSize="14"
-                 ItemsSource="{Binding Log}"/>
+        <ListBox DockPanel.Dock="Bottom" Height="100" FontSize="14" x:Name="LbLog"
+                 ItemsSource="{Binding Log}" PropertyChanged="Log_OnPropertyChanged"/>
         <StackPanel x:Name="DevicePanel" Spacing="3"/>
     </DockPanel>
 </UserControl>

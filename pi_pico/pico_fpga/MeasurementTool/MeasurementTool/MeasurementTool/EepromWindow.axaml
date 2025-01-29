@@ -2,9 +2,27 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+        mc:Ignorable="d"
         x:Class="MeasurementTool.EepromWindow"
         WindowStartupLocation="CenterScreen"
-        Title="EepromWindow">
-    Welcome to Avalonia!
+        SizeToContent="WidthAndHeight"
+        Title="Eeprom read/write">
+    <DockPanel>
+        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal">
+            <Label Content="Data to write:" Width="150" VerticalContentAlignment="Center"/>
+            <Label Content="Device ID" VerticalContentAlignment="Center"/>
+            <NumericUpDown x:Name="NuDeviceId" Minimum="1" Maximum="255" Value="0" FormatString="0"/>
+        </StackPanel>
+        <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal">
+            <NumericUpDown x:Name="NuBytes" Minimum="1" Maximum="255" Value="4" FormatString="0"/>
+            <Label Content="bytes" VerticalContentAlignment="Center"/>
+            <Button Click="BnRead_OnClick" Content="Read"/>
+            <Button x:Name="BnWrite" Click="BnWrite_OnClick" Content="Write" IsEnabled="False"/>
+        </StackPanel>
+        <StackPanel Orientation="Vertical">
+        <TextBox x:Name="TbData" Height="100" TextChanged="TbData_OnTextChanged"/>
+        <Label Content="Response"/>
+        <TextBox x:Name="TbResponse" Height="100" IsReadOnly="True"/>
+        </StackPanel>
+    </DockPanel>
 </Window>

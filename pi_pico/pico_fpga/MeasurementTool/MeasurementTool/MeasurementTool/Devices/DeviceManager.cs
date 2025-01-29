@@ -64,6 +64,8 @@ public sealed class DeviceManager
     private readonly Thread _messageThread;
     private volatile bool _isShuttingDown;
     
+    internal int MaxDeviceId { get; private set; }
+    
     public DeviceManager(IDeviceInterface di, ILogger logger)
     {
         _deviceInterface = di;
@@ -176,6 +178,8 @@ public sealed class DeviceManager
     private void QueueCommand(string command, Action<byte[]?> handler) =>
         _messages.Enqueue(new Message(Encoding.UTF8.GetBytes(command), handler));
 
+    internal void QueueCommand(byte[] data, Action<byte[]?> handler) => _messages.Enqueue(new Message(data, handler));
+    
     private void ProcessEnumerationResult(byte[]? data)
     {
         if (data == null)
@@ -187,8 +191,10 @@ public sealed class DeviceManager
         using var br = new BinaryReader(stream);
         var channelToDevice = new Dictionary<int, GenericDevice>();
         byte channel = 0;
+        MaxDeviceId = 0;
         while (stream.Position < stream.Length)
         {
+            MaxDeviceId++;
             var length = br.ReadInt16();
             if (length > 0)
             {

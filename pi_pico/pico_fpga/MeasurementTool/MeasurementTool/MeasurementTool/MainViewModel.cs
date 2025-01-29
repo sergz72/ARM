@@ -18,7 +18,7 @@ internal partial class MainViewModel : ObservableObject, ILogger
     [ObservableProperty] private ObservableCollection<LogRecord> _log = [];
     private volatile bool _isShuttingDown;
     
-    private readonly DeviceManager _deviceManager;
+    internal readonly DeviceManager DeviceManager;
     private readonly Thread _deviceThread;
     private readonly Settings _settings;
 
@@ -33,8 +33,8 @@ internal partial class MainViewModel : ObservableObject, ILogger
         else
             _settings = new Settings("/dev/ttyACM0", 115200);
         var iface = FindAvailableInterface();
-        _deviceManager = new DeviceManager(iface, this);
-        while (!_deviceManager.InitComplete())
+        DeviceManager = new DeviceManager(iface, this);
+        while (!DeviceManager.InitComplete())
             Thread.Sleep(100);
         _deviceThread = new Thread(DeviceLoop);
         _isShuttingDown = false;
@@ -44,7 +44,7 @@ internal partial class MainViewModel : ObservableObject, ILogger
     {
         _isShuttingDown = true;
         _deviceThread.Join();
-        _deviceManager.Shutdown();
+        DeviceManager.Shutdown();
     }
 
     private void DeviceLoop()
@@ -52,7 +52,7 @@ internal partial class MainViewModel : ObservableObject, ILogger
         while (!_isShuttingDown)
         {
             var start = DateTime.Now.Ticks;
-            _deviceManager.TimerEvent();
+            DeviceManager.TimerEvent();
             var end = DateTime.Now.Ticks;
             var elapsed = (end - start) / TimeSpan.TicksPerMillisecond;
             if (elapsed < 100)
@@ -81,7 +81,7 @@ internal partial class MainViewModel : ObservableObject, ILogger
 
     internal DeviceControl[] CreateUi()
     {
-        var result = _deviceManager.CreateUi();
+        var result = DeviceManager.CreateUi();
         _deviceThread.Start();
         return result;
     }
