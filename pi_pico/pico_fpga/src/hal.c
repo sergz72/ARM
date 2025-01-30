@@ -36,11 +36,12 @@ void pio_pwm_set_params(PIO pio, uint sm, unsigned int period, unsigned int leve
   pio_sm_put_blocking(pio, sm, level);
 }
 
-void counter_pio_init(unsigned int sm, unsigned int pin)
+void  counter_pio_init(unsigned int sm, unsigned int pin)
 {
   counter_program_init(COUNTER_PIO, sm, counter_program_offset, pin, PIN_GATE);
   pio_sm_put_blocking(COUNTER_PIO, sm, UINT32_MAX);
   pio_sm_exec(COUNTER_PIO, sm, pio_encode_pull(false, false));
+  pio_sm_set_enabled(COUNTER_PIO, sm, true);
 }
 
 int counter_get(int module_id, int pin_id)
@@ -65,22 +66,6 @@ int counter_get(int module_id, int pin_id)
   while (pio_sm_get_rx_fifo_level(COUNTER_PIO, sm))
     value = UINT32_MAX - pio_sm_get(COUNTER_PIO, sm);
   return value;
-}
-
-void counter_enable(int module_id)
-{
-  switch (module_id)
-  {
-    case 4:
-      pio_sm_set_enabled(COUNTER_PIO, COUNTER4_0_SM, true);
-      break;
-    case 5:
-      pio_sm_set_enabled(COUNTER_PIO, COUNTER5_0_SM, true);
-      pio_sm_set_enabled(COUNTER_PIO, COUNTER5_1_SM, true);
-      break;
-    default:
-      break;
-  }
 }
 
 int pwm_enable(int module_id, int pin_id, int enable)

@@ -88,7 +88,6 @@ unsigned int spi2_data_get(void);
 #define INTERNAL_DEVICES_COUNT 2
 
 int counter_get(int module_id, int pin_id);
-void counter_enable(int module_id);
 void counter_pio_init(unsigned int sm, unsigned int pin);
 int pwm_enable(int module_id, int pin_id, int enable);
 int pwm_set_frequency_and_duty(int module_id, int pin_id, unsigned int frequency, unsigned int duty);
