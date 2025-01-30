@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 using Avalonia.Controls;
 using Avalonia.Layout;
 using MeasurementTool.Devices.Controls;
@@ -14,12 +15,13 @@ public sealed class Pwm: GenericDevice
     private readonly int _channels;
     private readonly bool _ddsClock;
     private readonly int _bits;
+    private readonly string _name;
 
     internal readonly int MClk;
     
     public Pwm(DeviceManager dm, byte[] config, byte channel) : base(dm, channel)
     {
-        if (config.Length < 6)
+        if (config.Length < 8)
             throw new ArgumentException($"PWM channel {channel}: Invalid configuration length {config.Length}");
         _channelsUi = [];
         using var stream = new MemoryStream(config);
@@ -28,6 +30,7 @@ public sealed class Pwm: GenericDevice
         _channels = reader.ReadByte();
         _ddsClock = reader.ReadByte() != 0;
         _bits = reader.ReadByte();
+        _name = Encoding.UTF8.GetString(config[7..]);
     }
 
     internal override Control? CreateUi()
@@ -44,7 +47,7 @@ public sealed class Pwm: GenericDevice
 
     internal override string GetName()
     {
-        return "PWM Generator";
+        return _name;
     }
     
     private List<PwmChannel> CreateChannelsUi()
@@ -58,39 +61,43 @@ public sealed class Pwm: GenericDevice
         Dm.QueueCommand(Channel, command, CheckError);
     }
 
-    public (long, long) SetFrequencyAndDuty(int channel, long frequency, long duty)
+    public FactPwmValues CalculateFactValues(long frequency, double duty)
+    {
+        var clock = CalculateClock(frequency, duty);
+        var (fc, f) = CalculateFrequencyCode(clock, (int)frequency);
+        var (dc, d) = CalculateDutyCode(fc, duty);
+        return new FactPwmValues(clock, f, d, fc, dc);
+    }
+    
+    public void SetFrequencyAndDuty(int channel, FactPwmValues values)
     {
         using var ms = new MemoryStream();
         using var bw = new BinaryWriter(ms);
         bw.Write((byte)PwmCommands.SetFrequency);
         bw.Write((byte)channel);
-        var c = CalculateClock(frequency, duty);
-        bw.Write(c);
-        var (fc, f) = CalculateFrequencyCode(c, (int)frequency);
-        bw.Write(fc);
-        var (dc, d) = CalculateDutyCode(f, (int)duty);
-        bw.Write(dc);
+        bw.Write((uint)values.Clock);
+        bw.Write((uint)values.FrequencyCode);
+        bw.Write((uint)values.DutyCode);
         Dm.QueueCommand(Channel, ms.ToArray(), CheckError);
-        return (f, d);
     }
 
-    private int CalculateClock(long frequency, long duty)
+    private long CalculateClock(long frequency, double duty)
     {
         //todo
         return MClk;
     }
 
-    private (int, int) CalculateDutyCode(int f, int duty)
+    private static (long, double) CalculateDutyCode(long fc, double duty)
     {
-        var code = (long)f * duty / 1000;
-        var d = code * 1000 / f;
-        return ((int)code, (int)d);
+        var code = (long)(fc * duty / 100);
+        var d = (double)code * 100 / fc;
+        return (code, d);
     }
 
-    private (int, int) CalculateFrequencyCode(int clock, int frequency)
+    private (long, long) CalculateFrequencyCode(long clock, long frequency)
     {
-        var code = MClk / frequency;
-        var f = code == 0 ? 0 : MClk / code;
+        var code = clock / frequency;
+        var f = code == 0 ? 0 : clock / code;
         return (code, f);
     }
 }
@@ -100,3 +107,5 @@ internal enum PwmCommands
     SetFrequency = 'f',
     EnableOutput = 'e'
 }
+
+public record FactPwmValues(long Clock, long Frequency, double Duty, long FrequencyCode, long DutyCode);

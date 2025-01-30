@@ -44,19 +44,21 @@ static int exec_command(const dev_dds *config, int idx, unsigned char *buffer)
       memcpy(&command.set_frequency_command.frequency, buffer, 8);
       buffer += 8;
       memcpy(&command.set_frequency_command.divider, buffer, 2);
-      rc = config->command(config->deviceId, last_command == 'f' ? DDS_COMMAND_SET_FREQUENCY : DDS_COMMAND_SET_FREQUENCY_CODE, &command, idx);
+      rc = config->command(config->deviceId,
+                            last_command == 'f' ? DDS_COMMAND_SET_FREQUENCY : DDS_COMMAND_SET_FREQUENCY_CODE,
+                            &command, idx, config->device_config);
       break;
     case 'm': // set mode
       command.set_mode_command.mode = buffer[1];
-      rc = config->command(config->deviceId, DDS_COMMAND_SET_MODE, &command, idx);
+      rc = config->command(config->deviceId, DDS_COMMAND_SET_MODE, &command, idx, config->device_config);
       break;
     case 'a': // set attenuator
       command.set_attenuator_command.attenuator_value = buffer[1];
-      rc = config->command(config->deviceId, DDS_COMMAND_SET_ATTENUATOR, &command, idx);
+      rc = config->command(config->deviceId, DDS_COMMAND_SET_ATTENUATOR, &command, idx, config->device_config);
       break;
     case 'e': // enable output
       command.enable_command.enable = buffer[1];
-      rc = config->command(config->deviceId, DDS_COMMAND_ENABLE_OUTPUT, &command, idx);
+      rc = config->command(config->deviceId, DDS_COMMAND_ENABLE_OUTPUT, &command, idx, config->device_config);
       break;
     case 's': // sweep
     case 'd': // sweep codes
@@ -67,7 +69,8 @@ static int exec_command(const dev_dds *config, int idx, unsigned char *buffer)
       memcpy(&command.sweep_command.points, buffer, 2);
       buffer += 2;
       memcpy(&command.sweep_command.divider, buffer, 2);
-      rc = config->command(config->deviceId, last_command == 's' ? DDS_COMMAND_SWEEP : DDS_COMMAND_SWEEP_CODES, &command, idx);
+      rc = config->command(config->deviceId, last_command == 's' ? DDS_COMMAND_SWEEP : DDS_COMMAND_SWEEP_CODES,
+                            &command, idx, config->device_config);
       break;
     default:
       break;
@@ -114,6 +117,6 @@ int dds_message_processor(int idx, void *config, void *data, unsigned char *buff
       return 1;
   }
   if (!bytes_expected)
-    return exec_command(config, idx, buffer);
+    return exec_command(dconfig, idx, buffer);
   return 0;
 }

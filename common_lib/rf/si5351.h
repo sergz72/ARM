@@ -1,73 +1,41 @@
-/*
- * si5351.h - Si5351 library for avr-gcc
- *
- * Copyright (C) 2014 Jason Milldrum <milldrum@gmail.com>
- *
- * Many defines derived from clk-si5351.h in the Linux kernel.
- * Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
- * Rabeeh Khoury <rabeeh@solid-run.com>
- *
- * do_div() macro derived from /include/asm-generic/div64.h in
- * the Linux kernel.
- * Copyright (C) 2003 Bernardo Innocenti <bernie@develer.com>
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
-
 #ifndef SI5351_H_
 #define SI5351_H_
 
-#define SI5351_CRYSTAL_LOAD				183
-#define  SI5351_CRYSTAL_LOAD_6PF		(1<<6)
-#define  SI5351_CRYSTAL_LOAD_8PF		(2<<6)
-#define  SI5351_CRYSTAL_LOAD_10PF		(3<<6)
+#define SI5351_DEVICE_DEFAULT_ADDRESS 0xC0
 
-/* Enum definitions */
-
-/*
- * enum si5351_variant - SiLabs Si5351 chip variant
- * @SI5351_VARIANT_A: Si5351A (8 output clocks, XTAL input)
- * @SI5351_VARIANT_A3: Si5351A MSOP10 (3 output clocks, XTAL input)
- * @SI5351_VARIANT_B: Si5351B (8 output clocks, XTAL/VXCO input)
- * @SI5351_VARIANT_C: Si5351C (8 output clocks, XTAL/CLKIN input)
- */
-enum si5351_variant {
-	SI5351_VARIANT_A = 1,
-	SI5351_VARIANT_A3 = 2,
-	SI5351_VARIANT_B = 3,
-	SI5351_VARIANT_C = 4,
-};
-
-enum si5351_clock {SI5351_CLK0, SI5351_CLK1, SI5351_CLK2, SI5351_CLK3,
-	                 SI5351_CLK4, SI5351_CLK5, SI5351_CLK6, SI5351_CLK7};
-
-enum si5351_pll {SI5351_PLLA, SI5351_PLLB};
-
+enum si5351_variant {SI5351_VARIANT_A,SI5351_VARIANT_B,SI5351_VARIANT_C};
+enum si5351_crystal_load {SI5351_CRYSTAL_LOAD_6PF=0x40, SI5351_CRYSTAL_LOAD_8PF=0x80, SI5351_CRYSTAL_LOAD_10PF=0xC0};
 enum si5351_drive {SI5351_DRIVE_2MA, SI5351_DRIVE_4MA, SI5351_DRIVE_6MA, SI5351_DRIVE_8MA};
 
-/* Suggested public function prototypes */
+typedef struct
+{
+    unsigned char device_address;
+    int channel;
+    unsigned int mClk;
+    enum si5351_crystal_load load;
+    enum si5351_variant variant;
+    int output_count;
+} si5351_conf;
 
-void si5351_init(void);
-int si5351_set_freq(int channel, unsigned int, int, enum si5351_clock, unsigned int r_div);
-int si5351_set_pll(int channel, unsigned int, enum si5351_pll);
-int si5351_clock_enable(int channel, enum si5351_clock, unsigned char);
-int si5351_drive_strength(int channel,enum si5351_clock, enum si5351_drive);
-int si5351_update_status(int channel);
-void si5351_set_correction(int channel, int);
+typedef struct
+{
+    const si5351_conf conf;
+    double fVCO[2];
+    unsigned int max_frequency;
+    unsigned int max_frequency_plla;
+    unsigned int min_frequency;
+    unsigned char clock_enable_flags;
+    unsigned char clock_control[8];
+} si5351_dev;
 
-int si5351_write_bulk(int channel, unsigned char addr, unsigned char bytes, unsigned char *data);
-int si5351_write(int channel, unsigned char addr, unsigned char data);
-int si5351_read(int channel, unsigned char addr, unsigned char *data);
+int si5351_write(unsigned char device_address, int channel, const unsigned char *data, unsigned int length); // should be defined in hal.c
+int si5351_read(unsigned char device_address, int channel, unsigned char register_no, unsigned char *data, unsigned int length); // should be defined in hal.c
 
-#endif /* SI5351_H_ */
+int si5351_init(const si5351_conf *conf, si5351_dev *device);
+int si5351_enable_output(si5351_dev *device, int output_no, int enable);
+int si5351_set_frequency(si5351_dev *device, int output_no, unsigned int frequency, unsigned int divider);
+int si5351_set_drive_strength(si5351_dev *device, int output_no, enum si5351_drive drive);
+int si5351_get_status(const si5351_dev *device, unsigned char *status);
+int si5351_set_crystal_load(const si5351_dev *device, enum si5351_crystal_load load);
+
+#endif

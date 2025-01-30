@@ -14,7 +14,6 @@ public class Meter: GenericDevice
     private readonly MeterReturnValueType _valueType;
     private readonly MeterMeasureType _measureType;
     private readonly string _name;
-    private readonly byte _channel;
 
     private List<MeterChannel> _channelsUi;
 
@@ -36,7 +35,6 @@ public class Meter: GenericDevice
         _valueType = (MeterReturnValueType)config[3];
         _numbersBeforePoint = config[4];
         _name = Encoding.UTF8.GetString(config[5..]);
-        _channel = channel;
     }
     
     internal override Control? CreateUi()

@@ -5,7 +5,7 @@
              mc:Ignorable="d"
              xmlns:c="clr-namespace:MeasurementTool.Devices.Controls"
              x:Class="MeasurementTool.Devices.Controls.PwmChannel">
-    <Grid RowDefinitions="Auto,*" ColumnDefinitions="Auto,Auto,Auto,*">
+    <Grid RowDefinitions="Auto,Auto,Auto,*" ColumnDefinitions="Auto,Auto,Auto,*">
         <Label Grid.Row="1" x:Name="ChannelNumber" Content="CH1" VerticalAlignment="Center"/>
         <Label Content="Frequency" HorizontalAlignment="Center" Grid.Column="1" Grid.Row="0"/>
         <StackPanel Orientation="Horizontal" Grid.Column="1" Grid.Row="1">
@@ -21,6 +21,18 @@
             <c:NumberUpDown x:Name="Freq1"/>
             <Label Content="Hz" VerticalAlignment="Center"/>
         </StackPanel>
+        <StackPanel Orientation="Horizontal" Grid.Row="2" Grid.Column="1">
+            <Label Content="Fact frequency:"/>
+            <Label x:Name="FactFrequency" Content="0"/>
+        </StackPanel>
+        <StackPanel Orientation="Horizontal" Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="3">
+            <Label Content="Clock:"/>
+            <Label x:Name="Clock" Content="0"/>
+            <Label Content="Frequency code:"/>
+            <Label x:Name="FrequencyCode" Content="0"/>
+            <Label Content="Duty code:"/>
+            <Label x:Name="DutyCode" Content="0"/>
+        </StackPanel>
         <Label Content="Duty" HorizontalAlignment="Center" Grid.Column="2" Grid.Row="0"/>
         <StackPanel Orientation="Horizontal" Grid.Column="2" Grid.Row="1">
             <c:NumberUpDown x:Name="Duty10"/>
@@ -28,6 +40,10 @@
             <Label Content="." VerticalAlignment="Center"/>
             <c:NumberUpDown x:Name="Dutyp1"/>
             <Label Content="%" VerticalAlignment="Center"/>
+        </StackPanel>
+        <StackPanel Orientation="Horizontal" Grid.Row="2" Grid.Column="2" Grid.ColumnSpan="2">
+            <Label Content="Fact duty:"/>
+            <Label x:Name="FactDuty" Content="0"/>
         </StackPanel>
         <CheckBox x:Name="OutputEnable" Grid.Column="3" Grid.Row="0" Click="OutputEnable_OnClick">Output enable</CheckBox>
         <Grid Grid.Column="3" Grid.Row="1" RowDefinitions="Auto,*" ColumnDefinitions="*">

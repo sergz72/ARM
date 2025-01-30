@@ -448,7 +448,7 @@ void delay_us(unsigned int us)
   sleep_us(us);
 }
 
-int dds_command(unsigned char deviceId, unsigned char cmd, dds_cmd *data, int idx)
+int dds_command(unsigned char deviceId, unsigned char cmd, dds_cmd *data, int idx, void *config)
 {
   dds_i2c_command c;
   switch (cmd)
@@ -494,14 +494,9 @@ int dds_command(unsigned char deviceId, unsigned char cmd, dds_cmd *data, int id
   }
 }
 
-int si5351_write_bulk(int channel, unsigned char addr, unsigned char bytes, unsigned char *data)
+int si5351_write(unsigned char device_address, int channel, const unsigned char *data, unsigned int length)
 {
-  return i2c_soft_command(channel, SI5351_DEVICE_ID, &addr, 1, data, bytes, NULL, 0, I2C_TIMEOUT);
-}
-
-int si5351_write(int channel, unsigned char addr, unsigned char data)
-{
-  return i2c_soft_command(channel, SI5351_DEVICE_ID, &addr, 1, &data, 1, NULL, 0, I2C_TIMEOUT);
+  return i2c_soft_command(channel, device_address, NULL, 0, data, length, NULL, 0, I2C_TIMEOUT);
 }
 
 int dds_get_config(dds_config *cfg, unsigned char deviceId, int idx)

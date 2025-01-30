@@ -10,12 +10,13 @@
 
 typedef struct {
   unsigned char deviceId;
-  int (*command)(unsigned char deviceId, unsigned char cmd, dds_cmd *data, int idx);
+  int (*command)(unsigned char deviceId, unsigned char cmd, dds_cmd *data, int idx, void *config);
   dds_config cfg;
+  void *device_config;
 } dev_dds;
 
 int dds_get_config(dds_config *cfg, unsigned char deviceId, int idx); //should be defined in hal.c
-int dds_command(unsigned char deviceId, unsigned char cmd, dds_cmd *data, int idx); //should be defined in hal.c
+int dds_command(unsigned char deviceId, unsigned char cmd, dds_cmd *data, int idx, void *config); //should be defined in hal.c
 void* dds_initializer(unsigned char deviceId, int idx);
 int dds_message_processor(int idx, void *config, void *data, unsigned char *buffer, int len);
 
