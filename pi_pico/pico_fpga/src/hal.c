@@ -28,7 +28,7 @@ static unsigned int pwm_duty_40, pwm_duty_50, pwm_duty_51;
 // Write `period` to the input shift register
 void pio_pwm_set_params(PIO pio, uint sm, unsigned int period, unsigned int level) {
   pio_sm_set_enabled(pio, sm, false);
-  pio_sm_put_blocking(pio, sm, period);
+  pio_sm_put_blocking(pio, sm, period-1);
   pio_sm_exec(pio, sm, pio_encode_pull(false, false));
   pio_sm_exec(pio, sm, pio_encode_out(pio_isr, 32));
   pio_sm_exec(pio, sm, pio_encode_jmp(pwm_program_offset));
