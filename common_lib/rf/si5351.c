@@ -37,7 +37,7 @@ static int set_ms(si5351_dev *device, int output_no, unsigned int p1, unsigned i
                     unsigned int div_by_4, unsigned int r_div)
 {
     unsigned char data[SI5351_PARAMETERS_LENGTH+1];
-    data[0] = (unsigned char)(SI5351_CLK0_PARAMETERS + output_no * SI5351_CLK0_CTRL);
+    data[0] = (unsigned char)(SI5351_CLK0_PARAMETERS + output_no * SI5351_PARAMETERS_LENGTH);
     data[1] = (unsigned char)(p3 >> 8);
     data[2] = (unsigned char)p3;
     data[3] = (unsigned char)(((r_div << 4) & 0x70) | ((div_by_4 << 2) & 0x0C) | ((p1 >> 16) & 3));
@@ -78,7 +78,7 @@ static int set_pll_parameters(si5351_dev *device)
 
 static int validate_output_no(si5351_dev *device, int output_no)
 {
-    return output_no >= 0 && output_no < device->conf.output_count;
+    return output_no < 0 || output_no >= device->conf.output_count;
 }
 
 static int update_clock_control(si5351_dev *device, int output_no)
@@ -89,10 +89,18 @@ static int update_clock_control(si5351_dev *device, int output_no)
     return si5351_write(device->conf.device_address, device->conf.channel, data, 2);
 }
 
+static int update_clock_enable(si5351_dev *device)
+{
+    unsigned char data[2];
+    data[0] = SI5351_OUTPUT_ENABLE_CTRL;
+    data[1] = device->clock_enable_flags;
+    return si5351_write(device->conf.device_address, device->conf.channel, data, 2);
+}
+
 int si5351_init(const si5351_conf *conf, si5351_dev *device)
 {
     memcpy((void*)&device->conf, conf, sizeof(si5351_conf));
-    device->clock_enable_flags = 0;
+    device->clock_enable_flags = 0xFF;
     // Select MultiSynth 0 as the source for CLKn.
     // CLKn is powered down.
     memset(device->clock_control, 0x8C, 8); // FBB_INT = 0
@@ -102,6 +110,10 @@ int si5351_init(const si5351_conf *conf, si5351_dev *device)
         update_clock_control(device, i);
 
     int rc = si5351_set_crystal_load(device, conf->load);
+    if (rc)
+        return rc;
+
+    rc = update_clock_enable(device);
     if (rc)
         return rc;
 
@@ -125,21 +137,18 @@ int si5351_enable_output(si5351_dev *device, int output_no, int enable)
         return rc;
     if (enable)
     {
-        device->clock_enable_flags |= 1 << output_no;
-        device->clock_control[output_no] |= 0x80;
+        device->clock_enable_flags &= ~(1 << output_no);
+        device->clock_control[output_no] &= 0x7F;
     }
     else
     {
-        device->clock_enable_flags &= ~(1 << output_no);
-        device->clock_control[output_no] &= 0x7F;
+        device->clock_enable_flags |= 1 << output_no;
+        device->clock_control[output_no] |= 0x80;
     }
     rc = update_clock_control(device, output_no);
     if (rc)
         return rc;
-    unsigned char data[2];
-    data[0] = SI5351_OUTPUT_ENABLE_CTRL;
-    data[1] = device->clock_enable_flags;
-    return si5351_write(device->conf.device_address, device->conf.channel, data, 2);
+    return update_clock_enable(device);
 }
 
 static int set_hi_frequency(si5351_dev *device, int output_no, unsigned int frequency)

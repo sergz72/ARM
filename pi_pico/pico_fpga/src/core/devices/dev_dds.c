@@ -77,7 +77,13 @@ static int exec_command(const dev_dds *config, int idx, unsigned char *buffer)
     default:
       break;
   }
-  buffer[0] = rc ? 'e' : 'k';
+  if (rc)
+  {
+    buffer[0] = 'e';
+    buffer[1] = rc + '0';
+    return 2;
+  }
+  buffer[0] = 'k';
   return 1;
 }
 
@@ -118,7 +124,8 @@ int dds_message_processor(int idx, void *config, void *data, unsigned char *buff
       break;
     default:
       buffer[0] = 'e';
-      return 1;
+      buffer[1] = '0';
+      return 2;
   }
   if (!bytes_expected)
     return exec_command(dconfig, idx, buffer);

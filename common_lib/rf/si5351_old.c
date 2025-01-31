@@ -667,7 +667,7 @@ unsigned int pll_calc(unsigned int freq, struct Si5351RegSet *reg, int correctio
 {
 	unsigned int ref_freq = SI5351_XTAL_FREQ;
 	unsigned int rfrac, denom, a, b, c, p1, p2, p3;
-	uint64_t lltmp;
+	unsigned long long int lltmp;
 
 	/* Factor calibration value into nominal crystal frequency */
 	/* Measured in parts-per-ten million */
@@ -726,7 +726,7 @@ unsigned int pll_calc(unsigned int freq, struct Si5351RegSet *reg, int correctio
 unsigned int multisynth_calc(unsigned int freq, struct Si5351RegSet *reg)
 {
 	unsigned int pll_freq;
-	uint64_t lltmp;
+  unsigned long long int lltmp;
 	unsigned int a, b, c, p1, p2, p3;
 	unsigned char divby4;
 
@@ -781,7 +781,7 @@ unsigned int multisynth_calc(unsigned int freq, struct Si5351RegSet *reg)
 
 unsigned int multisynth_recalc(unsigned int freq, unsigned int pll_freq, struct Si5351RegSet *reg)
 {
-	uint64_t lltmp;
+  unsigned long long int lltmp;
 	unsigned int rfrac, denom, a, b, c, p1, p2, p3;
 	unsigned char divby4;
 

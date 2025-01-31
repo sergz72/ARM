@@ -16,6 +16,8 @@ static const DdsConfig config =
 
 static int si5351_command(unsigned char deviceId, unsigned char cmd, dds_cmd *command, int idx, void *config)
 {
+  if (config == NULL)
+    return 9;
   switch (cmd)
   {
   case DDS_COMMAND_SET_FREQUENCY:
@@ -45,7 +47,8 @@ void* si5351_initializer(int idx, void **data)
   device_config.variant = SI5351_VARIANT_A;
   device_config.mClk = SI5351_XTAL_FREQ;
 
-  si5351_init(&device_config, device);
+  if (si5351_init(&device_config, device))
+    return NULL;
 
   dev_dds *cfg = malloc(sizeof(dev_dds));
   if (cfg)
