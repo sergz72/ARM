@@ -9,6 +9,8 @@ typedef struct
 {
   unsigned int frequency1;
   unsigned int frequency2;
+  unsigned int frequency1_missing;
+  unsigned int frequency2_missing;
 } frequency_meter_data;
 
 static const MeterConfig config1 =
@@ -36,6 +38,8 @@ void* internal_frequency_meter_initializer(int idx, void **data)
   {
     fdata->frequency1 = 0;
     fdata->frequency2 = 0;
+    fdata->frequency1_missing = 0;
+    fdata->frequency2_missing = 0;
     *data = fdata;
     if (idx == 4)
       counter_pio_init(COUNTER4_0_SM, PIN_4_0);
@@ -56,6 +60,36 @@ int internal_frequency_meter_timer_event(int idx, int step, void* config, void *
   int frequency2 = idx == 4 ? -1 : counter_get(idx, 1);
   int got_f1 = frequency1 >= 0;
   int got_f2 = frequency2 >= 0;
+
+  if (!got_f1)
+  {
+    fdata->frequency1_missing++;
+    if (fdata->frequency1_missing >= 20)
+    {
+      got_f1 = 1;
+      frequency1 = 0;
+      fdata->frequency1_missing = 0;
+    }
+  }
+  else
+    fdata->frequency1_missing = 0;
+
+  if (idx == 5)
+  {
+    if (!got_f2)
+    {
+      fdata->frequency2_missing++;
+      if (fdata->frequency2_missing >= 20)
+      {
+        got_f2 = 1;
+        frequency2 = 0;
+        fdata->frequency2_missing = 0;
+      }
+    }
+    else
+      fdata->frequency2_missing = 0;
+  }
+
   if (got_f1 || got_f2)
   {
     if (got_f1)

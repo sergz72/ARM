@@ -57,7 +57,7 @@ typedef struct __attribute__((packed))
   unsigned char max_attenuator;
 } DdsConfig;
 
-typedef struct
+typedef struct __attribute__((packed))
 {
   unsigned int  mclk;
   unsigned char channels;
