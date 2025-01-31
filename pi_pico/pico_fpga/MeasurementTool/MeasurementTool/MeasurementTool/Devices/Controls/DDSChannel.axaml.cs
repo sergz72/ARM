@@ -21,7 +21,7 @@ public partial class DDSChannel : UserControl
         _dds = dds;
         _channel = channelNumber;
         ChannelNumber.Content = $"CH{channelNumber+1}";
-        _frequencyManager = new NumberUpDownManager(dds.MinFrequency * 10, dds.MaxFrequency * 10, dds.MinFrequency * 10, null,
+        _frequencyManager = new NumberUpDownManager(dds.MinFrequency * 10, dds.MaxFrequency * 10, 10000000, null,
                                                     Freqp1, Freq1, Freq10, Freq100, Freq1K, Freq10K,
                                                     Freq100K, Freq1M, Freq10M, Freq100M, Freq1G, Freq10G);
         _frequencyManager.ValueChanged += FrequencyManagerOnValueChanged;

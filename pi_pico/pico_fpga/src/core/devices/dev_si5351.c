@@ -19,7 +19,7 @@ static int si5351_command(unsigned char deviceId, unsigned char cmd, dds_cmd *co
   switch (cmd)
   {
   case DDS_COMMAND_SET_FREQUENCY:
-    return si5351_set_frequency((si5351_dev*)config, command->channel, command->set_frequency_command.frequency,
+    return si5351_set_frequency((si5351_dev*)config, command->channel, command->set_frequency_command.frequency / 10,
                                  command->set_frequency_command.divider);
   case DDS_COMMAND_SET_MODE:
   case DDS_COMMAND_SET_ATTENUATOR:

@@ -2,10 +2,8 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
 using Avalonia.Controls;
 using Avalonia.Layout;
-using Avalonia.Media;
 using MeasurementTool.Devices.Controls;
 
 namespace MeasurementTool.Devices;
@@ -20,7 +18,7 @@ public sealed class Dds: GenericDevice
             [1], DdsModes.Sine, 32)},
         { DdsType.Adf4351, new DdsInfo(mclk => 4400000000, mclk => 35000000, 1,
             [1,2,4,8,16,32,64], DdsModes.Sine, 0)},
-        { DdsType.Si5351, new DdsInfo(mclk => 160000000, mclk => 8000, 3,
+        { DdsType.Si5351, new DdsInfo(mclk => 225000000, mclk => 439454, 3,
             [1,2,4,8,16,32,64,128], DdsModes.Square, 0)}
     };
 
@@ -181,9 +179,9 @@ internal enum DdsType
 {
     Unknown,
     Ad9833,
+    Si5351,
     Ad9850,
-    Adf4351,
-    Si5351
+    Adf4351
 }
 
 public enum MeterType

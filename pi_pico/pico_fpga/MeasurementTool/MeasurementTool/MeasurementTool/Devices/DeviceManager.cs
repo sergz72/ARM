@@ -34,14 +34,14 @@ public abstract class GenericDevice
 
     internal abstract string GetName();
     
-    protected void CheckError(byte[]? response)
+    protected void CheckError(byte[] request, byte[]? response)
     {
         if (response == null)
             return;
         if (response.Length == 0)
             Dm.LogError(Channel, "Empty response");
         if (response[0] != (byte)'k')
-            Dm.LogError(Channel, Encoding.UTF8.GetString(response));
+            Dm.LogError(Channel, (char)request[1] + " " + Encoding.UTF8.GetString(response));
     }
 }
 
@@ -53,7 +53,7 @@ public interface ILogger
     void Error(string message);
 }
 
-internal record Message(byte[] Data, Action<byte[]?> Handler);
+internal record Message(byte[] Data, Action<byte[], byte[]?> Handler);
 
 public sealed class DeviceManager
 {
@@ -92,12 +92,12 @@ public sealed class DeviceManager
                 try
                 {
                     var response = _deviceInterface.SendCommand(message.Data);
-                    message.Handler.Invoke(response);
+                    message.Handler.Invoke(message.Data, response);
                 }
                 catch (Exception ex)
                 {
                     _logger.Error(ex.Message);
-                    message.Handler.Invoke(null);
+                    message.Handler.Invoke(message.Data, null);
                 }
             }
             else
@@ -133,7 +133,7 @@ public sealed class DeviceManager
         _logger.Error(_channelToDevice[channel].GetName(), channel, message);
     }
 
-    private void ParseDeviceResponses(byte[]? response)
+    private void ParseDeviceResponses(byte[] request, byte[]? response)
     {
         if (_channelToDevice == null || response == null)
             return;
@@ -164,7 +164,7 @@ public sealed class DeviceManager
         }
     }
     
-    internal void QueueCommand(byte channel, byte[] data, Action<byte[]?> handler)
+    internal void QueueCommand(byte channel, byte[] data, Action<byte[], byte[]?> handler)
     {
         var command = new byte[data.Length + 1];
         command[0] = channel;
@@ -172,15 +172,15 @@ public sealed class DeviceManager
         _messages.Enqueue(new Message(command, handler));
     }
 
-    internal void QueueCommand(byte channel, string command, Action<byte[]?> handler) =>
+    internal void QueueCommand(byte channel, string command, Action<byte[], byte[]?> handler) =>
         QueueCommand(channel, Encoding.UTF8.GetBytes(command), handler);
     
-    private void QueueCommand(string command, Action<byte[]?> handler) =>
+    private void QueueCommand(string command, Action<byte[], byte[]?> handler) =>
         _messages.Enqueue(new Message(Encoding.UTF8.GetBytes(command), handler));
 
-    internal void QueueCommand(byte[] data, Action<byte[]?> handler) => _messages.Enqueue(new Message(data, handler));
+    internal void QueueCommand(byte[] data, Action<byte[], byte[]?> handler) => _messages.Enqueue(new Message(data, handler));
     
-    private void ProcessEnumerationResult(byte[]? data)
+    private void ProcessEnumerationResult(byte[] request, byte[]? data)
     {
         if (data == null)
         {

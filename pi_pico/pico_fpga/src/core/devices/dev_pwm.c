@@ -55,7 +55,10 @@ int pwm_message_processor(int idx, void *config, void *data, unsigned char *buff
   {
     memcpy(command_buffer_p, buffer, len);
     if (len >= bytes_expected)
+    {
+      bytes_expected = 0;
       return exec_command(dev, data, idx, buffer);
+    }
     command_buffer_p += len;
     bytes_expected -= len;
     return 0;

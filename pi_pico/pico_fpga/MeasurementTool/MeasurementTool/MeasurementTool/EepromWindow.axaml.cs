@@ -64,7 +64,7 @@ public partial class EepromWindow : Window
         _dm?.QueueCommand(ms.ToArray(), ResponseHandler);
     }
 
-    private void ResponseHandler(byte[]? data)
+    private void ResponseHandler(byte[] request, byte[]? data)
     {
         var s = data is { Length: > 0 } ? BitConverter.ToString(data) : string.Empty;
         var sc = data is { Length: > 0 } ?
