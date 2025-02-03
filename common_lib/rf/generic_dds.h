@@ -61,32 +61,31 @@ typedef struct {
 } dds_cmd;
 
 typedef struct __attribute__((__packed__)) {
-  unsigned char command;
-  unsigned char channel;
   unsigned char parameter;
-} dds_cmd3;
+} dds_cmd1;
 
 typedef struct __attribute__((__packed__)) {
-  unsigned char  command;
-  unsigned char  channel;
   unsigned long long int freq;
   unsigned short div;
-} dds_cmd12;
+} dds_cmd10;
 
 typedef struct __attribute__((__packed__)) {
-  unsigned char  command;
-  unsigned char  channel;
   unsigned long long int freq;
   unsigned int step;
   unsigned int points;
   unsigned short div;
-} dds_cmd20;
+} dds_cmd18;
 
-typedef union __attribute__((__packed__)) {
-    unsigned char bytes[20];
-    dds_cmd3 c3;
-    dds_cmd12 c12;
-    dds_cmd20 c20;
+
+typedef struct __attribute__((__packed__)) {
+  unsigned char command;
+  unsigned char channel;
+  union
+  {
+    dds_cmd1 c1;
+    dds_cmd10 c10;
+    dds_cmd18 c18;
+  };
 } dds_i2c_command;
 
 #endif
