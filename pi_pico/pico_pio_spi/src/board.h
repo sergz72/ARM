@@ -16,10 +16,15 @@
 
 #define SPI_PIO  pio0
 #define SPI_SM   0
-#define PIN_SCK  15
-#define PIN_MOSI 26
-#define PIN_MISO 27
-#define PIN_NCS  14
+#define PIN_NCS  26
+#define PIN_SCK  27
+#define PIN_MOSI 28
+#define PIN_MISO 29
+
+#define I2C_SDA_PIN 14
+#define I2C_SCL_PIN 15
+#define I2C_INST    i2c1
+#define I2C_TIMEOUT 1000000 // 1s
 
 void SystemInit(void);
 int spi_set_baudrate(unsigned int);

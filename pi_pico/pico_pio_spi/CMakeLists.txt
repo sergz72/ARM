@@ -18,6 +18,7 @@ add_executable(pico_pio_spi
         src/hal.c
         src/main.c
         src/spi_commands.c
+        src/i2c_commands.c
         ../../common_lib/getstring.c
         ../../common_lib/shell/shell.c
         ../../common_lib/read_hex_string.c
@@ -26,7 +27,7 @@ add_executable(pico_pio_spi
 
 include_directories(src ../../common_lib ../../common_lib/shell)
 
-target_link_libraries(pico_pio_spi pico_stdlib hardware_pio)
+target_link_libraries(pico_pio_spi pico_stdlib hardware_pio hardware_i2c)
 
 # enable usb output, disable uart output
 pico_enable_stdio_usb(pico_pio_spi 1)

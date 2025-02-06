@@ -1,11 +1,17 @@
 #include <hardware/clocks.h>
-
 #include "board.h"
 #include "hardware/gpio.h"
+#include "hardware/i2c.h"
 #include "spi.pio.h"
 
 void SystemInit(void)
 {
+  i2c_init(I2C_INST, 100000);
+  gpio_set_function(I2C_SDA_PIN, GPIO_FUNC_I2C);
+  gpio_set_function(I2C_SCL_PIN, GPIO_FUNC_I2C);
+  gpio_pull_up(I2C_SDA_PIN);
+  gpio_pull_up(I2C_SCL_PIN);
+
   gpio_init(PIN_NCS);
   gpio_put(PIN_NCS, true);
   gpio_set_dir(PIN_NCS, GPIO_OUT);

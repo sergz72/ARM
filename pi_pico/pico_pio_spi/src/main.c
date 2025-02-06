@@ -4,6 +4,7 @@
 #include <shell.h>
 #include <getstring.h>
 #include "spi_commands.h"
+#include "i2c_commands.h"
 
 static char command_line[200];
 
@@ -38,6 +39,7 @@ int main()
 
   shell_init(printf, gets_);
   register_spi_commands();
+  register_i2c_commands();
 
   getstring_init(command_line, sizeof(command_line), getch_, puts_);
 
