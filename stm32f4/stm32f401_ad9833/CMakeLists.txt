@@ -39,6 +39,7 @@ file(GLOB SOURCES
         "../stm32f4lib/spi.c"
         "../stm32f4lib/adc.c"
         "../stm32f4lib/timer.c"
+        "../stm32f4lib/dma.c"
         "../../common_lib/rf/ad9833.c"
         "../startup_stm32f401ceux.s"
 )

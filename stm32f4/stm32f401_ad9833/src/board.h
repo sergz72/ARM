@@ -24,4 +24,6 @@
 #define LED_COMMAND_ON GPIOB->BSRR = 0x04000000
 #define LED_COMMAND_OFF GPIOB->BSRR = 0x0400
 
+//#define SPI_SLAVE_DMA
+
 #endif

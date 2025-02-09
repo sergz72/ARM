@@ -6,9 +6,26 @@
 #include <nvic.h>
 #include <spi.h>
 #include <timer.h>
+#include <dma.h>
 
 #define ADC_VREF 33000 //x0.1mv
 
+#ifdef SPI_SLAVE_DMA
+static inline void pointers_reset(void *rxaddress, const void *txaddress)
+{
+  DMA1_Stream3->CR &= ~DMA_SxCR_EN;
+  DMA1_Stream4->CR &= ~DMA_SxCR_EN;
+
+  DMA1_Stream3->NDTR = MAX_TRANSFER_SIZE;
+  DMA1_Stream3->M0AR = (unsigned int)rxaddress;
+  DMA1_Stream4->NDTR = MAX_TRANSFER_SIZE;
+  DMA1_Stream4->M0AR = (unsigned int)txaddress;
+
+  DMA1_Stream3->CR |= DMA_SxCR_EN;
+  DMA1_Stream4->CR |= DMA_SxCR_EN;
+}
+
+#else
 static unsigned char *rxbuf_p, *txbuf_p;
 
 static inline void pointers_reset(void *rxaddress, const void *txaddress)
@@ -16,11 +33,14 @@ static inline void pointers_reset(void *rxaddress, const void *txaddress)
   rxbuf_p = (unsigned char*)rxaddress;
   txbuf_p = (unsigned char*)txaddress;
 }
+#endif
 
 void __attribute__((section(".RamFunc"))) EXTI15_10_IRQHandler(void)
 {
   pointers_reset(rxbuf, txbufs[rxbuf[0] & 7]);
+#ifndef SPI_SLAVE_DMA
   SPI2->DR = *txbuf_p++;
+#endif
   command_ready = 1;
   EXTI->PR = EXTI_Line12;
 }
@@ -34,6 +54,7 @@ void __attribute__((section(".RamFunc"))) TIM2_IRQHandler(void)
   }
 }
 
+#ifndef SPI_SLAVE_DMA
 void __attribute__((section(".RamFunc"))) SPI2_IRQHandler(void)
 {
   unsigned int status = SPI2->SR;
@@ -42,6 +63,7 @@ void __attribute__((section(".RamFunc"))) SPI2_IRQHandler(void)
   if (status & SPI_SR_RXNE)
     *rxbuf_p++ = SPI2->DR;
 }
+#endif
 
 /*
  * LED_TIMER   = PC13
@@ -74,6 +96,40 @@ static void GPIOInit(void)
  *PB14 = SPI2_MISO
  *PB15 = SPI2_MOSI
  */
+
+#ifdef SPI_SLAVE_DMA
+static void DMAInit(void *rxaddress, const void *txaddress)
+{
+  DMA_InitTypeDef init;
+
+  RCC->AHB1ENR |= RCC_AHB1ENR_DMA1EN;
+
+  init.DMA_Mode = DMA_Mode_Normal;
+  init.DMA_Channel = DMA_Channel_0;
+  init.DMA_DIR = DMA_DIR_MemoryToPeripheral;
+  init.DMA_FIFOMode = DMA_FIFOMode_Disable;
+  init.DMA_FIFOThreshold = DMA_FIFOThreshold_Full;
+  init.DMA_Memory0BaseAddr = (uint32_t)txaddress;
+  init.DMA_MemoryDataSize = DMA_MemoryDataSize_Byte;
+  init.DMA_MemoryInc = DMA_MemoryInc_Enable;
+  init.DMA_MemoryBurst = DMA_MemoryBurst_Single;
+  init.DMA_PeripheralBaseAddr = (uint32_t)&SPI2->DR;
+  init.DMA_PeripheralBurst = DMA_PeripheralBurst_Single;
+  init.DMA_PeripheralInc = DMA_PeripheralInc_Disable;
+  init.DMA_PeripheralDataSize = DMA_PeripheralDataSize_Byte;
+  init.DMA_Priority = DMA_Priority_VeryHigh;
+  init.DMA_BufferSize = MAX_TRANSFER_SIZE;
+  DMA_Init(DMA1_Stream4, &init);
+  init.DMA_DIR = DMA_DIR_PeripheralToMemory;
+  init.DMA_Memory0BaseAddr = (uint32_t)rxaddress;
+  DMA_Init(DMA1_Stream3, &init);
+  DMA_FlowControllerConfig(DMA1_Stream4, DMA_FlowCtrl_Peripheral);
+  DMA_FlowControllerConfig(DMA1_Stream3, DMA_FlowCtrl_Peripheral);
+
+  DMA_Cmd(DMA1_Stream4, ENABLE);
+  DMA_Cmd(DMA1_Stream3, ENABLE);
+}
+#endif
 
 static void SPISlaveInit(void)
 {
@@ -113,14 +169,21 @@ static void SPISlaveInit(void)
   SPI_InitStructure.SPI_CRCPolynomial = 7;
   SPI_Init(SPI2, &SPI_InitStructure);
 
+#ifdef SPI_SLAVE_DMA
+  SPI_I2S_DMACmd(SPI2, SPI_I2S_DMAReq_Tx, ENABLE);
+  SPI_I2S_DMACmd(SPI2, SPI_I2S_DMAReq_Rx, ENABLE);
+#else
   SPI_I2S_ClearITPendingBit(SPI2, SPI_I2S_IT_RXNE);
   SPI_I2S_ClearITPendingBit(SPI2, SPI_I2S_IT_TXE);
   SPI_I2S_ITConfig(SPI2, SPI_I2S_IT_RXNE, ENABLE);
   SPI_I2S_ITConfig(SPI2, SPI_I2S_IT_TXE, ENABLE);
+#endif
 
   SPI_Cmd(SPI2, ENABLE);
 
+#ifndef SPI_SLAVE_DMA
   NVIC_Init(SPI2_IRQn, 0, 0, ENABLE);
+#endif
 }
 
 /*
@@ -213,7 +276,7 @@ static void TimerInit(void)
 
   /* Time base configuration */
   TIM_TimeBaseStructure.TIM_Period = 5000; // 5000 us
-  TIM_TimeBaseStructure.TIM_Prescaler = (unsigned short) (BOARD_PCLK1 / 1000000) - 1; // tick every 1 us
+  TIM_TimeBaseStructure.TIM_Prescaler = (unsigned short) (BOARD_PCLK1 / 500000) - 1; // tick every 1 us
   TIM_TimeBaseStructure.TIM_ClockDivision = TIM_CKD_DIV1;
   TIM_TimeBaseStructure.TIM_CounterMode = TIM_CounterMode_Up;
 
@@ -246,7 +309,11 @@ void SystemInit(void)
 
 void SysInit(void *rxaddress, const void *txaddress)
 {
+#ifdef SPI_SLAVE_DMA
+  DMAInit(rxaddress, txaddress);
+#else
   pointers_reset(rxaddress, txaddress);
+#endif
   SPISlaveInit();
 }
 
