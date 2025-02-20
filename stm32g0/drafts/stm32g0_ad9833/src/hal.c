@@ -7,29 +7,72 @@
 
 #define ADC_VREF 33000 //x0.1mv
 
-const SPI_InitTypeDef spi_slave_typedef = {
+const SPI_InitTypeDef spi_slave_init = {
   .Direction = SPI_DIRECTION_2LINES,
   .Mode = SPI_MODE_SLAVE,
   .DataSize = 8,
   .CLKPolarity = SPI_POLARITY_LOW,
   .CLKPhase = SPI_PHASE_1EDGE,
   .NSS = SPI_NSS_HARD_INPUT,
-  .BaudRatePrescaler = SPI_BAUDRATEPRESCALER_32,
+  .BaudRatePrescaler = SPI_BAUDRATEPRESCALER_16,
   .FirstBit = SPI_FIRSTBIT_MSB,
   .CRCCalculation = SPI_CRCCALCULATION_DISABLE,
   .CRCPolynomial = 7,
   .TIMode = SPI_TIMODE_DISABLE,
-  .InterruptsToEnable = SPI_CR2_TXEIE | SPI_CR2_RXNEIE | SPI_CR2_ERRIE
+#ifdef SPI_SLAVE_DMA
+  .InterruptsToEnable = 0,
+  .DMAToEnable = SPI_CR2_TXDMAEN | SPI_CR2_RXDMAEN | SPI_CR2_FRXTH
+#else
+  .InterruptsToEnable = SPI_CR2_TXEIE | SPI_CR2_RXNEIE | SPI_CR2_ERRIE,
+  .DMAToEnable = 0
+#endif
 };
 
-static unsigned char *rxbuf_p, *txbuf_p;
+const SPI_InitTypeDef spi_master_init = {
+  .Direction = SPI_DIRECTION_2LINES,
+  .Mode = SPI_MODE_MASTER,
+  .DataSize = 16,
+  .CLKPolarity = SPI_POLARITY_LOW,
+  .CLKPhase = SPI_PHASE_1EDGE,
+  .NSS = SPI_NSS_HARD_OUTPUT,
+  .BaudRatePrescaler = SPI_BAUDRATEPRESCALER_16,
+  .FirstBit = SPI_FIRSTBIT_MSB,
+  .CRCCalculation = SPI_CRCCALCULATION_DISABLE,
+  .CRCPolynomial = 7,
+  .TIMode = SPI_TIMODE_DISABLE,
+  .InterruptsToEnable = 0,
+  .DMAToEnable = 0
+};
+
 static unsigned int spi1_cr1, spi1_cr2;
+
+#ifdef SPI_SLAVE_DMA
+static void DMADisable(void)
+{
+  DMA1_Channel1->CCR &= ~DMA_CCR_EN;
+  DMA1_Channel2->CCR &= ~DMA_CCR_EN;
+}
+
+static void DMAReinit(void *rxaddress, const void *txaddress)
+{
+  DMA1_Channel1->CMAR = (unsigned int)rxaddress;
+  DMA1_Channel1->CNDTR = MAX_TRANSFER_SIZE;
+
+  DMA1_Channel2->CMAR = (unsigned int)txaddress;
+  DMA1_Channel2->CNDTR = MAX_TRANSFER_SIZE;
+
+  DMA1_Channel1->CCR |= DMA_CCR_EN;
+  DMA1_Channel2->CCR |= DMA_CCR_EN;
+}
+#else
+static unsigned char *rxbuf_p, *txbuf_p;
 
 static inline void pointers_reset(void *rxaddress, const void *txaddress)
 {
   rxbuf_p = (unsigned char*)rxaddress;
   txbuf_p = (unsigned char*)txaddress;
 }
+#endif
 
 static void SPISlaveReInit(void)
 {
@@ -37,16 +80,20 @@ static void SPISlaveReInit(void)
 
   SPI1->CR1 = spi1_cr1;
   SPI1->CR2 = spi1_cr2;
-
-  SPI_Enable(SPI1);
 }
 
 void __attribute__((section(".RamFunc"))) EXTI4_15_IRQHandler(void)
 {
-  //while ((SPI1->SR & SPI_SR_FRLVL) != 0)
-  //  *rxbuf_p++ = (unsigned char)SPI1->DR;
+#ifdef SPI_SLAVE_DMA
+  DMADisable();
+#else
   pointers_reset(rxbuf, txbufs[rxbuf[0] & 7]);
+#endif
   SPISlaveReInit();
+#ifdef SPI_SLAVE_DMA
+  DMAReinit(rxbuf, txbufs[rxbuf[0] & 7]);
+#endif
+  SPI_Enable(SPI1);
   command_ready = 1;
   EXTI->RPR1 = EXTI_Line4;
 }
@@ -60,6 +107,7 @@ void __attribute__((section(".RamFunc"))) TIM14_IRQHandler(void)
   }
 }
 
+#ifndef SPI_SLAVE_DMA
 void __attribute__((section(".RamFunc"))) SPI1_IRQHandler(void)
 {
   while ((SPI1->SR & SPI_SR_FTLVL) != SPI_SR_FTLVL)
@@ -67,6 +115,7 @@ void __attribute__((section(".RamFunc"))) SPI1_IRQHandler(void)
   while ((SPI1->SR & SPI_SR_FRLVL) != 0)
     *rxbuf_p++ = (unsigned char)SPI1->DR;
 }
+#endif
 
 /*
  * LED_TIMER   = PA1
@@ -117,14 +166,40 @@ static void SPISlaveInit(void)
             GPIO_PuPd_UP
   );
 
-  SPI_Init(SPI1, &spi_slave_typedef);
+  SPI_Init(SPI1, &spi_slave_init);
   spi1_cr1 = SPI1->CR1;
   spi1_cr2 = SPI1->CR2;
 
   SPI_Enable(SPI1);
 
+#ifndef SPI_SLAVE_DMA
   NVIC_Init(SPI1_IRQn, 0, 0, ENABLE);
+#endif
 }
+
+#ifdef SPI_SLAVE_DMA
+static void DMAInit(void *rxaddress, const void *txaddress)
+{
+  RCC->AHBENR |= RCC_AHBENR_DMA1EN;
+  // DMA channel 1 = from SPI to mem
+  DMA1_Channel1->CCR = DMA_CCR_MINC | // memory increment mode
+                       DMA_CCR_PL; // very high priority level
+  DMA1_Channel1->CPAR = (unsigned int)&SPI1->DR;
+
+  // DMA channel 2 = from mem to SPI
+  DMA1_Channel2->CCR = DMA_CCR_MINC | // memory increment mode
+                       DMA_CCR_PL | // very high priority level
+                       DMA_CCR_DIR; // read from memory
+  DMA1_Channel2->CPAR = (unsigned int)&SPI1->DR;
+
+  // 16 = SPI1_RX
+  DMAMUX1_Channel0->CCR = 16;
+  // 17 = SPI1_TX
+  DMAMUX1_Channel1->CCR = 17;
+
+  DMAReinit(rxaddress, txaddress);
+}
+#endif
 
 /*
  *PA8 = SPI2_NSS
@@ -165,19 +240,7 @@ static void SPIMasterInit(void)
             GPIO_PuPd_UP
   );
 
-  SPI_InitStructure.Direction = SPI_DIRECTION_2LINES;
-  SPI_InitStructure.Mode = SPI_MODE_MASTER;
-  SPI_InitStructure.DataSize = 16;
-  SPI_InitStructure.CLKPolarity = SPI_POLARITY_LOW;
-  SPI_InitStructure.CLKPhase = SPI_PHASE_1EDGE;
-  SPI_InitStructure.NSS = SPI_NSS_HARD_OUTPUT;
-  SPI_InitStructure.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_32;
-  SPI_InitStructure.FirstBit = SPI_FIRSTBIT_MSB;
-  SPI_InitStructure.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
-  SPI_InitStructure.CRCPolynomial = 7;
-  SPI_InitStructure.TIMode = SPI_TIMODE_DISABLE;
-
-  SPI_Init(SPI2, &SPI_InitStructure);
+  SPI_Init(SPI2, &spi_master_init);
   SPI_Enable(SPI2);
 }
 
@@ -272,7 +335,11 @@ void SystemInit(void)
 
 void SysInit(void *rxaddress, const void *txaddress)
 {
+#ifdef SPI_SLAVE_DMA
+  DMAInit(rxaddress, txaddress);
+#else
   pointers_reset(rxaddress, txaddress);
+#endif
   SPISlaveInit();
   EXTIInit();
 }

@@ -21,7 +21,7 @@ void SPI_Init(SPI_TypeDef *instance, const SPI_InitTypeDef *init)
                                   init->CLKPolarity | init->CLKPhase | nss_cr1 |
                                   init->BaudRatePrescaler | init->FirstBit  | init->CRCCalculation);
 
-  WRITE_REG(instance->CR2,  nss_cr2 | ((init->DataSize - 1) << 8) | init->TIMode | init->InterruptsToEnable);
+  WRITE_REG(instance->CR2,  nss_cr2 | ((init->DataSize - 1) << 8) | init->TIMode | init->InterruptsToEnable | init->DMAToEnable);
 
   /*---------------------------- SPIx CRCPOLY Configuration ------------------*/
   /* Configure : CRC Polynomial */

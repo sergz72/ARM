@@ -24,4 +24,6 @@
 #define LED_COMMAND_ON GPIOA->BSRR = 0x40000
 #define LED_COMMAND_OFF GPIOA->BSRR = 4
 
+#define SPI_SLAVE_DMA
+
 #endif

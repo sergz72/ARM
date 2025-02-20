@@ -43,6 +43,7 @@ typedef struct
   unsigned int CRCPolynomial;       /*!< Specifies the polynomial used for the CRC calculation.
                                      This parameter must be an odd number between Min_Data = 1 and Max_Data = 65535 */
   unsigned int InterruptsToEnable;
+  unsigned int DMAToEnable;
 } SPI_InitTypeDef;
 
 #define SPI_CRCCALCULATION_DISABLE      0U
