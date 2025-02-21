@@ -15,11 +15,20 @@
 #include <spi.pio.h>
 #include <string.h>
 
+#include "dev_dds.h"
+
 #define PIN_SDA 0
 #define PIN_SCL 1
 
+#define PIN_MOSI 0
+#define PIN_SCK  1
+#define PIN_MISO 2
+#define PIN_NCS  3
+
 #define GATE_PIO pio0
 #define GATE_SM 3
+
+#define SPI_BUFFER_SIZE 10240
 
 typedef struct
 {
@@ -48,6 +57,7 @@ static bool led_state;
 static int pwm_program_offset, counter_program_offset, spi_program_offset;
 static ModuleInfo module_info[MAX_DEVICES];
 static int last_allocated_pio;
+static unsigned char spi_buffer[SPI_BUFFER_SIZE];
 
 // Write `period` to the input shift register
 void pio_pwm_set_params(PIO pio, uint sm, unsigned int period, unsigned int level) {
@@ -284,7 +294,7 @@ void delay_us(unsigned int us)
   sleep_us(us);
 }
 
-int dds_command(unsigned char deviceId, unsigned char cmd, dds_cmd *data, int idx, void *config)
+int dds_command(unsigned char deviceId, DeviceObject *o, unsigned char cmd, dds_cmd *data)
 {
   dds_i2c_command c;
   c.command = cmd;
@@ -293,30 +303,25 @@ int dds_command(unsigned char deviceId, unsigned char cmd, dds_cmd *data, int id
   {
     case DDS_COMMAND_ENABLE_OUTPUT:
       c.c1.parameter = data->enable_command.enable;
-      return i2c_soft_command(idx, deviceId, (unsigned char*)&c, 3,
-                              NULL, 0, NULL, 0, I2C_TIMEOUT);
+      return o->transfer(o->idx, deviceId, (unsigned char*)&c, 3, NULL, 0);
     case DDS_COMMAND_SET_ATTENUATOR:
       c.c1.parameter = data->set_attenuator_command.attenuator_value;
-      return i2c_soft_command(idx, deviceId, (unsigned char*)&c, 3,
-                              NULL, 0, NULL, 0, I2C_TIMEOUT);
+      return o->transfer(o->idx, deviceId, (unsigned char*)&c, 3, NULL, 0);
     case DDS_COMMAND_SET_FREQUENCY:
     case DDS_COMMAND_SET_FREQUENCY_CODE:
       c.c10.freq = data->set_frequency_command.frequency;
       c.c10.div = data->set_frequency_command.divider;
-      return i2c_soft_command(idx, deviceId, (unsigned char*)&c, 8,
-                              NULL, 0, NULL, 0, I2C_TIMEOUT);
+      return o->transfer(o->idx, deviceId, (unsigned char*)&c, 8, NULL, 0);
     case DDS_COMMAND_SET_MODE:
       c.c1.parameter = data->set_mode_command.mode;
-      return i2c_soft_command(idx, deviceId, (unsigned char*)&c, 3,
-                              NULL, 0, NULL, 0, I2C_TIMEOUT);
+      return o->transfer(o->idx, deviceId, (unsigned char*)&c, 3, NULL, 0);
     case DDS_COMMAND_SWEEP:
     case DDS_COMMAND_SWEEP_CODES:
       c.c18.freq = data->sweep_command.frequency;
       c.c18.step = data->sweep_command.step;
       c.c18.points = data->sweep_command.points;
       c.c18.div = data->sweep_command.divider;
-      return i2c_soft_command(idx, deviceId, (unsigned char*)&c, 8,
-                              NULL, 0, NULL, 0, I2C_TIMEOUT);
+      return o->transfer(o->idx, deviceId, (unsigned char*)&c, 8, NULL, 0);
     default:
       return 1;
   }
@@ -327,9 +332,10 @@ int si5351_write(unsigned char device_address, int channel, const unsigned char 
   return i2c_soft_command(channel, device_address, NULL, 0, data, length, NULL, 0, I2C_TIMEOUT);
 }
 
-int dds_get_config(dds_config *cfg, unsigned char deviceId, int idx)
+int dds_get_config(DdsConfig *cfg, DeviceObject *o)
 {
-  return i2c_soft_read(idx, deviceId, (unsigned char*)cfg, sizeof(dds_config), I2C_TIMEOUT);
+  unsigned char command = 1;
+  return o->transfer(o->idx, o->device->device_id, &command, 1, (unsigned char*)cfg, sizeof(DdsConfig));
 }
 
 int mcp9600Read16(int channel, unsigned char address, unsigned char reg, unsigned short *data)
@@ -383,3 +389,67 @@ int alloc_pio(int module_id)
   module_info[module_id].pio = last_allocated_pio == 0 ? pio0 : (last_allocated_pio == 1 ? pio1 : pio2);
   return 0;
 }
+
+int i2c_transfer(int idx, int address, const void *txdata, unsigned int txdatalength, void *rxdata,
+                        unsigned int rxdatalength)
+{
+  return i2c_soft_command(idx, address, NULL, 0, txdata, txdatalength, rxdata, rxdatalength, I2C_TIMEOUT);
+}
+
+static void __time_critical_func(spi_trfr)(PIO spi_pio, unsigned int spi_sm, int pin_ncs, const unsigned char *txdata,
+                                            unsigned char *rxdata, unsigned int num_bytes)
+{
+  gpio_put(pin_ncs, false);
+  unsigned int tx_remain = num_bytes, rx_remain = num_bytes;
+  volatile unsigned char *txfifo = (volatile unsigned char *) &spi_pio->txf[spi_sm];
+  volatile unsigned char *rxfifo = (volatile unsigned char *) &spi_pio->rxf[spi_sm];
+  while (tx_remain || rx_remain) {
+    if (tx_remain && !pio_sm_is_tx_fifo_full(spi_pio, spi_sm)) {
+      *txfifo = *txdata++;
+      tx_remain--;
+    }
+    if (rx_remain && !pio_sm_is_rx_fifo_empty(spi_pio, spi_sm)) {
+      *rxdata++ = *rxfifo;
+      rx_remain--;
+    }
+  }
+  gpio_put(pin_ncs, true);
+}
+
+int __time_critical_func(spi_transfer)(int idx, int address, const void *txdata, unsigned int txdatalength, void *rxdata,
+                                       unsigned int rxdatalength)
+{
+  int pin_ncs = module_predefined_info[idx].pins[PIN_NCS];
+  PIO spi_pio = module_predefined_info[idx].spi_pio;
+  unsigned int spi_sm = module_predefined_info[idx].spi_sm;
+  int tx = txdatalength && txdata;
+  int rx = rxdatalength && rxdata;
+  if (tx || rx)
+  {
+    if (tx)
+      spi_trfr(spi_pio, spi_sm, pin_ncs, txdata, spi_buffer, txdatalength);
+    if (tx && rx)
+      delay_us(10);
+    if (rx)
+    {
+      memset(spi_buffer, 0, rxdatalength);
+      spi_trfr(spi_pio, spi_sm, pin_ncs, spi_buffer, rxdata, rxdatalength);
+    }
+  }
+  return 0;
+}
+
+void init_spi(int module_id)
+{
+  int pin_ncs = module_predefined_info[module_id].pins[PIN_NCS];
+  int pin_sck = module_predefined_info[module_id].pins[PIN_SCK];
+  int pin_mosi = module_predefined_info[module_id].pins[PIN_MOSI];
+  int pin_miso = module_predefined_info[module_id].pins[PIN_MISO];
+  PIO spi_pio = module_predefined_info[module_id].spi_pio;
+  unsigned int spi_sm = module_predefined_info[module_id].spi_sm;
+  gpio_init(pin_ncs);
+  gpio_put(pin_ncs, true);
+  gpio_set_dir(pin_ncs, GPIO_OUT);
+  pio_spi_init(spi_pio, spi_sm, spi_program_offset, 8, 64, pin_sck, pin_mosi, pin_miso);
+}
+

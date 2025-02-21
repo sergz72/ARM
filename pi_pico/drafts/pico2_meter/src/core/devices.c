@@ -9,29 +9,11 @@
 
 DeviceObject device_list[MAX_DEVICES];
 
-static int i2c_transfer(int idx, int address, const void *txdata, unsigned int txdatalength, void *rxdata,
-                        unsigned int rxdatalength)
-{
-  return i2c_soft_command(idx, address, NULL, 0, txdata, txdatalength, rxdata, rxdatalength, I2C_TIMEOUT);
-}
-
-static int spi_transfer(int idx, int address, const void *txdata, unsigned int txdatalength, void *rxdata,
-                        unsigned int rxdatalength)
-{
-  //todo
-  return 1;
-}
-
-static void InitSPI(int idx)
-{
-  //todo
-}
-
 static TransferFunction GetDeviceInterface(int idx)
 {
   if (SDA_IN(idx))
     return i2c_transfer;
-  InitSPI(idx);
+  init_spi(idx);
   return spi_transfer;
 }
 

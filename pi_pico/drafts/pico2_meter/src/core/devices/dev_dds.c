@@ -7,13 +7,13 @@ static unsigned char command_buffer[20];
 static unsigned char *command_buffer_p;
 static int bytes_expected;
 
-void dds_initializer(unsigned char deviceId, DeviceObject *o)
+void dds_initializer(DeviceObject *o)
 {
   int rc;
   dev_dds *cfg = malloc(sizeof(dev_dds));
   if (cfg)
   {
-    rc = dds_get_config(&cfg->cfg, deviceId, o->idx);
+    rc = dds_get_config(&cfg->cfg, o);
     if (rc)
     {
       free(cfg);
@@ -21,7 +21,7 @@ void dds_initializer(unsigned char deviceId, DeviceObject *o)
     }
     else
     {
-      cfg->deviceId = deviceId;
+      cfg->deviceId = o->device->device_id;
       cfg->command = dds_command;
     }
   }
@@ -31,7 +31,13 @@ void dds_initializer(unsigned char deviceId, DeviceObject *o)
   command_buffer_p = command_buffer;
 }
 
-static int exec_command(const dev_dds *config, int idx, unsigned char *buffer)
+int dds_save_config(DeviceObject *o, void *buffer)
+{
+  memcpy(buffer, &((dev_dds*)o->device_config)->cfg, sizeof(DdsConfig));
+  return sizeof(DdsConfig);
+}
+
+static int exec_command(const dev_dds *config, DeviceObject *o, unsigned char *buffer)
 {
   dds_cmd command;
   int rc = 1;
@@ -46,21 +52,21 @@ static int exec_command(const dev_dds *config, int idx, unsigned char *buffer)
       memcpy(&command.set_frequency_command.frequency, command_buffer_p, 8);
       command_buffer_p += 8;
       memcpy(&command.set_frequency_command.divider, command_buffer_p, 2);
-      rc = config->command(config->deviceId,
+      rc = config->command(config->deviceId, o,
                             last_command == 'f' ? DDS_COMMAND_SET_FREQUENCY : DDS_COMMAND_SET_FREQUENCY_CODE,
-                            &command, idx, config->device_config);
+                            &command);
       break;
     case 'm': // set mode
       command.set_mode_command.mode = *command_buffer_p;
-      rc = config->command(config->deviceId, DDS_COMMAND_SET_MODE, &command, idx, config->device_config);
+      rc = config->command(config->deviceId, o, DDS_COMMAND_SET_MODE, &command);
       break;
     case 'a': // set attenuator
       command.set_attenuator_command.attenuator_value = *command_buffer_p;
-      rc = config->command(config->deviceId, DDS_COMMAND_SET_ATTENUATOR, &command, idx, config->device_config);
+      rc = config->command(config->deviceId, o, DDS_COMMAND_SET_ATTENUATOR, &command);
       break;
     case 'e': // enable output
       command.enable_command.enable = *command_buffer_p;
-      rc = config->command(config->deviceId, DDS_COMMAND_ENABLE_OUTPUT, &command, idx, config->device_config);
+      rc = config->command(config->deviceId, o, DDS_COMMAND_ENABLE_OUTPUT, &command);
       break;
     case 's': // sweep
     case 'd': // sweep codes
@@ -71,8 +77,8 @@ static int exec_command(const dev_dds *config, int idx, unsigned char *buffer)
       memcpy(&command.sweep_command.points, command_buffer_p, 2);
       command_buffer_p += 2;
       memcpy(&command.sweep_command.divider, command_buffer_p, 2);
-      rc = config->command(config->deviceId, last_command == 's' ? DDS_COMMAND_SWEEP : DDS_COMMAND_SWEEP_CODES,
-                            &command, idx, config->device_config);
+      rc = config->command(config->deviceId, o, last_command == 's' ? DDS_COMMAND_SWEEP : DDS_COMMAND_SWEEP_CODES,
+                            &command);
       break;
     default:
       break;
@@ -97,7 +103,7 @@ int dds_message_processor(DeviceObject *o, unsigned char *buffer, int len)
     if (len >= bytes_expected)
     {
       bytes_expected = 0;
-      return exec_command(dconfig, o->idx, buffer);
+      return exec_command(dconfig, o, buffer);
     }
     command_buffer_p += len;
     bytes_expected -= len;
@@ -128,6 +134,6 @@ int dds_message_processor(DeviceObject *o, unsigned char *buffer, int len)
       return 2;
   }
   if (!bytes_expected)
-    return exec_command(dconfig, o->idx, buffer);
+    return exec_command(dconfig, o, buffer);
   return 0;
 }

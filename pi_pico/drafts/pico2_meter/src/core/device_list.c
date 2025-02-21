@@ -2,7 +2,6 @@
 #include "dev_ina3221.h"
 #include "dev_ina226.h"
 #include "dev_ads1115.h"
-#include "dev_ad9833.h"
 #include "dev_si5351.h"
 #include "dev_mcp3421.h"
 #include "dev_mcp9600.h"
@@ -48,12 +47,12 @@ const Device devices[] = {
         .save_config = mcp3421_save_config
     },
     {
-        .device_id = AD9833_DEVICE_ID,
+        .device_id = DDS_DEVICE_ID,
         .public_id = PUBLIC_ID_DDS,
-        .initializer = ad9833_initializer,
+        .initializer = dds_initializer,
         .timer_event = NULL,
         .message_processor = dds_message_processor,
-        .save_config = ad9833_save_config
+        .save_config = dds_save_config
     },
     {
         .device_id = SI5351_DEVICE_ID,

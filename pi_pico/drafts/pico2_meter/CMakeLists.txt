@@ -30,7 +30,6 @@ add_executable(pico2_meter
         ../../common_lib/sensor/mcp9600.c
         ../../common_lib/rf/si5351.c
         ../../common_lib/memory/24c01_16.c
-        src/core/devices/dev_ad9833.c
         src/core/devices/dev_ads1115.c
         src/core/devices/dev_dds.c
         src/core/devices/dev_ina226.c
