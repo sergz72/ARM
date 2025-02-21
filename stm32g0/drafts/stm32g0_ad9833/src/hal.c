@@ -132,6 +132,15 @@ static void GPIOInit(void)
             GPIO_OType_PP,
             GPIO_PuPd_NOPULL
   );
+  //INTERRUPT FLAG
+  INTERRUPT_FLAG_CLR;
+  GPIO_Init(GPIOA,
+            GPIO_Pin_11,
+            GPIO_Mode_OUT,
+            GPIO_Speed_Low,
+            GPIO_OType_PP,
+            GPIO_PuPd_NOPULL
+  );
 }
 
 /*
@@ -357,6 +366,10 @@ void timer_enable(void)
 
 void status_updated(void)
 {
+  if (status)
+    INTERRUPT_FLAG_SET;
+  else
+    INTERRUPT_FLAG_CLR;
 }
 
 void ad9833_write(int channel, unsigned short data)
