@@ -4,17 +4,6 @@
 #include <generic_dds.h>
 #include <devices.h>
 
-#define DDS_DEVICE_ID 1
-
-#define DDS_AD9833 1
-#define DDS_SI5351 2
-#define LEVEL_METER_NONE   0
-#define LEVEL_METER_AD8307 1
-#define LEVEL_METER_AD8310 2
-#define LEVEL_METER_AD8313 3
-#define LEVEL_METER_AD8317 4
-#define LEVEL_METER_AD8318 5
-
 typedef struct {
   unsigned char deviceId;
   int (*command)(unsigned char deviceId, DeviceObject *o, unsigned char cmd, dds_cmd *data);

@@ -63,15 +63,6 @@ typedef struct
 
 typedef struct __attribute__((packed))
 {
-  unsigned short type;
-  unsigned short level_meter_type;
-  unsigned long long int mclk;
-  unsigned short max_mv;
-  unsigned char max_attenuator;
-} DdsConfig;
-
-typedef struct __attribute__((packed))
-{
   unsigned int  mclk;
   unsigned char channels;
   unsigned char bits;

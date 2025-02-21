@@ -13,17 +13,27 @@
 #define DDS_COMMAND_SWEEP              6
 #define DDS_COMMAND_SWEEP_CODES        7
 
-typedef struct __attribute__((__packed__)) {
-  unsigned long long int max_frequency;
-  unsigned long long int min_frequency;
-  unsigned short mclk_MHz;
-  unsigned short max_vout_mV;
-  unsigned char  max_attenuator_value;
-  unsigned char  channels;
-  unsigned char  accumulator_bits;
-  unsigned char  out_square_divider_bits;
-  unsigned char  supported_modes;
-} dds_config;
+#define DDS_DEVICE_ID 1
+
+#define DDS_AD9833  1
+#define DDS_SI5351  2
+#define DDS_AD9850  3
+#define DDS_ADF4351 4
+#define LEVEL_METER_NONE   0
+#define LEVEL_METER_AD8307 1
+#define LEVEL_METER_AD8310 2
+#define LEVEL_METER_AD8313 3
+#define LEVEL_METER_AD8317 4
+#define LEVEL_METER_AD8318 5
+
+typedef struct __attribute__((packed))
+{
+  unsigned short type;
+  unsigned short level_meter_type;
+  unsigned long long int mclk;
+  unsigned short max_mv;
+  unsigned char max_attenuator;
+} DdsConfig;
 
 typedef struct {
   unsigned char enable;
