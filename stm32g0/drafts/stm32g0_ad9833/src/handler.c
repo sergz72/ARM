@@ -6,17 +6,13 @@
 unsigned short ad9833_cfg, ad9833_divider;
 
 const unsigned char device_id = I2C_ADDRESS;
-const dds_config device_config =
+const DdsConfig device_config =
 {
-    .accumulator_bits = 28,
-    .channels = 1,
-    .max_attenuator_value = 0,
-    .max_frequency = 12500000,
-    .min_frequency = 1,
-    .out_square_divider_bits = 1,
-    .max_vout_mV = 3300,
-    .mclk_MHz = 25,
-    .supported_modes = (1 << DDS_MODE_SINE) | (1 << DDS_MODE_TRIANGLE) | (1 << DDS_MODE_SQUARE)
+    .max_attenuator = 0,
+    .level_meter_type = LEVEL_METER_AD8307,
+    .mclk = 25000000,
+    .max_mv = 3300,
+    .type = DDS_AD9833
 };
 
 void handler_init(void)

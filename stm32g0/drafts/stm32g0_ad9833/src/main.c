@@ -23,7 +23,7 @@ unsigned char rxbuf[MAX_TRANSFER_SIZE];
 unsigned char status;
 
 extern const unsigned char device_id;
-extern const dds_config device_config;
+extern const DdsConfig device_config;
 
 const void *txbufs[] =
 {
