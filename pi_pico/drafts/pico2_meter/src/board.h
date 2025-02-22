@@ -11,7 +11,7 @@
 #define PIN_LED 25
 
 // for frequency meter - 1s interval
-#define PIN_GATE 6
+#define PIN_GATE 10
 
 //module 1
 #define PIN_SDA1 2
@@ -22,10 +22,10 @@
 #define PIN_1_3  1
 
 //module 2
-#define PIN_SDA2 8
-#define PIN_SCL2 9
-#define PIN_2_0  10
-#define PIN_2_1  11
+#define PIN_SDA2 6
+#define PIN_SCL2 7
+#define PIN_2_0  8
+#define PIN_2_1  9
 #define PIN_2_2  -1
 #define PIN_2_3  -1
 
@@ -38,20 +38,20 @@
 #define PIN_3_3  -1
 
 // module 4
-#define PIN_SDA4 18
-#define PIN_SCL4 19
-#define PIN_4_0  16
-#define PIN_4_1  17
+#define PIN_SDA4 17
+#define PIN_SCL4 16
+#define PIN_4_0  19
+#define PIN_4_1  18
 #define PIN_4_2  -1
 #define PIN_4_3  -1
 
 // module 5
-#define PIN_SDA5 22
-#define PIN_SCL5 26
-#define PIN_5_0  20
-#define PIN_5_1  21
-#define PIN_5_2  27
-#define PIN_5_3  28
+#define PIN_SDA5 26
+#define PIN_SCL5 22
+#define PIN_5_0  28
+#define PIN_5_1  27
+#define PIN_5_2  21
+#define PIN_5_3  20
 
 #define MAX_DEVICES 5
 
