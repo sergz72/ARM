@@ -30,4 +30,10 @@
 
 #define SPI_SLAVE_DMA
 
+#define SYSTICK_MULTIPLIER 48
+
+#define SPI_TIMEOUT 1000000
+
+void delay(unsigned int us);
+
 #endif

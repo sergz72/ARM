@@ -2,7 +2,6 @@
 #define _SYSTICK_H
 
 #define STK_CTRL_CLKSOURCE_LSB		2
-#define STK_CTRL_CLKSOURCE_AHB_DIV8	0
 #define STK_CTRL_CLKSOURCE_AHB		1
 
 void systick_set_reload(unsigned int value);

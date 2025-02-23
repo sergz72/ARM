@@ -31,6 +31,7 @@ file(GLOB SOURCES
         "../stm32g0lib/spi.c"
         "../stm32g0lib/adc.c"
         "../stm32g0lib/timer.c"
+        "../stm32g0lib/systick.c"
         "../../common_lib/rf/ad9833.c"
         "../startup_stm32g031xx.s"
 )

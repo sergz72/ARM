@@ -4,6 +4,8 @@
 #include <nvic.h>
 #include <spi.h>
 #include <timer.h>
+#include <systick.h>
+#include <adc.h>
 
 #define ADC_VREF 33000 //x0.1mv
 
@@ -45,6 +47,43 @@ const SPI_InitTypeDef spi_master_init = {
 };
 
 static unsigned int spi1_cr1, spi1_cr2;
+
+volatile int Sys_Tick;
+
+void SysTick_Handler(void)
+{
+  Sys_Tick++;
+}
+
+static void systick_start(unsigned int us)
+{
+  systick_set_reload(us * SYSTICK_MULTIPLIER);
+
+  systick_interrupt_enable();
+  /* start counting */
+  systick_counter_enable();
+}
+
+static void systick_stop(void)
+{
+  /* stop counting */
+  systick_counter_disable();
+  systick_interrupt_disable();
+}
+
+static void systick_wait(void)
+{
+  Sys_Tick = 0;
+  while (!Sys_Tick)
+    __WFI();
+}
+
+void delay(unsigned int us)
+{
+  systick_start(us);
+  systick_wait();
+  systick_stop();
+}
 
 #ifdef SPI_SLAVE_DMA
 static void DMADisable(void)
@@ -218,8 +257,6 @@ static void DMAInit(void *rxaddress, const void *txaddress)
 
 static void SPIMasterInit(void)
 {
-  SPI_InitTypeDef SPI_InitStructure;
-
   RCC->APBENR1 |= RCC_APBENR1_SPI2EN;
 
   GPIO_PinAFConfig(GPIOA, GPIO_PinSource8, GPIO_AF_1);
@@ -286,6 +323,9 @@ static void ADCInit(void)
             GPIO_OType_PP,
             GPIO_PuPd_NOPULL
   );
+
+  ADC_Init(0, 4);
+  ADC_Enable();
 }
 
 static void TimerInit(void)
@@ -333,12 +373,15 @@ void SystemInit(void)
 
   ClockInit();
 
+  /* 48MHz / 8 => 6M counts per second */
+  systick_set_clocksource(STK_CTRL_CLKSOURCE_AHB);
+
   RCC->IOPENR |= RCC_IOPENR_GPIOAEN | RCC_IOPENR_GPIOBEN;
   RCC->APBENR2 |= RCC_APBENR2_SYSCFGEN;
 
   GPIOInit();
-  //SPIMasterInit();
-  //ADCInit();
+  SPIMasterInit();
+  ADCInit();
   TimerInit();
 }
 
@@ -355,8 +398,7 @@ void SysInit(void *rxaddress, const void *txaddress)
 
 unsigned short adc_get(void)
 {
-  //todo
-  return 0;
+  return (unsigned short)ADC_GetValue(3, ADC_SampleTime_160_5Cycles);
 }
 
 void timer_enable(void)
@@ -374,7 +416,11 @@ void status_updated(void)
 
 void ad9833_write(int channel, unsigned short data)
 {
-  //todo
+  SPI2->DR = data;
+  while (SPI2->SR & SPI_SR_BSY)
+    ;
+  volatile unsigned short dummy = SPI2->DR;
+  (void)dummy;
 }
 
 void _init(void)
