@@ -88,6 +88,7 @@ typedef struct __attribute__((__packed__)) {
 
 
 typedef struct __attribute__((__packed__)) {
+  unsigned char device_command;
   unsigned char command;
   unsigned char channel;
   union

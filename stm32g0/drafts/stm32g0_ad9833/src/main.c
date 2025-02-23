@@ -19,8 +19,9 @@ static int led_command_state;
 #endif
 
 volatile unsigned int command_ready, timer_interrupt;
-unsigned char rxbuf[MAX_TRANSFER_SIZE];
+volatile dds_i2c_command commands[DDS_COMMAND_QUEUE_LENGTH];
 unsigned char status;
+int command_to_execute;
 
 extern const unsigned char device_id;
 extern const DdsConfig device_config;
@@ -108,8 +109,9 @@ int main(void)
     status = 0;
     sweep_points = sweep_current_point = 0;
     last_command = 0;
+    command_to_execute = 0;
 
-    SysInit(rxbuf, &device_id);
+    SysInit(&device_id);
 
     handler_init();
 
@@ -132,21 +134,29 @@ int main(void)
             else
                 LED_COMMAND_OFF;
 #endif
+            command_ready = 0;
+        }
+        while (command_to_execute != command_to_process)
+        {
+            dds_i2c_command *cmd = &commands[command_to_execute];
+            if (command_to_execute == DDS_COMMAND_QUEUE_LENGTH - 1)
+                command_to_execute = 0;
+            else
+                command_to_execute++;
             if (last_command == GET_RESULTS_COMMAND)
             {
                 status = 0;
                 status_updated();
             }
-            switch (rxbuf[0])
+            switch (cmd->device_command)
             {
                 case DDS_COMMAND:
-                    exec_dds_command((const dds_i2c_command*)(rxbuf + 1));
+                    exec_dds_command(cmd);
                     break;
                 default:
                     break;
             }
-            command_ready = 0;
-            last_command = rxbuf[0];
+            last_command = cmd->device_command;
         }
     }
 }

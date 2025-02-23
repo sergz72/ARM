@@ -6,6 +6,9 @@
 #include <timer.h>
 #include <systick.h>
 #include <adc.h>
+#include <string.h>
+
+#include "generic_dds.h"
 
 #define ADC_VREF 33000 //x0.1mv
 
@@ -46,9 +49,13 @@ const SPI_InitTypeDef spi_master_init = {
   .DMAToEnable = 0
 };
 
+volatile int command_to_process;
+
 static unsigned int spi1_cr1, spi1_cr2;
 
 volatile int Sys_Tick;
+
+static unsigned char rxbuf[MAX_TRANSFER_SIZE];
 
 void SysTick_Handler(void)
 {
@@ -86,13 +93,13 @@ void delay(unsigned int us)
 }
 
 #ifdef SPI_SLAVE_DMA
-static void DMADisable(void)
+static void inline DMADisable(void)
 {
   DMA1_Channel1->CCR &= ~DMA_CCR_EN;
   DMA1_Channel2->CCR &= ~DMA_CCR_EN;
 }
 
-static void DMAReinit(void *rxaddress, const void *txaddress)
+static void inline DMAReinit(void *rxaddress, const void *txaddress)
 {
   DMA1_Channel1->CMAR = (unsigned int)rxaddress;
   DMA1_Channel1->CNDTR = MAX_TRANSFER_SIZE;
@@ -113,7 +120,7 @@ static inline void pointers_reset(void *rxaddress, const void *txaddress)
 }
 #endif
 
-static void SPISlaveReInit(void)
+static void inline SPISlaveReInit(void)
 {
   SPI1_Reset();
 
@@ -133,6 +140,11 @@ void __attribute__((section(".RamFunc"))) EXTI4_15_IRQHandler(void)
   DMAReinit(rxbuf, txbufs[rxbuf[0] & 7]);
 #endif
   SPI_Enable(SPI1);
+  memcpy(&commands[command_to_process], rxbuf, sizeof(dds_i2c_command));
+  if (command_to_process == DDS_COMMAND_QUEUE_LENGTH - 1)
+    command_to_process = 0;
+  else
+    command_to_process++;
   command_ready = 1;
   EXTI->RPR1 = EXTI_Line4;
 }
@@ -386,10 +398,11 @@ void SystemInit(void)
   TimerInit();
 }
 
-void SysInit(void *rxaddress, const void *txaddress)
+void SysInit(const void *txaddress)
 {
+  command_to_process = 0;
 #ifdef SPI_SLAVE_DMA
-  DMAInit(rxaddress, txaddress);
+  DMAInit(rxbuf, txaddress);
 #else
   pointers_reset(rxaddress, txaddress);
 #endif
