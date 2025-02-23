@@ -36,7 +36,7 @@ const SPI_InitTypeDef spi_master_init = {
   .DataSize = 16,
   .CLKPolarity = SPI_POLARITY_LOW,
   .CLKPhase = SPI_PHASE_1EDGE,
-  .NSS = SPI_NSS_HARD_OUTPUT,
+  .NSS = SPI_NSS_SOFT,
   .BaudRatePrescaler = SPI_BAUDRATEPRESCALER_16,
   .FirstBit = SPI_FIRSTBIT_MSB,
   .CRCCalculation = SPI_CRCCALCULATION_DISABLE,
@@ -259,7 +259,7 @@ static void SPIMasterInit(void)
 {
   RCC->APBENR1 |= RCC_APBENR1_SPI2EN;
 
-  GPIO_PinAFConfig(GPIOA, GPIO_PinSource8, GPIO_AF_1);
+  //GPIO_PinAFConfig(GPIOA, GPIO_PinSource8, GPIO_AF_1);
   GPIO_PinAFConfig(GPIOA, GPIO_PinSource0, GPIO_AF_0);
   GPIO_PinAFConfig(GPIOB, GPIO_PinSource7, GPIO_AF_1);
   //SCK, MOSI -> pulldown
@@ -278,12 +278,13 @@ static void SPIMasterInit(void)
             GPIO_PuPd_DOWN
   );
   //NSS -> pullup
+  SPI2_NSS_SET;
   GPIO_Init(GPIOA,
             GPIO_Pin_8,
-            GPIO_Mode_AF,
+            GPIO_Mode_OUT,
             GPIO_Speed_VeryHigh,
             GPIO_OType_PP,
-            GPIO_PuPd_UP
+            GPIO_PuPd_NOPULL
   );
 
   SPI_Init(SPI2, &spi_master_init);
@@ -416,11 +417,13 @@ void status_updated(void)
 
 void ad9833_write(int channel, unsigned short data)
 {
+  SPI2_NSS_CLR;
   SPI2->DR = data;
   while (SPI2->SR & SPI_SR_BSY)
     ;
   volatile unsigned short dummy = SPI2->DR;
   (void)dummy;
+  SPI2_NSS_SET;
 }
 
 void _init(void)

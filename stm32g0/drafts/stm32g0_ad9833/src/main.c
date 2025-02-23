@@ -140,7 +140,7 @@ int main(void)
             switch (rxbuf[0])
             {
                 case DDS_COMMAND:
-                    exec_dds_command((const dds_i2c_command*)rxbuf + 1);
+                    exec_dds_command((const dds_i2c_command*)(rxbuf + 1));
                     break;
                 default:
                     break;

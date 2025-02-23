@@ -44,6 +44,11 @@ typedef struct
   unsigned int pwm_duty[2];
 } ModuleInfo;
 
+typedef struct __attribute__((__packed__)) {
+  unsigned char command;
+  dds_i2c_command i2c_command;
+} dds_device_command;
+
 static const ModulePredefinedInfo module_predefined_info[MAX_DEVICES] =
 {
   {.spi_pio = pio0, .spi_sm = 2, .pins = {PIN_SDA1, PIN_SCL1, PIN_1_0, PIN_1_1, PIN_1_2, PIN_1_3}},
@@ -296,32 +301,33 @@ void delay_us(unsigned int us)
 
 int dds_command(unsigned char deviceId, DeviceObject *o, unsigned char cmd, dds_cmd *data)
 {
-  dds_i2c_command c;
-  c.command = cmd;
-  c.channel = data->channel;
+  dds_device_command c;
+  c.command = 3;
+  c.i2c_command.command = cmd;
+  c.i2c_command.channel = data->channel;
   switch (cmd)
   {
     case DDS_COMMAND_ENABLE_OUTPUT:
-      c.c1.parameter = data->enable_command.enable;
-      return o->transfer(o->idx, deviceId, (unsigned char*)&c, 3, NULL, 0);
+      c.i2c_command.c1.parameter = data->enable_command.enable;
+      return o->transfer(o->idx, deviceId, (unsigned char*)&c, 4, NULL, 0);
     case DDS_COMMAND_SET_ATTENUATOR:
-      c.c1.parameter = data->set_attenuator_command.attenuator_value;
-      return o->transfer(o->idx, deviceId, (unsigned char*)&c, 3, NULL, 0);
+      c.i2c_command.c1.parameter = data->set_attenuator_command.attenuator_value;
+      return o->transfer(o->idx, deviceId, (unsigned char*)&c, 4, NULL, 0);
     case DDS_COMMAND_SET_FREQUENCY:
     case DDS_COMMAND_SET_FREQUENCY_CODE:
-      c.c10.freq = data->set_frequency_command.frequency;
-      c.c10.div = data->set_frequency_command.divider;
-      return o->transfer(o->idx, deviceId, (unsigned char*)&c, 8, NULL, 0);
+      c.i2c_command.c10.freq = data->set_frequency_command.frequency;
+      c.i2c_command.c10.div = data->set_frequency_command.divider;
+      return o->transfer(o->idx, deviceId, (unsigned char*)&c, 13, NULL, 0);
     case DDS_COMMAND_SET_MODE:
-      c.c1.parameter = data->set_mode_command.mode;
-      return o->transfer(o->idx, deviceId, (unsigned char*)&c, 3, NULL, 0);
+      c.i2c_command.c1.parameter = data->set_mode_command.mode;
+      return o->transfer(o->idx, deviceId, (unsigned char*)&c, 4, NULL, 0);
     case DDS_COMMAND_SWEEP:
     case DDS_COMMAND_SWEEP_CODES:
-      c.c18.freq = data->sweep_command.frequency;
-      c.c18.step = data->sweep_command.step;
-      c.c18.points = data->sweep_command.points;
-      c.c18.div = data->sweep_command.divider;
-      return o->transfer(o->idx, deviceId, (unsigned char*)&c, 8, NULL, 0);
+      c.i2c_command.c18.freq = data->sweep_command.frequency;
+      c.i2c_command.c18.step = data->sweep_command.step;
+      c.i2c_command.c18.points = data->sweep_command.points;
+      c.i2c_command.c18.div = data->sweep_command.divider;
+      return o->transfer(o->idx, deviceId, (unsigned char*)&c, 21, NULL, 0);
     default:
       return 1;
   }
