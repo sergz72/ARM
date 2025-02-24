@@ -44,11 +44,6 @@ typedef struct
   unsigned int pwm_duty[2];
 } ModuleInfo;
 
-typedef struct __attribute__((__packed__)) {
-  unsigned char command;
-  dds_i2c_command i2c_command;
-} dds_device_command;
-
 static const ModulePredefinedInfo module_predefined_info[MAX_DEVICES] =
 {
   {.spi_pio = pio0, .spi_sm = 2, .pins = {PIN_SDA1, PIN_SCL1, PIN_1_0, PIN_1_1, PIN_1_2, PIN_1_3}},
@@ -301,32 +296,32 @@ void delay_us(unsigned int us)
 
 int dds_command(unsigned char deviceId, DeviceObject *o, unsigned char cmd, dds_cmd *data)
 {
-  dds_device_command c;
-  c.command = DEVICE_COMMAND_DDS_COMMAND;
-  c.i2c_command.command = cmd;
-  c.i2c_command.channel = data->channel;
+  dds_i2c_command c;
+  c.device_command = DEVICE_COMMAND_DDS_COMMAND;
+  c.command = cmd;
+  c.channel = data->channel;
   switch (cmd)
   {
     case DDS_COMMAND_ENABLE_OUTPUT:
-      c.i2c_command.c1.parameter = data->enable_command.enable;
+      c.c1.parameter = data->enable_command.enable;
       return o->transfer(o->idx, deviceId, (unsigned char*)&c, 4, NULL, 0);
     case DDS_COMMAND_SET_ATTENUATOR:
-      c.i2c_command.c1.parameter = data->set_attenuator_command.attenuator_value;
+      c.c1.parameter = data->set_attenuator_command.attenuator_value;
       return o->transfer(o->idx, deviceId, (unsigned char*)&c, 4, NULL, 0);
     case DDS_COMMAND_SET_FREQUENCY:
     case DDS_COMMAND_SET_FREQUENCY_CODE:
-      c.i2c_command.c10.freq = data->set_frequency_command.frequency;
-      c.i2c_command.c10.div = data->set_frequency_command.divider;
+      c.c10.freq = data->set_frequency_command.frequency;
+      c.c10.div = data->set_frequency_command.divider;
       return o->transfer(o->idx, deviceId, (unsigned char*)&c, 13, NULL, 0);
     case DDS_COMMAND_SET_MODE:
-      c.i2c_command.c1.parameter = data->set_mode_command.mode;
+      c.c1.parameter = data->set_mode_command.mode;
       return o->transfer(o->idx, deviceId, (unsigned char*)&c, 4, NULL, 0);
     case DDS_COMMAND_SWEEP:
     case DDS_COMMAND_SWEEP_CODES:
-      c.i2c_command.c18.freq = data->sweep_command.frequency;
-      c.i2c_command.c18.step = data->sweep_command.step;
-      c.i2c_command.c18.points = data->sweep_command.points;
-      c.i2c_command.c18.div = data->sweep_command.divider;
+      c.c18.freq = data->sweep_command.frequency;
+      c.c18.step = data->sweep_command.step;
+      c.c18.points = data->sweep_command.points;
+      c.c18.div = data->sweep_command.divider;
       return o->transfer(o->idx, deviceId, (unsigned char*)&c, 21, NULL, 0);
     default:
       return 1;
@@ -461,6 +456,8 @@ void init_spi(int module_id)
 
 void init_device_pin(const struct _DeviceObject *o, int pin_no, enum gpio_dir dir)
 {
+  if (pin_no < 4 || pin_no > 5)
+    return;
   int pin = module_predefined_info[o->idx].pins[pin_no];
   gpio_init(pin);
   gpio_set_dir(pin, dir);
@@ -468,6 +465,8 @@ void init_device_pin(const struct _DeviceObject *o, int pin_no, enum gpio_dir di
 
 bool get_device_pin_level(const struct _DeviceObject *o, int pin_no)
 {
+  if (pin_no < 4 || pin_no > 5)
+    return false;
   int pin = module_predefined_info[o->idx].pins[pin_no];
   return gpio_get(pin);
 }
