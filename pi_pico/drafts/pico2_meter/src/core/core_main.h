@@ -8,6 +8,8 @@
 #define SI5351_XTAL_FREQ 25000000
 #define SI5351_CHANNELS 4
 
+struct _DeviceObject;
+
 int I2CCheck(int idx, int device_id);
 void SCL_HIGH(int);
 void SCL_LOW(int);
@@ -30,5 +32,7 @@ int i2c_transfer(int idx, int address, const void *txdata, unsigned int txdatale
 int spi_transfer(int idx, int address, const void *txdata, unsigned int txdatalength, void *rxdata,
                         unsigned int rxdatalength);
 void init_spi(int module_id);
+void init_device_pin(const struct _DeviceObject *o, int pin_no, enum gpio_dir dir);
+bool get_device_pin_level(const struct _DeviceObject *o, int pin_no);
 
 #endif

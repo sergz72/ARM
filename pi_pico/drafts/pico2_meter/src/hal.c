@@ -302,7 +302,7 @@ void delay_us(unsigned int us)
 int dds_command(unsigned char deviceId, DeviceObject *o, unsigned char cmd, dds_cmd *data)
 {
   dds_device_command c;
-  c.command = 3;
+  c.command = DEVICE_COMMAND_DDS_COMMAND;
   c.i2c_command.command = cmd;
   c.i2c_command.channel = data->channel;
   switch (cmd)
@@ -340,7 +340,7 @@ int si5351_write(unsigned char device_address, int channel, const unsigned char 
 
 int dds_get_config(DdsConfig *cfg, DeviceObject *o)
 {
-  unsigned char command = 1;
+  unsigned char command = DEVICE_COMMAND_GET_CONFIGURATION;
   return o->transfer(o->idx, o->device->device_id, &command, 1, (unsigned char*)cfg, sizeof(DdsConfig));
 }
 
@@ -459,3 +459,15 @@ void init_spi(int module_id)
   pio_spi_init(spi_pio, spi_sm, spi_program_offset, 8, 64, pin_sck, pin_mosi, pin_miso);
 }
 
+void init_device_pin(const struct _DeviceObject *o, int pin_no, enum gpio_dir dir)
+{
+  int pin = module_predefined_info[o->idx].pins[pin_no];
+  gpio_init(pin);
+  gpio_set_dir(pin, dir);
+}
+
+bool get_device_pin_level(const struct _DeviceObject *o, int pin_no)
+{
+  int pin = module_predefined_info[o->idx].pins[pin_no];
+  return gpio_get(pin);
+}

@@ -23,6 +23,9 @@ void dds_initializer(DeviceObject *o)
     {
       cfg->deviceId = o->device->device_id;
       cfg->command = dds_command;
+      if (cfg->cfg.level_meter_type != LEVEL_METER_NONE)
+        init_device_pin(o, 4, GPIO_IN);
+      cfg->sweep_points = 0;
     }
   }
   o->device_config = cfg;
@@ -37,7 +40,7 @@ int dds_save_config(DeviceObject *o, void *buffer)
   return sizeof(DdsConfig);
 }
 
-static int exec_command(const dev_dds *config, DeviceObject *o, unsigned char *buffer)
+static int exec_command(dev_dds *config, DeviceObject *o, unsigned char *buffer)
 {
   dds_cmd command;
   int rc = 1;
@@ -49,6 +52,7 @@ static int exec_command(const dev_dds *config, DeviceObject *o, unsigned char *b
   {
     case 'f': // set frequency
     case 'c': // set frequency code
+      config->sweep_points = 0;
       memcpy(&command.set_frequency_command.frequency, command_buffer_p, 8);
       command_buffer_p += 8;
       memcpy(&command.set_frequency_command.divider, command_buffer_p, 2);
@@ -66,6 +70,8 @@ static int exec_command(const dev_dds *config, DeviceObject *o, unsigned char *b
       break;
     case 'e': // enable output
       command.enable_command.enable = *command_buffer_p;
+      if (!command.enable_command.enable)
+        config->sweep_points = 0;
       rc = config->command(config->deviceId, o, DDS_COMMAND_ENABLE_OUTPUT, &command);
       break;
     case 's': // sweep
@@ -77,6 +83,7 @@ static int exec_command(const dev_dds *config, DeviceObject *o, unsigned char *b
       memcpy(&command.sweep_command.points, command_buffer_p, 2);
       command_buffer_p += 2;
       memcpy(&command.sweep_command.divider, command_buffer_p, 2);
+      config->sweep_points = command.sweep_command.points;
       rc = config->command(config->deviceId, o, last_command == 's' ? DDS_COMMAND_SWEEP : DDS_COMMAND_SWEEP_CODES,
                             &command);
       break;
@@ -95,7 +102,7 @@ static int exec_command(const dev_dds *config, DeviceObject *o, unsigned char *b
 
 int dds_message_processor(DeviceObject *o, unsigned char *buffer, int len)
 {
-  const dev_dds *dconfig = (const dev_dds*)o->device_config;
+  dev_dds *dconfig = (dev_dds*)o->device_config;
 
   if (bytes_expected)
   {
@@ -135,5 +142,18 @@ int dds_message_processor(DeviceObject *o, unsigned char *buffer, int len)
   }
   if (!bytes_expected)
     return exec_command(dconfig, o, buffer);
+  return 0;
+}
+
+int dds_timer_event(DeviceObject *o, int step, int interrupt, unsigned char *buffer)
+{
+  dev_dds *cfg = (dev_dds*)o->device_config;
+  if (cfg->cfg.level_meter_type != LEVEL_METER_NONE && cfg->sweep_points > 0 && get_device_pin_level(o, 4))
+  {
+    unsigned char c = DEVICE_COMMAND_GET_RESULTS;
+    unsigned int size = cfg->sweep_points * 2;
+    if (!o->transfer(o->idx, 0, &c, 1, buffer, size))
+      return size;
+  }
   return 0;
 }

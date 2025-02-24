@@ -26,6 +26,12 @@
 #define LEVEL_METER_AD8317 4
 #define LEVEL_METER_AD8318 5
 
+#define DEVICE_COMMAND_GET_ID            0
+#define DEVICE_COMMAND_GET_CONFIGURATION 1
+#define DEVICE_COMMAND_GET_STATUS        2
+#define DEVICE_COMMAND_DDS_COMMAND       3
+#define DEVICE_COMMAND_GET_RESULTS       4
+
 typedef struct __attribute__((packed))
 {
   unsigned short type;

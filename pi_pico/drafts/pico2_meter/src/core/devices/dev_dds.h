@@ -9,6 +9,7 @@ typedef struct {
   int (*command)(unsigned char deviceId, DeviceObject *o, unsigned char cmd, dds_cmd *data);
   DdsConfig cfg;
   void *device_config;
+  unsigned int sweep_points;
 } dev_dds;
 
 int dds_get_config(DdsConfig *cfg, DeviceObject *o); //should be defined in hal.c
@@ -16,5 +17,6 @@ int dds_command(unsigned char deviceId, DeviceObject *o, unsigned char cmd, dds_
 void dds_initializer(DeviceObject *o);
 int dds_message_processor(DeviceObject *o, unsigned char *buffer, int len);
 int dds_save_config(DeviceObject *o, void *buffer);
+int dds_timer_event(DeviceObject *o, int step, int interrupt, unsigned char *buffer);
 
 #endif

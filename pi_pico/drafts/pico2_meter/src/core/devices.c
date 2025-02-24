@@ -3,6 +3,7 @@
 #include "board.h"
 #include "device_list.h"
 #include <24c01_16.h>
+#include <generic_dds.h>
 #include <stdlib.h>
 
 #include "i2c_soft.h"
@@ -31,9 +32,9 @@ static void FindI2CDeviceId(DeviceObject *o)
       int rc = I2CCheck(o->idx, d->device_id);
       if (rc)
       {
-        if (!o->device_config)
-          d->initializer(o);
-        o->device = d;
+        d->initializer(o);
+        if (o->device_config)
+          o->device = d;
         return;
       }
     }
@@ -46,9 +47,9 @@ static void FindI2CDeviceId(DeviceObject *o)
     {
       if (d->device_id > 255 && d->device_id == d_id)
       {
-        if (!o->device_config)
-          d->initializer(o);
-        o->device = d;
+        d->initializer(o);
+        if (o->device_config)
+          o->device = d;
         return;
       }
       d++;
@@ -59,32 +60,40 @@ static void FindI2CDeviceId(DeviceObject *o)
 
 static void FindSPIDeviceId(DeviceObject *o)
 {
-  unsigned char command = 0;
+  unsigned char command = DEVICE_COMMAND_GET_ID;
   unsigned char id;
 
   if (o->transfer(o->idx, o->device->device_id, &command, 1, &id, 1))
-  {
-    o->device = NULL;
     return;
-  }
   const Device *d = devices;
   for (int i = 0; i < MAX_KNOWN_DEVICES; i++)
   {
     if (d->device_id == id)
     {
-      if (!o->device_config)
-        d->initializer(o);
-      o->device = d;
+      d->initializer(o);
+      if (o->device_config)
+        o->device = d;
       return;
     }
     d++;
   }
-  o->device = NULL;
 }
 
 static void FindDeviceId(int idx)
 {
   DeviceObject *o = &device_list[idx];
+
+  o->device = NULL;
+  if (o->device_config)
+  {
+    free(o->device_config);
+    o->device_config = NULL;
+  }
+  if (o->device_data)
+  {
+    free(o->device_data);
+    o->device_data = NULL;
+  }
 
   change_channel(idx);
   if (!o->transfer)
@@ -93,19 +102,6 @@ static void FindDeviceId(int idx)
     FindI2CDeviceId(o);
   else
     FindSPIDeviceId(o);
-  if (o->device == NULL)
-  {
-    if (o->device_config)
-    {
-      free(o->device_config);
-      o->device_config = NULL;
-    }
-    if (o->device_data)
-    {
-      free(o->device_data);
-      o->device_data = NULL;
-    }
-  }
 }
 
 void InitDeviceLists(void)

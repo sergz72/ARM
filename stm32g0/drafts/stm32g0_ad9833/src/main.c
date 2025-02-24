@@ -1,9 +1,6 @@
 #include "hal.h"
 #include <generic_dds.h>
 
-#define DDS_COMMAND         3
-#define GET_RESULTS_COMMAND 4
-
 static unsigned short txbuf[MAX_TRANSFER_SIZE / 2];
 static unsigned int sweep_points, sweep_current_point;
 static unsigned long sweep_freq_code_start, sweep_freq_code;
@@ -143,14 +140,14 @@ int main(void)
                 command_to_execute = 0;
             else
                 command_to_execute++;
-            if (last_command == GET_RESULTS_COMMAND)
+            if (last_command == DEVICE_COMMAND_GET_RESULTS)
             {
                 status = 0;
                 status_updated();
             }
             switch (cmd->device_command)
             {
-                case DDS_COMMAND:
+                case DEVICE_COMMAND_DDS_COMMAND:
                     exec_dds_command(cmd);
                     break;
                 default:

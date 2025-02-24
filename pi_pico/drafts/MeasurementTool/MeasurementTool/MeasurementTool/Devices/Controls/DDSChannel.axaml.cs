@@ -86,7 +86,7 @@ public partial class DDSChannel : UserControl
         if (width == 0 || step > width / 50)
             throw new Exception("Invalid width");
         var steps = width / step;
-        if (steps > 500)
+        if (steps > 200)
             throw new Exception("Invalid step");
         _dds.SetSweep(_channel, f1, (int)(Divider.SelectedItem ?? 1), (int)step, (int)steps);
         return true;
