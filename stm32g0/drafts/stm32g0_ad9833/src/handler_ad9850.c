@@ -16,7 +16,7 @@ const DdsConfig device_config =
 
 void handler_init(void)
 {
-    ad9850_init(0, 1, 0);
+    ad9850_init(0, 0, 0);
 }
 
 void set_frequency_code(int channel, unsigned long long int code, unsigned short divider)
