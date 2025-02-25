@@ -204,6 +204,16 @@ static void GPIOInit(void)
             GPIO_OType_PP,
             GPIO_PuPd_NOPULL
   );
+#ifdef DDS_TYPE_AD9850
+  AD9850_RESET_SET(0);
+  GPIO_Init(GPIOA,
+            GPIO_Pin_12,
+            GPIO_Mode_OUT,
+            GPIO_Speed_Low,
+            GPIO_OType_PP,
+            GPIO_PuPd_NOPULL
+  );
+#endif
 }
 
 /*

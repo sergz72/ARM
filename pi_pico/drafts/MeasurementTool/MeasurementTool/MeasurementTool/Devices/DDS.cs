@@ -13,7 +13,7 @@ public sealed class Dds: GenericDevice
     private static readonly Dictionary<DdsType, DdsInfo> DdsInfos = new()
     {
         { DdsType.Ad9833, new DdsInfo(mclk => mclk / 2, mclk => 1, 1,
-            [1,2], DdsModes.Sine|DdsModes.Square|DdsModes.Triangle, 20)},
+            [1,2], DdsModes.Sine|DdsModes.Square|DdsModes.Triangle, 28)},
         { DdsType.Ad9850, new DdsInfo(mclk => mclk / 2, mclk => 1, 1,
             [1], DdsModes.Sine, 32)},
         { DdsType.Ad9851, new DdsInfo(mclk => mclk / 2, mclk => 1, 1,
@@ -101,7 +101,13 @@ public sealed class Dds: GenericDevice
 
     public void SetMode(int channel, DdsModes mode)
     {
-        var command = new[] { (byte)DdsCommands.SetMode, (byte)channel, (byte)mode };
+        var outMode = mode switch
+        {
+            DdsModes.Triangle => (byte)1,
+            DdsModes.Square => (byte)2,
+            _ => (byte)0
+        };
+        var command = new[] { (byte)DdsCommands.SetMode, (byte)channel, (byte)outMode };
         Dm.QueueCommand(Channel, command, CheckError);
     }
 
@@ -120,7 +126,8 @@ public sealed class Dds: GenericDevice
 
     private long CalculateFrequencyCode(long value)
     {
-        return (value << _accumulatorBits) / _ddsConfig.Mclk;
+        var v = (value << _accumulatorBits) / (_ddsConfig.Mclk * 10);
+        return v;
     }
     
     public void SetFrequency(int channel, long value, int divider)
