@@ -1,4 +1,5 @@
 #include "board.h"
+#ifdef DDS_TYPE_AD9833
 #include <ad9833.h>
 #include <generic_dds.h>
 #include "handler.h"
@@ -67,3 +68,12 @@ void enable_output(int channel, int enable)
         ad9833_cfg |= AD9833_CFG_SLEEP1|AD9833_CFG_SLEEP12;
     ad9833_set_config(0, ad9833_cfg);
 }
+
+void set_frequency(int channel, unsigned long long int frequency)
+{
+}
+
+void set_attenuator(int channel, unsigned int value)
+{
+}
+#endif

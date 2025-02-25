@@ -21,9 +21,10 @@ project(stm32g0_ad9833 C ASM)
 
 file(GLOB SOURCES
         "src/hal.c"
-        "src/handler.c"
+        "src/handler_ad9833.c"
+        "src/handler_ad9850.c"
+        "src/handler_adf4351.c"
         "src/main.c"
-        "../cmisis/device/*.*"
         "../stm32g0lib/gpio.c"
         "../stm32g0lib/exti.c"
         "../stm32g0lib/nvic.c"
@@ -33,6 +34,8 @@ file(GLOB SOURCES
         "../stm32g0lib/timer.c"
         "../stm32g0lib/systick.c"
         "../../common_lib/rf/ad9833.c"
+        "../../common_lib/rf/ad9850.c"
+        "../../common_lib/rf/adf4351.c"
         "../startup_stm32g031xx.s"
 )
 

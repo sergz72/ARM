@@ -124,6 +124,7 @@ int dds_message_processor(DeviceObject *o, unsigned char *buffer, int len)
   switch (last_command)
   {
     case 'f': // set frequency
+    case 'c': // set frequency code
       bytes_expected = len >= 11 ? 0 : 11 - len;
       break;
     case 'm': // set mode

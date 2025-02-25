@@ -16,6 +16,8 @@ void SysInit(const void *txaddress);
 void handler_init(void);
 unsigned short adc_get(void);
 void set_frequency_code(int channel, unsigned long long int code, unsigned short divider);
+void set_frequency(int channel, unsigned long long int frequency);
+void set_attenuator(int channel, unsigned int value);
 void set_mode(int channel, int mode);
 void enable_output(int channel, int enable);
 void timer_enable(void);

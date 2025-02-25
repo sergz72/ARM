@@ -18,7 +18,8 @@
 #define DDS_AD9833  1
 #define DDS_SI5351  2
 #define DDS_AD9850  3
-#define DDS_ADF4351 4
+#define DDS_AD9851  4
+#define DDS_ADF4351 5
 #define LEVEL_METER_NONE   0
 #define LEVEL_METER_AD8307 1
 #define LEVEL_METER_AD8310 2

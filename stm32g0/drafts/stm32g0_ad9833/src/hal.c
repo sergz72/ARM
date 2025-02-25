@@ -36,12 +36,24 @@ const SPI_InitTypeDef spi_slave_init = {
 const SPI_InitTypeDef spi_master_init = {
   .Direction = SPI_DIRECTION_2LINES,
   .Mode = SPI_MODE_MASTER,
+#ifdef DDS_TYPE_AD9833
   .DataSize = 16,
   .CLKPolarity = SPI_POLARITY_HIGH,
+#elifdef DDS_TYPE_ADF4351
+  .DataSize = 16,
+  .CLKPolarity = SPI_POLARITY_LOW,
+#else
+  .DataSize = 8,
+  .CLKPolarity = SPI_POLARITY_LOW,
+#endif
   .CLKPhase = SPI_PHASE_1EDGE,
   .NSS = SPI_NSS_SOFT,
   .BaudRatePrescaler = SPI_BAUDRATEPRESCALER_16,
+#if defined(DDS_TYPE_AD9833) || defined(DDS_TYPE_ADF4351)
   .FirstBit = SPI_FIRSTBIT_MSB,
+#else
+  .FirstBit = SPI_FIRSTBIT_LSB,
+#endif
   .CRCCalculation = SPI_CRCCALCULATION_DISABLE,
   .CRCPolynomial = 7,
   .TIMode = SPI_TIMODE_DISABLE,
@@ -290,7 +302,11 @@ static void SPIMasterInit(void)
             GPIO_PuPd_DOWN
   );
   //NSS -> pullup
+#if defined(DDS_TYPE_AD9833) || defined(DDS_TYPE_ADF4351)
   SPI2_NSS_SET;
+#else
+  SPI2_NSS_CLR;
+#endif
   GPIO_Init(GPIOA,
             GPIO_Pin_8,
             GPIO_Mode_OUT,
@@ -428,6 +444,7 @@ void status_updated(void)
     INTERRUPT_FLAG_CLR;
 }
 
+#ifdef DDS_TYPE_AD9833
 void ad9833_write(int channel, unsigned short data)
 {
   SPI2_NSS_CLR;
@@ -437,6 +454,60 @@ void ad9833_write(int channel, unsigned short data)
   volatile unsigned short dummy = SPI2->DR;
   (void)dummy;
   SPI2_NSS_SET;
+}
+#endif
+
+#ifdef DDS_TYPE_AD9850
+void ad9850_write(int channel, const unsigned char *data, unsigned int length)
+{
+  while (length--)
+  {
+    while ((SPI2->SR & SPI_SR_FRLVL) != 0)
+    {
+      volatile unsigned char dummy = SPI2->DR;
+      (void)dummy;
+    }
+    while ((SPI2->SR & SPI_SR_FTLVL) == SPI_SR_FTLVL)
+      ;
+    *(unsigned char*)&SPI2->DR = *data++;
+  }
+  while (SPI2->SR & SPI_SR_BSY)
+  {
+    while ((SPI2->SR & SPI_SR_FRLVL) != 0)
+    {
+      volatile unsigned char dummy = SPI2->DR;
+      (void)dummy;
+    }
+  }
+  SPI2_NSS_SET;
+  AD9850_DELAY;
+  SPI2_NSS_CLR;
+}
+#endif
+
+#ifdef DDS_TYPE_ADF4351
+void adf4351_write(int channel, unsigned int data)
+{
+  unsigned short *sdata = (unsigned short *)&data;
+
+  SPI2_NSS_CLR;
+  SPI2->DR = *sdata++;
+  SPI2->DR = *sdata;
+  while (SPI2->SR & SPI_SR_BSY)
+  {
+    while ((SPI2->SR & SPI_SR_FRLVL) != 0)
+    {
+      volatile unsigned char dummy = SPI2->DR;
+      (void)dummy;
+    }
+  }
+  SPI2_NSS_SET;
+}
+#endif
+
+void dummy_call(void)
+{
+  asm("nop");
 }
 
 void _init(void)

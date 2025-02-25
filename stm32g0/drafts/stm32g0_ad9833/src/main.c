@@ -50,7 +50,11 @@ static void timer_event(void)
             return;
         }
         sweep_current_point++;
+#ifdef DDS_TYPE_ADF4351
+        set_frequency(sweep_channel, sweep_freq_code);
+#else
         set_frequency_code(sweep_channel, sweep_freq_code, sweep_div);
+#endif
         sweep_freq_code += sweep_step;
     }
 #ifdef LED_TIMER_ON
@@ -75,8 +79,15 @@ static void exec_dds_command(const dds_i2c_command *cmd)
             sweep_points = 0;
             set_frequency_code(cmd->channel, cmd->c10.freq, cmd->c10.div);
             break;
+        case DDS_COMMAND_SET_FREQUENCY:
+            sweep_points = 0;
+            set_frequency(cmd->channel, cmd->c10.freq);
+            break;
         case DDS_COMMAND_SET_MODE:
             set_mode(cmd->channel, cmd->c1.parameter);
+            break;
+        case DDS_COMMAND_SET_ATTENUATOR:
+            set_attenuator(cmd->channel, cmd->c1.parameter);
             break;
         case DDS_COMMAND_ENABLE_OUTPUT:
             enable_output(cmd->channel, cmd->c1.parameter);

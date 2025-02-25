@@ -16,8 +16,10 @@ public sealed class Dds: GenericDevice
             [1,2], DdsModes.Sine|DdsModes.Square|DdsModes.Triangle, 20)},
         { DdsType.Ad9850, new DdsInfo(mclk => mclk / 2, mclk => 1, 1,
             [1], DdsModes.Sine, 32)},
+        { DdsType.Ad9851, new DdsInfo(mclk => mclk / 2, mclk => 1, 1,
+            [1], DdsModes.Sine, 32)},
         { DdsType.Adf4351, new DdsInfo(mclk => 4400000000, mclk => 35000000, 1,
-            [1,2,4,8,16,32,64], DdsModes.Sine, 0)},
+            [1], DdsModes.Sine, 0)},
         { DdsType.Si5351, new DdsInfo(mclk => 225000000, mclk => 439454, 3,
             [1,2,4,8,16,32,64,128], DdsModes.Square, 0)}
     };
@@ -181,13 +183,18 @@ internal enum DdsType
     Ad9833,
     Si5351,
     Ad9850,
+    Ad9851,
     Adf4351
 }
 
 public enum MeterType
 {
     None,
-    Ad8307
+    Ad8307,
+    Ad8310,
+    Ad8313,
+    Ad8317,
+    Ad8318
 }
 
 internal enum DdsCommands
