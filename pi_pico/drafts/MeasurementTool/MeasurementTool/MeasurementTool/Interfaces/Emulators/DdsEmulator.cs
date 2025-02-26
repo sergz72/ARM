@@ -35,7 +35,10 @@ internal sealed class DdsEmulator(ILogger logger) : IDeviceEmulator
         switch (command[0])
         {
             case (byte)DdsCommands.EnableOutput:
-                _channelEnabled[command[1]] = command[2] != 0;
+                var enable = command[2] != 0;
+                if (!enable)
+                    _sweepPoints[command[1]] = 0;
+                _channelEnabled[command[1]] = enable;
                 logger.Info($"DDS enable output command channel={command[1]} enable={command[2]}");
                 return [(byte)'k'];
             case (byte)DdsCommands.SetFrequency:

@@ -1,28 +1,28 @@
 #include <ad8370.h>
-#include <board.h>
 
-void AD8370_SetGain(int spi_id, float gain)
+#define DB_PER_CODE 3333 // * 10000
+#define MAX_LOW_GAIN 17
+
+int AD8370_SetGain(int spi_id, int gain)
 {
-  unsigned char code;
+  unsigned char code, gcode;
 
-//AV = GainCode * 0.055744 * (1 + 6.079458 * MSB)
+  if (gain < AD8370_MIN_GAIN || gain > AD8370_MAX_GAIN)
+    return 1;
 
-  if (gain < 0)
-    gain = 0;
-  if (gain > AD8370_MAX_GAIN)
-    gain = AD8370_MAX_GAIN;
-  if (gain <= 7.079488)
+  if (gain > MAX_LOW_GAIN)
   {
-    code = (int)(gain / AD8370_MIN_GAIN);
-    if (code > 127)
-      code = 127;
+    code = 0x80;
+    gain -= 17;
   }
   else
-  {
-    code = (int)(gain / 0.394637306752);
-    if (code > 127)
-      code = 127;
-    code |= 0x80;
-  }
-  ad8370_spi_send(spi_id, code);
+    code = 0;
+  
+  gain -= AD8370_MIN_GAIN;
+
+  gcode = (unsigned char)(gain * 10000 / DB_PER_CODE + 1);
+
+  ad8370_spi_send(spi_id, code + gcode);
+
+  return 0;
 }

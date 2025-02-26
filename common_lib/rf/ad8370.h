@@ -1,9 +1,10 @@
 #ifndef AD8370_H_
 #define AD8370_H_
 
-#define AD8370_MIN_GAIN 0.055744
-#define AD8370_MAX_GAIN 50
+#define AD8370_MIN_GAIN -25
+#define AD8370_MAX_GAIN 34
 
-void AD8370_SetGain(int spi_id, float gain);
+int AD8370_SetGain(int spi_id, int gain); // gain is in dB
+void ad8370_spi_send(int spi_id, unsigned char code);
 
-#endif /*AD8370_H_*/
+#endif
