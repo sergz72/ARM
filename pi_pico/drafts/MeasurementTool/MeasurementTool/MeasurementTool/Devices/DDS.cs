@@ -157,10 +157,10 @@ public sealed class Dds: GenericDevice
         bw.Write((byte)channel);
         _sweepF1 = _sendCodes ? CalculateFrequencyCode(f1) : f1;
         bw.Write(_sweepF1);
-        bw.Write((short)divider);
         _sweepStep = _sendCodes ? CalculateStep(f2, numPoints) : step;
         bw.Write(_sweepStep);
         bw.Write((short)numPoints);
+        bw.Write((short)divider);
         Dm.QueueCommand(Channel, ms.ToArray(), CheckError);
     }
 

@@ -50,7 +50,7 @@ const Device devices[] = {
         .device_id = DDS_DEVICE_ID,
         .public_id = PUBLIC_ID_DDS,
         .initializer = dds_initializer,
-        .timer_event = NULL,
+        .timer_event = dds_timer_event,
         .message_processor = dds_message_processor,
         .save_config = dds_save_config
     },
