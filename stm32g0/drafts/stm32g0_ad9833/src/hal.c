@@ -511,8 +511,8 @@ void adf4351_write(int channel, unsigned int data)
   unsigned short *sdata = (unsigned short *)&data;
 
   SPI2_NSS_CLR;
-  SPI2->DR = *sdata++;
-  SPI2->DR = *sdata;
+  SPI2->DR = sdata[1];
+  SPI2->DR = sdata[0];
   while (SPI2->SR & SPI_SR_BSY)
   {
     while ((SPI2->SR & SPI_SR_FRLVL) != 0)
