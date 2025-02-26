@@ -214,6 +214,16 @@ static void GPIOInit(void)
             GPIO_PuPd_NOPULL
   );
 #endif
+#ifdef DDS_TYPE_ADF4351
+  ADF4351_CE_SET(0);
+  GPIO_Init(GPIOA,
+            GPIO_Pin_12,
+            GPIO_Mode_OUT,
+            GPIO_Speed_Low,
+            GPIO_OType_PP,
+            GPIO_PuPd_NOPULL
+  );
+#endif
 }
 
 /*

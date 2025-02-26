@@ -69,6 +69,7 @@ static unsigned int build_register2(const ADF4351Config *config)
     unsigned int value = ((current & 0x0F) << 9) |
                          ((config->r_counter & 0x3FF) << 14) |
                          0x22; // power down
+                         //0x02;
     if (config->low_spur_mode)
         value |= 3 << 29;
     if (config->reference_doubler)

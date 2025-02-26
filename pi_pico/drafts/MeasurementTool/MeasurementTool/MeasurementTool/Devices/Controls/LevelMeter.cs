@@ -16,7 +16,8 @@ public class LevelMeter : Control
     
     private static readonly Dictionary<MeterType, MeterInfo> MeterInfos = new()
     {
-        {MeterType.Ad8307, new MeterInfo("AD8307", -80, 20, mv => -80 + mv / 25)}
+        {MeterType.Ad8307, new MeterInfo("AD8307", -80, 20, mv => -80 + mv / 25)},
+        {MeterType.Ad8318, new MeterInfo("AD8318", -65, 10, mv => -65 + (2200 - mv) / 23)}
     };
     
     private const int AxisOffsetY = 20;

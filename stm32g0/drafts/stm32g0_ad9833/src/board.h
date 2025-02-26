@@ -36,6 +36,10 @@
 #define AD9850_RESET_CLR(channel) GPIOA->BSRR = 0x10000000
 #define AD9850_RESET_SET(channel) GPIOA->BSRR = 0x1000
 
+// PA12
+#define ADF4351_CE_CLR(channel) GPIOA->BSRR = 0x10000000
+#define ADF4351_CE_SET(channel) GPIOA->BSRR = 0x1000
+
 #define SPI_SLAVE_DMA
 
 #define SYSTICK_MULTIPLIER 48
@@ -53,8 +57,8 @@
 #define ADF4351_MAX_CHANNELS 1
 
 //#define DDS_TYPE_AD9833
-#define DDS_TYPE_AD9850
-//#define DDS_TYPE_ADF4351
+//#define DDS_TYPE_AD9850
+#define DDS_TYPE_ADF4351
 
 void delay(unsigned int us);
 void dummy_call(void) __attribute__((noinline));
