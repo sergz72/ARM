@@ -31,8 +31,8 @@ void handler_init(void)
 {
     adf4351_init(0, &adf4351_config);
     adf4351_output_enable(0, 0, 1);
-    adf4351_output_enable(0, 1, 1);
-    adf4351_set_rf_power(0, 1, 3); // max power on aux
+    //adf4351_output_enable(0, 1, 1);
+    //adf4351_set_rf_power(0, 1, 3); // max power on aux
 }
 
 void set_frequency_code(int channel, unsigned long long int code, unsigned short divider)
@@ -53,6 +53,7 @@ void enable_output(int channel, int enable)
 
 void set_frequency(int channel, unsigned long long int frequency)
 {
+    frequency /= 10;
     if (frequency > 64000ULL * 65535ULL)
         adf4351_set_r_counter(0, R_COUNTER_BASE / 2);
     else
