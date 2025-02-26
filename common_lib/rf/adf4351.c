@@ -55,12 +55,12 @@ int adf4351_set_freq(int channel, unsigned long long freq)
 
 static unsigned int build_register0(const ADF4351Config *config)
 {
-    return 0;
+    return 65535 << 15;
 }
 
 static unsigned int build_register1(const ADF4351Config *config)
 {
-    return 1 + (1 << 27); // prescaler 8/9
+    return 1 + (2 << 3) + (1 << 15) + (1 << 27); // mod = 2, phase = 1, prescaler 8/9
 }
 
 static unsigned int build_register2(const ADF4351Config *config)
@@ -89,7 +89,7 @@ static unsigned int build_register3(const ADF4351Config *config)
 
 static unsigned int build_register4(const ADF4351Config *config)
 {
-    return 4 + (1 << 23); // feedback is fundamental
+    return 4 + (255 << 12) + (1 << 23); // feedback is fundamental, band select clock divider = 255
 }
 
 static unsigned int build_register5(const ADF4351Config *config)
