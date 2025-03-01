@@ -12,6 +12,8 @@
 
 // for frequency meter - 1s interval
 #define PIN_GATE 10
+//module reset
+#define PIN_RESET 11
 
 //module 1
 #define PIN_SDA1 2

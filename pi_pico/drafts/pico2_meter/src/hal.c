@@ -144,6 +144,8 @@ static void configure_gate_pin(void)
 
 static void configure_ports(void)
 {
+  gpio_init(PIN_RESET);
+  gpio_set_dir(PIN_RESET, GPIO_OUT);
   gpio_init(PIN_LED);
   gpio_set_dir(PIN_LED, GPIO_OUT);
 
@@ -375,6 +377,7 @@ int main_comm_port_read_bytes(unsigned char *buffer, int buffer_size)
 
 void release_reset(void)
 {
+  gpio_put(PIN_RESET, true);
 }
 
 int get_interrupt_pin_level(void)
