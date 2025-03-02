@@ -79,7 +79,7 @@ static void timer_event(void)
   int id = timer_event_id;
   int mask = 1;
   int interrupt_flags = read_interrupt_flags();
-  for (int i = 0; i < MAX_DEVICES; i++)
+  for (int i = 0; i < MAX_TOTAL_DEVICES; i++)
   {
     if (d->device)
     {
