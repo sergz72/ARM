@@ -21,7 +21,9 @@ public sealed class Dds: GenericDevice
         { DdsType.Adf4351, new DdsInfo(mclk => 4400000000, mclk => 35000000, 1,
             [1], DdsModes.Sine, 0)},
         { DdsType.Si5351, new DdsInfo(mclk => 225000000, mclk => 439454, 3,
-            [1,2,4,8,16,32,64,128], DdsModes.Square, 0)}
+            [1,2,4,8,16,32,64,128], DdsModes.Square, 0)},
+        { DdsType.Ad9959, new DdsInfo(mclk => mclk / 2, mclk => 1, 4,
+            [1], DdsModes.Sine, 32)}
     };
 
     public readonly long MinFrequency;
@@ -191,7 +193,8 @@ internal enum DdsType
     Si5351,
     Ad9850,
     Ad9851,
-    Adf4351
+    Adf4351,
+    Ad9959
 }
 
 public enum MeterType
