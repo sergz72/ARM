@@ -8,7 +8,7 @@
 
 #include "i2c_soft.h"
 
-DeviceObject device_list[MAX_DEVICES];
+DeviceObject device_list[MAX_TOTAL_DEVICES];
 
 static TransferFunction GetDeviceInterface(int idx)
 {
@@ -18,7 +18,7 @@ static TransferFunction GetDeviceInterface(int idx)
   return spi_transfer;
 }
 
-static void FindI2CDeviceId(DeviceObject *o)
+static void FindI2CDeviceIds(DeviceObject *o)
 {
   int i;
   const Device *d;
@@ -55,60 +55,83 @@ static void FindI2CDeviceId(DeviceObject *o)
       d++;
     }
   }
-  o->device = NULL;
 }
 
-static void FindSPIDeviceId(DeviceObject *o)
+static void FindSPIDeviceIds(DeviceObject *o)
 {
   unsigned char command = DEVICE_COMMAND_GET_ID;
-  unsigned char id;
+  unsigned char ids[MAX_SUBDEVICES];
 
-  if (o->transfer(o->idx, o->device->device_id, &command, 1, &id, 1))
+  if (o->transfer(o, &command, 1, ids, MAX_SUBDEVICES))
     return;
-  const Device *d = devices;
-  for (int i = 0; i < MAX_KNOWN_DEVICES; i++)
+  for (int subdevice = 0; subdevice < MAX_SUBDEVICES; subdevice++)
   {
-    if (d->device_id == id)
+    unsigned char id = ids[subdevice];
+    if (!id)
+      break;
+    const Device *d = devices;
+    for (int i = 0; i < MAX_KNOWN_DEVICES; i++)
     {
-      d->initializer(o);
-      if (o->device_config)
-        o->device = d;
-      return;
+      if (d->device_id == id)
+      {
+        d->initializer(o);
+        if (o->device_config)
+          o->device = d;
+        break;
+      }
+      d++;
     }
-    d++;
+    o++;
   }
 }
 
-static void FindDeviceId(int idx)
+static void FindDeviceIds(int idx)
 {
-  DeviceObject *o = &device_list[idx];
+  DeviceObject *o = &device_list[idx * MAX_SUBDEVICES];
+  DeviceObject *oo = o;
 
-  o->device = NULL;
-  if (o->device_config)
+  for (int subdevice = 0; subdevice < MAX_SUBDEVICES; subdevice++)
   {
-    free(o->device_config);
-    o->device_config = NULL;
-  }
-  if (o->device_data)
-  {
-    free(o->device_data);
-    o->device_data = NULL;
+    oo->device = NULL;
+    if (oo->device_config)
+    {
+      free(oo->device_config);
+      oo->device_config = NULL;
+    }
+    if (oo->device_data)
+    {
+      free(oo->device_data);
+      oo->device_data = NULL;
+    }
+    oo++;
   }
 
   change_channel(idx);
   if (!o->transfer)
+  {
     o->transfer = GetDeviceInterface(idx);
+    oo = &o[1];
+
+    for (int subdevice = 1; subdevice < MAX_SUBDEVICES; subdevice++)
+    {
+      oo->transfer = o->transfer;
+      oo++;
+    }
+  }
   if (o->transfer == i2c_transfer)
-    FindI2CDeviceId(o);
+    FindI2CDeviceIds(o);
   else
-    FindSPIDeviceId(o);
+    FindSPIDeviceIds(o);
 }
 
 void InitDeviceLists(void)
 {
   memset(device_list, 0, sizeof(device_list));
-  for (int i = 1; i < MAX_DEVICES; i++)
-    device_list[i].idx = i;
+  for (int i = 0; i < MAX_TOTAL_DEVICES; i++)
+  {
+    device_list[i].idx = i / MAX_SUBDEVICES;
+    device_list[i].subdevice = i % MAX_SUBDEVICES;
+  }
 }
 
 void BuildDeviceList(void)
@@ -116,7 +139,7 @@ void BuildDeviceList(void)
   int i;
 
   for (i = 0; i < MAX_DEVICES; i++)
-    FindDeviceId(i);
+    FindDeviceIds(i);
 }
 
 int BuildMeterConfig(void *buffer, const MeterConfig *config, const char *name)

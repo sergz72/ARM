@@ -41,7 +41,7 @@ static void device_list_response()
 {
   DeviceObject *d = device_list;
   int idx = 0;
-  for (int i = 0; i < MAX_DEVICES; i++)
+  for (int i = 0; i < MAX_TOTAL_DEVICES; i++)
   {
     if (d->device == NULL)
     {
@@ -229,7 +229,7 @@ void core_main(void)
           eeprom_command_buffer_p = eeprom_command_buffer.buffer;
           build_eeprom_read_command(comm_buffer + 1, len - 1);
         }
-        else if (c < MAX_DEVICES) // channel message
+        else if (c < MAX_TOTAL_DEVICES) // channel message
         {
           current_channel = &device_list[c];
           if (!current_channel->device)
@@ -243,7 +243,7 @@ void core_main(void)
             }
             else
             {
-              change_channel(c);
+              change_channel(current_channel->idx);
               if (len > 1)
               {
                 int response_length = current_channel->device->message_processor(current_channel, comm_buffer + 1, len - 1);

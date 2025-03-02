@@ -13,7 +13,7 @@ static const DdsConfig config =
   .mclk = SI5351_XTAL_FREQ
 };
 
-static int si5351_command(unsigned char deviceId, DeviceObject *o, unsigned char cmd, dds_cmd *command)
+static int si5351_command(DeviceObject *o, unsigned char cmd, dds_cmd *command)
 {
   if (o->device_config == NULL)
     return 9;

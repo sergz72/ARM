@@ -28,8 +28,6 @@
 #define GATE_PIO pio0
 #define GATE_SM 3
 
-#define SPI_BUFFER_SIZE 10240
-
 typedef struct
 {
   PIO spi_pio;
@@ -57,7 +55,6 @@ static bool led_state;
 static int pwm_program_offset, counter_program_offset, spi_program_offset;
 static ModuleInfo module_info[MAX_DEVICES];
 static int last_allocated_pio;
-static unsigned char spi_buffer[SPI_BUFFER_SIZE];
 
 // Write `period` to the input shift register
 void pio_pwm_set_params(PIO pio, uint sm, unsigned int period, unsigned int level) {
@@ -296,7 +293,7 @@ void delay_us(unsigned int us)
   sleep_us(us);
 }
 
-int dds_command(unsigned char deviceId, DeviceObject *o, unsigned char cmd, dds_cmd *data)
+int dds_command(DeviceObject *o, unsigned char cmd, dds_cmd *data)
 {
   dds_i2c_command c;
   c.device_command = DEVICE_COMMAND_DDS_COMMAND;
@@ -306,25 +303,25 @@ int dds_command(unsigned char deviceId, DeviceObject *o, unsigned char cmd, dds_
   {
     case DDS_COMMAND_ENABLE_OUTPUT:
       c.c1.parameter = data->enable_command.enable;
-      return o->transfer(o->idx, deviceId, (unsigned char*)&c, 4, NULL, 0);
+      return o->transfer(o, (unsigned char*)&c, 4, NULL, 0);
     case DDS_COMMAND_SET_ATTENUATOR:
       c.c1.parameter = data->set_attenuator_command.attenuator_value;
-      return o->transfer(o->idx, deviceId, (unsigned char*)&c, 4, NULL, 0);
+      return o->transfer(o, (unsigned char*)&c, 4, NULL, 0);
     case DDS_COMMAND_SET_FREQUENCY:
     case DDS_COMMAND_SET_FREQUENCY_CODE:
       c.c10.freq = data->set_frequency_command.frequency;
       c.c10.div = data->set_frequency_command.divider;
-      return o->transfer(o->idx, deviceId, (unsigned char*)&c, 13, NULL, 0);
+      return o->transfer(o, (unsigned char*)&c, 13, NULL, 0);
     case DDS_COMMAND_SET_MODE:
       c.c1.parameter = data->set_mode_command.mode;
-      return o->transfer(o->idx, deviceId, (unsigned char*)&c, 4, NULL, 0);
+      return o->transfer(o, (unsigned char*)&c, 4, NULL, 0);
     case DDS_COMMAND_SWEEP:
     case DDS_COMMAND_SWEEP_CODES:
       c.c18.freq = data->sweep_command.frequency;
       c.c18.step = data->sweep_command.step;
       c.c18.points = data->sweep_command.points;
       c.c18.div = data->sweep_command.divider;
-      return o->transfer(o->idx, deviceId, (unsigned char*)&c, 21, NULL, 0);
+      return o->transfer(o, (unsigned char*)&c, 21, NULL, 0);
     default:
       return 1;
   }
@@ -338,7 +335,7 @@ int si5351_write(unsigned char device_address, int channel, const unsigned char 
 int dds_get_config(DdsConfig *cfg, DeviceObject *o)
 {
   unsigned char command = DEVICE_COMMAND_GET_CONFIGURATION;
-  return o->transfer(o->idx, o->device->device_id, &command, 1, (unsigned char*)cfg, sizeof(DdsConfig));
+  return o->transfer(o, &command, 1, (unsigned char*)cfg, sizeof(DdsConfig));
 }
 
 int mcp9600Read16(int channel, unsigned char address, unsigned char reg, unsigned short *data)
@@ -394,13 +391,14 @@ int alloc_pio(int module_id)
   return 0;
 }
 
-int i2c_transfer(int idx, int address, const void *txdata, unsigned int txdatalength, void *rxdata,
+int i2c_transfer(struct _DeviceObject *o, const void *txdata, unsigned int txdatalength, void *rxdata,
                         unsigned int rxdatalength)
 {
-  return i2c_soft_command(idx, address, NULL, 0, txdata, txdatalength, rxdata, rxdatalength, I2C_TIMEOUT);
+  return i2c_soft_command(o->idx, o->device->device_id, (unsigned char*)&o->subdevice, 1,
+                    txdata, txdatalength, rxdata, rxdatalength, I2C_TIMEOUT);
 }
 
-static void __time_critical_func(spi_trfr)(PIO spi_pio, unsigned int spi_sm, int pin_ncs, const unsigned char *txdata,
+static void __time_critical_func(spi_rx)(PIO spi_pio, unsigned int spi_sm, int pin_ncs,
                                             unsigned char *rxdata, unsigned int num_bytes)
 {
   gpio_put(pin_ncs, false);
@@ -409,7 +407,7 @@ static void __time_critical_func(spi_trfr)(PIO spi_pio, unsigned int spi_sm, int
   volatile unsigned char *rxfifo = (volatile unsigned char *) &spi_pio->rxf[spi_sm];
   while (tx_remain || rx_remain) {
     if (tx_remain && !pio_sm_is_tx_fifo_full(spi_pio, spi_sm)) {
-      *txfifo = *txdata++;
+      *txfifo = 0;
       tx_remain--;
     }
     if (rx_remain && !pio_sm_is_rx_fifo_empty(spi_pio, spi_sm)) {
@@ -420,25 +418,44 @@ static void __time_critical_func(spi_trfr)(PIO spi_pio, unsigned int spi_sm, int
   gpio_put(pin_ncs, true);
 }
 
-int __time_critical_func(spi_transfer)(int idx, int address, const void *txdata, unsigned int txdatalength, void *rxdata,
+static void __time_critical_func(spi_tx)(PIO spi_pio, unsigned int spi_sm, int pin_ncs, unsigned char subdevice_id,
+                                          const unsigned char *txdata, unsigned int num_bytes)
+{
+  gpio_put(pin_ncs, false);
+  unsigned int tx_remain = num_bytes, rx_remain = num_bytes + 1;
+  volatile unsigned char *txfifo = (volatile unsigned char *) &spi_pio->txf[spi_sm];
+  volatile unsigned char *rxfifo = (volatile unsigned char *) &spi_pio->rxf[spi_sm];
+  *txfifo = subdevice_id;
+  while (tx_remain || rx_remain) {
+    if (tx_remain && !pio_sm_is_tx_fifo_full(spi_pio, spi_sm)) {
+      *txfifo = *txdata++;
+      tx_remain--;
+    }
+    if (rx_remain && !pio_sm_is_rx_fifo_empty(spi_pio, spi_sm)) {
+      volatile unsigned char dummy = *rxfifo;
+      (void)dummy;
+      rx_remain--;
+    }
+  }
+  gpio_put(pin_ncs, true);
+}
+
+int __time_critical_func(spi_transfer)(struct _DeviceObject *o, const void *txdata, unsigned int txdatalength, void *rxdata,
                                        unsigned int rxdatalength)
 {
-  int pin_ncs = module_predefined_info[idx].pins[PIN_NCS];
-  PIO spi_pio = module_predefined_info[idx].spi_pio;
-  unsigned int spi_sm = module_predefined_info[idx].spi_sm;
+  int pin_ncs = module_predefined_info[o->idx].pins[PIN_NCS];
+  PIO spi_pio = module_predefined_info[o->idx].spi_pio;
+  unsigned int spi_sm = module_predefined_info[o->idx].spi_sm;
   int tx = txdatalength && txdata;
   int rx = rxdatalength && rxdata;
   if (tx || rx)
   {
     if (tx)
-      spi_trfr(spi_pio, spi_sm, pin_ncs, txdata, spi_buffer, txdatalength);
+      spi_tx(spi_pio, spi_sm, pin_ncs, o->subdevice, txdata, txdatalength);
     if (tx && rx)
       delay_us(10);
     if (rx)
-    {
-      memset(spi_buffer, 0, rxdatalength);
-      spi_trfr(spi_pio, spi_sm, pin_ncs, spi_buffer, rxdata, rxdatalength);
-    }
+      spi_rx(spi_pio, spi_sm, pin_ncs, rxdata, rxdatalength);
   }
   return 0;
 }

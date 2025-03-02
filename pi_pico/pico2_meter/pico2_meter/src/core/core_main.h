@@ -8,6 +8,8 @@
 #define SI5351_XTAL_FREQ 25000000
 #define SI5351_CHANNELS 4
 
+#define MAX_SUBDEVICES 4
+
 struct _DeviceObject;
 
 int I2CCheck(int idx, int device_id);
@@ -27,9 +29,9 @@ void core_main(void);
 void release_reset(void);
 void change_channel(int);
 int get_interrupt_pin_level(void);
-int i2c_transfer(int idx, int address, const void *txdata, unsigned int txdatalength, void *rxdata,
+int i2c_transfer(struct _DeviceObject *o, const void *txdata, unsigned int txdatalength, void *rxdata,
                         unsigned int rxdatalength);
-int spi_transfer(int idx, int address, const void *txdata, unsigned int txdatalength, void *rxdata,
+int spi_transfer(struct _DeviceObject *o, const void *txdata, unsigned int txdatalength, void *rxdata,
                         unsigned int rxdatalength);
 void init_spi(int module_id);
 void init_device_pin(const struct _DeviceObject *o, int pin_no, enum gpio_dir dir);

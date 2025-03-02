@@ -2,6 +2,7 @@
 #define _DEVICES_H
 
 #include "board.h"
+#include "core_main.h"
 
 #define MEASURE_TYPE_VOLTS 0
 #define MEASURE_TYPE_AMPERS 1
@@ -29,12 +30,13 @@ typedef struct {
   int (*message_processor)(struct _DeviceObject *object, unsigned char *buffer, int len);
 } Device;
 
-typedef int (*TransferFunction)(int idx, int address, const void *txdata, unsigned int txdatalength, void *rxdata,
+typedef int (*TransferFunction)(struct _DeviceObject *o, const void *txdata, unsigned int txdatalength, void *rxdata,
                                 unsigned int rxdatalength);
 
 typedef struct _DeviceObject
 {
   int idx;
+  int subdevice;
   TransferFunction transfer;
   const Device *device;
   void *device_data;
@@ -69,7 +71,9 @@ typedef struct __attribute__((packed))
   unsigned char dds_clock;
 } PWMConfig;
 
-extern DeviceObject device_list[MAX_DEVICES];
+#define MAX_TOTAL_DEVICES MAX_DEVICES*MAX_SUBDEVICES
+
+extern DeviceObject device_list[MAX_TOTAL_DEVICES];
 
 void BuildDeviceList(void);
 void InitDeviceLists(void);

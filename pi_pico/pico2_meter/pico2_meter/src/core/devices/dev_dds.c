@@ -56,23 +56,22 @@ static int exec_command(dev_dds *config, DeviceObject *o, unsigned char *buffer)
       memcpy(&command.set_frequency_command.frequency, command_buffer_p, 8);
       command_buffer_p += 8;
       memcpy(&command.set_frequency_command.divider, command_buffer_p, 2);
-      rc = config->command(config->deviceId, o,
-                            last_command == 'f' ? DDS_COMMAND_SET_FREQUENCY : DDS_COMMAND_SET_FREQUENCY_CODE,
+      rc = config->command(o, last_command == 'f' ? DDS_COMMAND_SET_FREQUENCY : DDS_COMMAND_SET_FREQUENCY_CODE,
                             &command);
       break;
     case 'm': // set mode
       command.set_mode_command.mode = *command_buffer_p;
-      rc = config->command(config->deviceId, o, DDS_COMMAND_SET_MODE, &command);
+      rc = config->command(o, DDS_COMMAND_SET_MODE, &command);
       break;
     case 'a': // set attenuator
       command.set_attenuator_command.attenuator_value = *command_buffer_p;
-      rc = config->command(config->deviceId, o, DDS_COMMAND_SET_ATTENUATOR, &command);
+      rc = config->command(o, DDS_COMMAND_SET_ATTENUATOR, &command);
       break;
     case 'e': // enable output
       command.enable_command.enable = *command_buffer_p;
       if (!command.enable_command.enable)
         config->sweep_points = 0;
-      rc = config->command(config->deviceId, o, DDS_COMMAND_ENABLE_OUTPUT, &command);
+      rc = config->command(o, DDS_COMMAND_ENABLE_OUTPUT, &command);
       break;
     case 's': // sweep
     case 'd': // sweep codes
@@ -84,7 +83,7 @@ static int exec_command(dev_dds *config, DeviceObject *o, unsigned char *buffer)
       command_buffer_p += 2;
       memcpy(&command.sweep_command.divider, command_buffer_p, 2);
       config->sweep_points = command.sweep_command.points;
-      rc = config->command(config->deviceId, o, last_command == 's' ? DDS_COMMAND_SWEEP : DDS_COMMAND_SWEEP_CODES,
+      rc = config->command(o, last_command == 's' ? DDS_COMMAND_SWEEP : DDS_COMMAND_SWEEP_CODES,
                             &command);
       break;
     default:
@@ -153,7 +152,7 @@ int dds_timer_event(DeviceObject *o, int step, int interrupt, unsigned char *buf
   {
     unsigned char c = DEVICE_COMMAND_GET_RESULTS;
     unsigned int size = cfg->sweep_points * 2;
-    if (!o->transfer(o->idx, 0, &c, 1, buffer, size))
+    if (!o->transfer(o, &c, 1, buffer, size))
       return size;
   }
   return 0;
