@@ -11,8 +11,10 @@ typedef struct
     int reference_doubler;
     int reference_divide_by_2;
     unsigned int r_counter;
+    unsigned int mod;
+    int pd_polarity_positive;
     int cycle_slip_reduction;
-    unsigned int charge_pump_current;
+    unsigned int charge_pump_current; // in uA
 } ADF4351Config;
 
 void adf4351_power_down(int channel);

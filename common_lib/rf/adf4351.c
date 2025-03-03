@@ -7,6 +7,7 @@ typedef struct
     double reference_frequency;
     unsigned int refin;
     unsigned int r_counter;
+    unsigned int mod;
     int reference_doubler;
     int reference_divide_by_2;
 } ADF4351Channel;
@@ -40,7 +41,9 @@ int adf4351_set_freq(int channel, unsigned long long freq)
         freq *= 2;
         rfdiv++;
     }
-    unsigned int n = (unsigned int)((double)freq / channels[channel].reference_frequency);
+    unsigned int n = (unsigned int)((double)freq * channels[channel].mod / channels[channel].reference_frequency);
+    unsigned int frac = n % channels[channel].mod;
+    n /= channels[channel].mod;
     if (n < 75 || n > 65535)
         return 2;
     if ((channels[channel].registers[4] >> 20) & 7 != rfdiv)
@@ -49,18 +52,18 @@ int adf4351_set_freq(int channel, unsigned long long freq)
         channels[channel].registers[4] |= rfdiv << 20;
         write_register(channel, 4);
     }
-    channels[channel].registers[0] = n << 15;
+    channels[channel].registers[0] = (n << 15) + (frac << 3);
     write_register(channel, 0);
 }
 
 static unsigned int build_register0(const ADF4351Config *config)
 {
-    return 65535 << 15;
+    return 65535 << 15; // int = 65535, frac = 0
 }
 
 static unsigned int build_register1(const ADF4351Config *config)
 {
-    return 1 + (2 << 3) + (1 << 15) + (1 << 27); // mod = 2, phase = 1, prescaler 8/9
+    return 1 + (1 << 15) + ((config->mod & 0xFFF) << 3) + (1 << 27); // phase = 1, prescaler 8/9
 }
 
 static unsigned int build_register2(const ADF4351Config *config)
@@ -69,27 +72,29 @@ static unsigned int build_register2(const ADF4351Config *config)
     unsigned int value = ((current & 0x0F) << 9) |
                          ((config->r_counter & 0x3FF) << 14) |
                          0x22; // power down
-                         //0x02;
     if (config->low_spur_mode)
         value |= 3 << 29;
     if (config->reference_doubler)
         value |= 1 << 25;
     if (config->reference_divide_by_2)
         value |= 1 << 24;
-    return value;
+    if (config->pd_polarity_positive)
+        value |= 1 << 6;
+    return value;// | (1 << 4);
 }
 
 static unsigned int build_register3(const ADF4351Config *config)
 {
-    unsigned int value = 3;
+    unsigned int value = 3 + (1 << 23) + (100 << 3);// + (1 << 15); // band select clock mode = high, clock divider = 100, fast lock enable
     if (config->cycle_slip_reduction)
         value |= 1 << 18;
     return value;
 }
 
-static unsigned int build_register4(const ADF4351Config *config)
+static unsigned int build_register4(int channel, const ADF4351Config *config)
 {
-    return 4 + (255 << 12) + (1 << 23); // feedback is fundamental, band select clock divider = 255
+    unsigned int band_select_clock_divider = channels[channel].reference_frequency / 60000;
+    return 4 + (1 << 10) + (band_select_clock_divider << 12) + (1 << 23); // feedback is fundamental, mute till lock detect
 }
 
 static unsigned int build_register5(const ADF4351Config *config)
@@ -122,12 +127,13 @@ void adf4351_init(int channel, const ADF4351Config *config)
     channels[channel].reference_doubler = config->reference_doubler;
     channels[channel].reference_divide_by_2 = config->reference_divide_by_2;
     channels[channel].r_counter = config->r_counter;
+    channels[channel].mod = config->mod;
     calculate_reference_frequency(channel);
     channels[channel].registers[0] = build_register0(config);
     channels[channel].registers[1] = build_register1(config);
     channels[channel].registers[2] = build_register2(config);
     channels[channel].registers[3] = build_register3(config);
-    channels[channel].registers[4] = build_register4(config);
+    channels[channel].registers[4] = build_register4(channel, config);
     channels[channel].registers[5] = build_register5(config);
     for (int i = 5; i >= 0; i--)
         write_register(channel, i);
