@@ -17,11 +17,22 @@ add_compile_options(-Wall
 add_executable(pico2_meter
         src/hal.c
         src/main.c
-        src/core/devices.c
-        src/core/device_list.c
-        src/core/device_config.c
-        src/core/core_main.c
         src/hal.c
+        src/internal_devices/dev_internal_pwm.c
+        src/internal_devices/dev_internal_frequency_meter.c
+        ../../meter_core/core_main.c
+        ../../meter_core/device_config.c
+        ../../meter_core/device_list.c
+        ../../meter_core/devices.c
+        ../../meter_core/devices/dev_ads1115.c
+        ../../meter_core/devices/dev_dds.c
+        ../../meter_core/devices/dev_ina226.c
+        ../../meter_core/devices/dev_ina3221.c
+        ../../meter_core/devices/dev_mcp3421.c
+        ../../meter_core/devices/dev_mcp9600.c
+        ../../meter_core/devices/dev_si5351.c
+        ../../meter_core/devices/dev_pwm.c
+        ../../meter_core/devices/dev_meter.c
         ../../common_lib/i2c_soft.c
         ../../common_lib/sensor/ads1115.c
         ../../common_lib/sensor/mcp3421.c
@@ -30,24 +41,13 @@ add_executable(pico2_meter
         ../../common_lib/sensor/mcp9600.c
         ../../common_lib/rf/si5351.c
         ../../common_lib/memory/24c01_16.c
-        src/core/devices/dev_ads1115.c
-        src/core/devices/dev_dds.c
-        src/core/devices/dev_ina226.c
-        src/core/devices/dev_ina3221.c
-        src/core/devices/dev_mcp3421.c
-        src/core/devices/dev_mcp9600.c
-        src/core/devices/dev_si5351.c
-        src/core/devices/dev_pwm.c
-        src/core/devices/dev_meter.c
-        src/internal_devices/dev_internal_pwm.c
-        src/internal_devices/dev_internal_frequency_meter.c
 )
 
 include_directories(
-        src 
-        src/core
-        src/core/devices
+        src
         src/internal_devices
+        ../../meter_core
+        ../../meter_core/devices
         ../../common_lib
         ../../common_lib/rf
         ../../common_lib/memory
