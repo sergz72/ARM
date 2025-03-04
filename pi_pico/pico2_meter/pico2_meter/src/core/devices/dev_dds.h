@@ -12,11 +12,9 @@ typedef struct {
   unsigned int sweep_points;
 } dev_dds;
 
-int dds_get_config(DdsConfig *cfg, DeviceObject *o); //should be defined in hal.c
-int dds_command(DeviceObject *o, unsigned char cmd, dds_cmd *data); //should be defined in hal.c
 void dds_initializer(DeviceObject *o);
 int dds_message_processor(DeviceObject *o, unsigned char *buffer, int len);
 int dds_save_config(DeviceObject *o, void *buffer);
-int dds_timer_event(DeviceObject *o, int step, int interrupt, unsigned char *buffer);
+int dds_timer_event(DeviceObject *o, int step, unsigned char *buffer);
 
 #endif

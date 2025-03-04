@@ -28,13 +28,12 @@ void delay_us(unsigned int us);
 void core_main(void);
 void release_reset(void);
 void change_channel(int);
-int get_interrupt_pin_level(void);
 int i2c_transfer(struct _DeviceObject *o, const void *txdata, unsigned int txdatalength, void *rxdata,
                         unsigned int rxdatalength);
 int spi_transfer(struct _DeviceObject *o, const void *txdata, unsigned int txdatalength, void *rxdata,
                         unsigned int rxdatalength);
 void init_spi(int module_id);
-void init_device_pin(const struct _DeviceObject *o, int pin_no, enum gpio_dir dir);
-bool get_device_pin_level(const struct _DeviceObject *o, int pin_no);
+void init_interrupt_pin(const struct _DeviceObject *o);
+bool get_interrupt_pin_level(const struct _DeviceObject *o);
 
 #endif

@@ -6,7 +6,7 @@
 #include <devices.h>
 
 void ads1115_initializer(DeviceObject *o);
-int ads1115_timer_event(DeviceObject *o, int step, int interrupt, unsigned char *buffer);
+int ads1115_timer_event(DeviceObject *o, int step, unsigned char *buffer);
 int ads1115_save_config(DeviceObject *o, void *buffer);
 
 #endif

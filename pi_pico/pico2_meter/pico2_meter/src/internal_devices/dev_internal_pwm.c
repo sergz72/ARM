@@ -13,41 +13,32 @@ static const PWMConfig config =
   .mclk = 50000000
 };
 
-static int pwm_enable_output(int idx, void *cfg, void *data, int channel, int enable);
+static int pwm_enable_output(DeviceObject *o, int channel, int enable);
 
-static int pwm_set_frequency_duty(int idx, void *cfg, void *data, int channel, unsigned int frequency,
-                            unsigned int duty);
+static int pwm_set_frequency_duty(DeviceObject *o, int channel, unsigned int frequency, unsigned int duty);
 
-static const dev_pwm dev =
+static int pwm_enable_output(DeviceObject *o, int channel, int enable)
 {
-  .cfg = NULL,
-  .enable_output = pwm_enable_output,
-  .set_frequency_and_duty = pwm_set_frequency_duty,
-};
-
-static int pwm_enable_output(int idx, void *cfg, void *data, int channel, int enable)
-{
-  return pwm_enable(idx, channel, enable);
+  return pwm_enable(o->idx, channel, enable);
 }
 
-static int pwm_set_frequency_duty(int idx, void *cfg, void *data, int channel, unsigned int frequency,
-                            unsigned int duty)
+static int pwm_set_frequency_duty(DeviceObject *o, int channel, unsigned int frequency, unsigned int duty)
 {
-  return pwm_set_frequency_and_duty(idx, channel, frequency, duty);
+  return pwm_set_frequency_and_duty(o->idx, channel, frequency, duty);
 }
 
 void internal_pwm_initializer(DeviceObject *o)
 {
   if (alloc_pio(o->idx))
-  {
-    o->device_config = NULL;
     return;
-  }
+  dev_pwm *dev = malloc(sizeof(dev_pwm));
+  if (!dev)
+    return;
   pwm_initializer();
-  void *config = malloc(sizeof(dev_pwm));
-  if (config)
-    memcpy(config, &dev, sizeof(dev_pwm));
-  o->device_config = config;
+  dev->enable_output = pwm_enable_output;
+  dev->set_frequency_and_duty = pwm_set_frequency_duty;
+  memcpy(&dev->cfg, &config, sizeof(PWMConfig));
+  o->device_config = dev;
 }
 
 int internal_pwm_save_config(DeviceObject *o, void *buffer)

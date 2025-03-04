@@ -7,6 +7,46 @@ static unsigned char command_buffer[20];
 static unsigned char *command_buffer_p;
 static int bytes_expected;
 
+static int dds_command(DeviceObject *o, unsigned char cmd, dds_cmd *data)
+{
+  dds_i2c_command c;
+  c.device_command = DEVICE_COMMAND_DDS_COMMAND;
+  c.command = cmd;
+  c.channel = data->channel;
+  switch (cmd)
+  {
+    case DDS_COMMAND_ENABLE_OUTPUT:
+      c.c1.parameter = data->enable_command.enable;
+    return o->transfer(o, (unsigned char*)&c, 4, NULL, 0);
+    case DDS_COMMAND_SET_ATTENUATOR:
+      c.c1.parameter = data->set_attenuator_command.attenuator_value;
+    return o->transfer(o, (unsigned char*)&c, 4, NULL, 0);
+    case DDS_COMMAND_SET_FREQUENCY:
+    case DDS_COMMAND_SET_FREQUENCY_CODE:
+      c.c10.freq = data->set_frequency_command.frequency;
+    c.c10.div = data->set_frequency_command.divider;
+    return o->transfer(o, (unsigned char*)&c, 13, NULL, 0);
+    case DDS_COMMAND_SET_MODE:
+      c.c1.parameter = data->set_mode_command.mode;
+    return o->transfer(o, (unsigned char*)&c, 4, NULL, 0);
+    case DDS_COMMAND_SWEEP:
+    case DDS_COMMAND_SWEEP_CODES:
+      c.c18.freq = data->sweep_command.frequency;
+    c.c18.step = data->sweep_command.step;
+    c.c18.points = data->sweep_command.points;
+    c.c18.div = data->sweep_command.divider;
+    return o->transfer(o, (unsigned char*)&c, 21, NULL, 0);
+    default:
+      return 1;
+  }
+}
+
+static int dds_get_config(DdsConfig *cfg, DeviceObject *o)
+{
+  unsigned char command = DEVICE_COMMAND_GET_CONFIGURATION;
+  return o->transfer(o, &command, 1, (unsigned char*)cfg, sizeof(DdsConfig));
+}
+
 void dds_initializer(DeviceObject *o)
 {
   int rc;
@@ -24,7 +64,7 @@ void dds_initializer(DeviceObject *o)
       cfg->deviceId = o->device->device_id;
       cfg->command = dds_command;
       if (cfg->cfg.level_meter_type != LEVEL_METER_NONE)
-        init_device_pin(o, 4, GPIO_IN);
+        init_interrupt_pin(o);
       cfg->sweep_points = 0;
     }
   }
@@ -145,10 +185,10 @@ int dds_message_processor(DeviceObject *o, unsigned char *buffer, int len)
   return 0;
 }
 
-int dds_timer_event(DeviceObject *o, int step, int interrupt, unsigned char *buffer)
+int dds_timer_event(DeviceObject *o, int step, unsigned char *buffer)
 {
   dev_dds *cfg = (dev_dds*)o->device_config;
-  if (cfg->cfg.level_meter_type != LEVEL_METER_NONE && cfg->sweep_points > 0 && get_device_pin_level(o, 4))
+  if (cfg->cfg.level_meter_type != LEVEL_METER_NONE && cfg->sweep_points > 0 && get_interrupt_pin_level(o))
   {
     unsigned char c = DEVICE_COMMAND_GET_RESULTS;
     unsigned int size = cfg->sweep_points * 2;

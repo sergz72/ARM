@@ -49,7 +49,7 @@ void mcp9600_initializer(DeviceObject *o)
   o->device_config = NULL;
 }
 
-int mcp9600_timer_event(DeviceObject *o, int step, int interrupt, unsigned char *buffer)
+int mcp9600_timer_event(DeviceObject *o, int step, unsigned char *buffer)
 {
   DEV_MCP9600Data d;
   unsigned char status;

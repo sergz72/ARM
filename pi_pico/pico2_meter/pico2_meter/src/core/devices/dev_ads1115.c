@@ -95,7 +95,7 @@ static void getResult(int idx, int channel, int divider, DEV_ADS1115Data *data)
   }
 }
 
-int ads1115_timer_event(DeviceObject *o, int step, int interrupt, unsigned char *buffer)
+int ads1115_timer_event(DeviceObject *o, int step, unsigned char *buffer)
 {
   DEV_ADS1115Config* cfg = (DEV_ADS1115Config*)o->device_config;
   DEV_ADS1115Data *ddata = (DEV_ADS1115Data*)o->device_data;

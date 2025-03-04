@@ -41,7 +41,7 @@ void internal_frequency_meter_initializer(struct _DeviceObject *o)
   o->device_config = fdata;
 }
 
-int internal_frequency_meter_timer_event(struct _DeviceObject *o, int step, int interrupt, unsigned char *buffer)
+int internal_frequency_meter_timer_event(struct _DeviceObject *o, int step, unsigned char *buffer)
 {
   frequency_meter_data *fdata = (frequency_meter_data*)o->device_config;
 

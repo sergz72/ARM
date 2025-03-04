@@ -16,6 +16,8 @@
 #define VALUE_TYPE_NANOS 3
 #define VALUE_TYPE_PICOS 4
 
+#define METER_DEVICE_ID 2
+
 typedef struct
 {
   unsigned char channels;

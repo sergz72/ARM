@@ -46,7 +46,7 @@ void mcp3421_initializer(DeviceObject *o)
   o->device_config = cfg;
 }
 
-int mcp3421_timer_event(DeviceObject *o, int step, int interrupt, unsigned char *buffer)
+int mcp3421_timer_event(DeviceObject *o, int step, unsigned char *buffer)
 {
   DEV_MCP3421Config* cfg = (DEV_MCP3421Config*)o->device_config;
   int v;

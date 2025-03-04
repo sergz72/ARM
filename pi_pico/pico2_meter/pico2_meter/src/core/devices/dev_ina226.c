@@ -32,7 +32,7 @@ void ina226_initializer(DeviceObject *o)
   o->device_config = cfg;
 }
 
-int ina226_timer_event(DeviceObject *o, int step, int interrupt, unsigned char *buffer)
+int ina226_timer_event(DeviceObject *o, int step, unsigned char *buffer)
 {
   int rc;
   DEV_INA226Data *ddata = (DEV_INA226Data*)o->device_data;

@@ -14,7 +14,7 @@ typedef struct {
 #define INA226_DEVICE_ID 0x80
 
 void ina226_initializer(DeviceObject *o);
-int ina226_timer_event(DeviceObject *o, int step, int interrupt, unsigned char *buffer);
+int ina226_timer_event(DeviceObject *o, int step, unsigned char *buffer);
 int ina226_save_config(DeviceObject *o, void *buffer);
 
 #endif

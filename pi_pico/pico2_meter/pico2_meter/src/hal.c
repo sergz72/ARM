@@ -293,49 +293,9 @@ void delay_us(unsigned int us)
   sleep_us(us);
 }
 
-int dds_command(DeviceObject *o, unsigned char cmd, dds_cmd *data)
-{
-  dds_i2c_command c;
-  c.device_command = DEVICE_COMMAND_DDS_COMMAND;
-  c.command = cmd;
-  c.channel = data->channel;
-  switch (cmd)
-  {
-    case DDS_COMMAND_ENABLE_OUTPUT:
-      c.c1.parameter = data->enable_command.enable;
-      return o->transfer(o, (unsigned char*)&c, 4, NULL, 0);
-    case DDS_COMMAND_SET_ATTENUATOR:
-      c.c1.parameter = data->set_attenuator_command.attenuator_value;
-      return o->transfer(o, (unsigned char*)&c, 4, NULL, 0);
-    case DDS_COMMAND_SET_FREQUENCY:
-    case DDS_COMMAND_SET_FREQUENCY_CODE:
-      c.c10.freq = data->set_frequency_command.frequency;
-      c.c10.div = data->set_frequency_command.divider;
-      return o->transfer(o, (unsigned char*)&c, 13, NULL, 0);
-    case DDS_COMMAND_SET_MODE:
-      c.c1.parameter = data->set_mode_command.mode;
-      return o->transfer(o, (unsigned char*)&c, 4, NULL, 0);
-    case DDS_COMMAND_SWEEP:
-    case DDS_COMMAND_SWEEP_CODES:
-      c.c18.freq = data->sweep_command.frequency;
-      c.c18.step = data->sweep_command.step;
-      c.c18.points = data->sweep_command.points;
-      c.c18.div = data->sweep_command.divider;
-      return o->transfer(o, (unsigned char*)&c, 21, NULL, 0);
-    default:
-      return 1;
-  }
-}
-
 int si5351_write(unsigned char device_address, int channel, const unsigned char *data, unsigned int length)
 {
   return i2c_soft_command(channel, device_address, NULL, 0, data, length, NULL, 0, I2C_TIMEOUT);
-}
-
-int dds_get_config(DdsConfig *cfg, DeviceObject *o)
-{
-  unsigned char command = DEVICE_COMMAND_GET_CONFIGURATION;
-  return o->transfer(o, &command, 1, (unsigned char*)cfg, sizeof(DdsConfig));
 }
 
 int mcp9600Read16(int channel, unsigned char address, unsigned char reg, unsigned short *data)
@@ -375,11 +335,6 @@ int main_comm_port_read_bytes(unsigned char *buffer, int buffer_size)
 void release_reset(void)
 {
   gpio_put(PIN_RESET, true);
-}
-
-int get_interrupt_pin_level(void)
-{
-  return 0;
 }
 
 int alloc_pio(int module_id)
@@ -474,19 +429,15 @@ void init_spi(int module_id)
   pio_spi_init(spi_pio, spi_sm, spi_program_offset, 8, 64, pin_sck, pin_mosi, pin_miso);
 }
 
-void init_device_pin(const struct _DeviceObject *o, int pin_no, enum gpio_dir dir)
+void init_interrupt_pin(const struct _DeviceObject *o)
 {
-  if (pin_no < 4 || pin_no > 5)
-    return;
-  int pin = module_predefined_info[o->idx].pins[pin_no];
+  int pin = module_predefined_info[o->idx].pins[o->transfer == i2c_transfer ? 2 : 4];
   gpio_init(pin);
-  gpio_set_dir(pin, dir);
+  gpio_set_dir(pin, GPIO_IN);
 }
 
-bool get_device_pin_level(const struct _DeviceObject *o, int pin_no)
+bool get_interrupt_pin_level(const struct _DeviceObject *o)
 {
-  if (pin_no < 4 || pin_no > 5)
-    return false;
-  int pin = module_predefined_info[o->idx].pins[pin_no];
+  int pin = module_predefined_info[o->idx].pins[o->transfer == i2c_transfer ? 2 : 4];
   return gpio_get(pin);
 }

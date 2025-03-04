@@ -7,6 +7,7 @@
 #include "dev_mcp9600.h"
 #include "dev_dds.h"
 #include "dev_pwm.h"
+#include "dev_meter.h"
 
 #define PUBLIC_ID_DDS 1
 #define PUBLIC_ID_METER 2
@@ -69,6 +70,22 @@ const Device devices[] = {
         .timer_event = mcp9600_timer_event,
         .message_processor = NULL,
         .save_config = mcp9600_save_config
+    },
+    {
+        .device_id = METER_DEVICE_ID,
+        .public_id = PUBLIC_ID_METER,
+        .initializer = meter_initializer,
+        .timer_event = meter_timer_event,
+        .message_processor = NULL,
+        .save_config = meter_save_config
+    },
+    {
+        .device_id = PWM_DEVICE_ID,
+        .public_id = PUBLIC_ID_PWM,
+        .initializer = external_pwm_initializer,
+        .timer_event = NULL,
+        .message_processor = pwm_message_processor,
+        .save_config = pwm_save_config
     }
     INTERNAL_DEVICES
 };

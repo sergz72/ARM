@@ -1,5 +1,13 @@
 #include "dev_pwm.h"
+
+#include <stdlib.h>
 #include <string.h>
+#include "generic_dds.h"
+
+typedef struct
+{
+
+} ExternalPWMConfig;
 
 static unsigned char last_command;
 static unsigned char command_buffer[20];
@@ -12,8 +20,16 @@ void pwm_initializer(void)
   command_buffer_p = command_buffer;
 }
 
-static int exec_command(dev_pwm *dev, void *data, int idx, unsigned char *buffer)
+static int pwm_get_config(PWMConfig *cfg, DeviceObject *o)
 {
+  unsigned char command = DEVICE_COMMAND_GET_CONFIGURATION;
+  return o->transfer(o, &command, 1, (unsigned char*)cfg, sizeof(PWMConfig));
+}
+
+static int exec_command(DeviceObject *o, unsigned char *buffer)
+{
+  dev_pwm *dev = (dev_pwm *)o->device_config;
+
   command_buffer_p = command_buffer;
 
   int rc = 1;
@@ -27,10 +43,10 @@ static int exec_command(dev_pwm *dev, void *data, int idx, unsigned char *buffer
       memcpy(&frequency, command_buffer_p, 4);
       command_buffer_p += 4;
       memcpy(&duty, command_buffer_p, 4);
-      rc = dev->set_frequency_and_duty(idx, dev->cfg, data, channel, frequency, duty) ? 3 : 0;
+      rc = dev->set_frequency_and_duty(o, channel, frequency, duty) ? 3 : 0;
       break;
     case 'e': // enable output
-      rc = dev->enable_output(idx, dev->cfg, data, channel, *command_buffer_p) ? 2 : 0;
+      rc = dev->enable_output(o, channel, *command_buffer_p) ? 2 : 0;
       break;
     default:
       break;
@@ -47,15 +63,13 @@ static int exec_command(dev_pwm *dev, void *data, int idx, unsigned char *buffer
 
 int pwm_message_processor(DeviceObject *o, unsigned char *buffer, int len)
 {
-  dev_pwm *dev = (dev_pwm *)o->device_config;
-
   if (bytes_expected)
   {
     memcpy(command_buffer_p, buffer, len);
     if (len >= bytes_expected)
     {
       bytes_expected = 0;
-      return exec_command(dev, o->device_data, o->idx, buffer);
+      return exec_command(o, buffer);
     }
     command_buffer_p += len;
     bytes_expected -= len;
@@ -80,6 +94,42 @@ int pwm_message_processor(DeviceObject *o, unsigned char *buffer, int len)
       return 2;
   }
   if (!bytes_expected)
-    return exec_command(dev, o->device_data, o->idx, buffer);
+    return exec_command(o, buffer);
   return 0;
+}
+
+static int external_pwm_set_frequency_and_duty(DeviceObject *o, int channel, unsigned int frequency, unsigned int duty)
+{
+  return 1;
+}
+
+static int external_pwm_enable_output(DeviceObject *o, int channel, int enable)
+{
+  return 1;
+}
+
+void external_pwm_initializer(DeviceObject *o)
+{
+  int rc;
+  dev_pwm *cfg = malloc(sizeof(dev_pwm));
+  if (cfg)
+  {
+    rc = pwm_get_config(&cfg->cfg, o);
+    if (rc)
+    {
+      free(cfg);
+      cfg = NULL;
+    }
+    else
+    {
+      cfg->enable_output = external_pwm_enable_output;
+      cfg->set_frequency_and_duty = external_pwm_set_frequency_and_duty;
+    }
+  }
+  o->device_config = cfg;
+}
+
+int pwm_save_config(DeviceObject *o, void *buffer)
+{
+  return BuildPWMConfig(buffer, &((dev_pwm*)o->device_config)->cfg, "External PWM");
 }

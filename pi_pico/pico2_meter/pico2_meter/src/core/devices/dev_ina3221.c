@@ -49,7 +49,7 @@ static void collect_channel_data(int idx, int channel, int r, DEV_INA226Data *da
     data->current = 0;
 }
 
-int ina3221_timer_event(DeviceObject *o, int step, int interrupt, unsigned char *buffer)
+int ina3221_timer_event(DeviceObject *o, int step, unsigned char *buffer)
 {
   INA3221Data *ddata = (INA3221Data*)o->device_data;
   DEV_INA226Config* cfg = (DEV_INA226Config*)o->device_config;

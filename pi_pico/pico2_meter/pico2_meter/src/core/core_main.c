@@ -61,14 +61,6 @@ static void device_list_response()
   main_comm_port_write_bytes(comm_buffer, idx);
 }
 
-static int read_interrupt_flags(void)
-{
-  if (get_interrupt_pin_level())
-    return 0;
-  //todo
-  return 0;
-}
-
 static void timer_event(void)
 {
   comm_buffer[0] = 'k';
@@ -77,8 +69,6 @@ static void timer_event(void)
 
   DeviceObject *d = device_list;
   int id = timer_event_id;
-  int mask = 1;
-  int interrupt_flags = read_interrupt_flags();
   for (int i = 0; i < MAX_TOTAL_DEVICES; i++)
   {
     if (d->device)
@@ -86,7 +76,7 @@ static void timer_event(void)
       if (d->device->timer_event)
       {
         change_channel(i);
-        int elen = d->device->timer_event(d, id, interrupt_flags & mask, p + 3);
+        int elen = d->device->timer_event(d, id, p + 3);
         if (elen)
         {
           *p++ = (unsigned char)i;
@@ -102,7 +92,6 @@ static void timer_event(void)
     else
       id++;
     d++;
-    mask <<= 1;
   }
   main_comm_port_write_bytes(comm_buffer, len);
   if (timer_event_id == 9)

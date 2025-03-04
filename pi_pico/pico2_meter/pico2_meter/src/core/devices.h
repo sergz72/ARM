@@ -13,7 +13,7 @@ typedef struct {
   int public_id;
   void (*initializer)(struct _DeviceObject *object);
   int (*save_config)(struct _DeviceObject *object, void *buffer);
-  int (*timer_event)(struct _DeviceObject *object, int step, int interrupt, unsigned char *buffer);
+  int (*timer_event)(struct _DeviceObject *object, int step, unsigned char *buffer);
   int (*message_processor)(struct _DeviceObject *object, unsigned char *buffer, int len);
 } Device;
 

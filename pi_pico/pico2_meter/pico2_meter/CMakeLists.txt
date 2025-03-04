@@ -38,6 +38,7 @@ add_executable(pico2_meter
         src/core/devices/dev_mcp9600.c
         src/core/devices/dev_si5351.c
         src/core/devices/dev_pwm.c
+        src/core/devices/dev_meter.c
         src/internal_devices/dev_internal_pwm.c
         src/internal_devices/dev_internal_frequency_meter.c
 )
