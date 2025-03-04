@@ -1,8 +1,8 @@
 #include "dev_pwm.h"
-
 #include <stdlib.h>
 #include <string.h>
 #include "generic_dds.h"
+#include <generic_pwm.h>
 
 typedef struct
 {
@@ -100,12 +100,23 @@ int pwm_message_processor(DeviceObject *o, unsigned char *buffer, int len)
 
 static int external_pwm_set_frequency_and_duty(DeviceObject *o, int channel, unsigned int frequency, unsigned int duty)
 {
-  return 1;
+  pwm_i2c_command cmd;
+  cmd.device_command = DEVICE_COMMAND_PWM_COMMAND;
+  cmd.command = PWM_COMMAND_SET_PERIOD_AND_DUTY;
+  cmd.channel = channel;
+  cmd.c8.period = frequency;
+  cmd.c8.duty = duty;
+  return o->transfer(o, (unsigned char*)&cmd, 11, NULL, 0);;
 }
 
 static int external_pwm_enable_output(DeviceObject *o, int channel, int enable)
 {
-  return 1;
+  pwm_i2c_command cmd;
+  cmd.device_command = DEVICE_COMMAND_PWM_COMMAND;
+  cmd.command = PWM_COMMAND_ENABLE_OUTPUT;
+  cmd.channel = channel;
+  cmd.c1.parameter = enable;
+  return o->transfer(o, (unsigned char*)&cmd, 4, NULL, 0);;
 }
 
 void external_pwm_initializer(DeviceObject *o)

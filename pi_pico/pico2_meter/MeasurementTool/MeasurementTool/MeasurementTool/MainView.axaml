@@ -12,6 +12,6 @@
         </Menu>
         <ListBox DockPanel.Dock="Bottom" Height="100" FontSize="14" x:Name="LbLog"
                  ItemsSource="{Binding Log}" PropertyChanged="Log_OnPropertyChanged"/>
-        <StackPanel x:Name="DevicePanel" Spacing="3"/>
+        <WrapPanel x:Name="DevicePanel"/>
     </DockPanel>
 </UserControl>
