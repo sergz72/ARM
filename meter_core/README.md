@@ -11,8 +11,8 @@
   - ADS1115 ADC.
   - INA3221  Triple-Channel, High-Side Measurement, Shunt and Bus Voltage Monitor.
 3. External SPI modules support:
-  - [AD9833 DDS](../../stm32g0/stm32g0_ad9833)
-  - [AD9850 DDS](../../stm32g0/stm32g0_ad9833)
+  - [AD9833 DDS](../stm32g0/stm32g0_ad9833)
+  - [AD9850 DDS](../stm32g0/stm32g0_ad9833)
   - Signal level meters like AD8307, AD8318, etc (together with a DDS module).
   - [4 channel DDS with 297 MHz clock, 4 channel PWM with 74.25 MHz clock, 2 channel frequency counter using Tang Primer 20k FPGA](https://github.com/sergz72/FPGA/tree/main/multidevice)
 
