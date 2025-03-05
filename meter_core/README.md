@@ -1,4 +1,4 @@
-# Core formware for [Universal measuring tool](../meter_ui)
+# Core firmware for [Universal measurements tool](../meter_ui)
 
 ## Features
 
