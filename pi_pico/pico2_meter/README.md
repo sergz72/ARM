@@ -16,6 +16,7 @@ Module 1 (14 pin)
 - PIN_1_1/SPI_NCS   5
 - PIN_1_2/INTERRUPT 0
 - PIN_1_3           1
+- RESET_PIN         11
 
 Module 2 (10 pin)
 - PIN_SDA2/SPI_MOSI 6
@@ -42,3 +43,4 @@ Module 5 (14 pin)
 - PIN_5_1/SPI_NCS   27
 - PIN_5_2/INTERRUPT 21
 - PIN_5_3           20
+- RESET_PIN         11
