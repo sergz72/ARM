@@ -1835,6 +1835,12 @@
 		(uuid "380d0b30-e219-4e6d-bf50-afba4dfb3510")
 	)
 	(junction
+		(at 176.53 111.76)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "497cb284-a6a1-4229-a5ed-c85ba687ad90")
+	)
+	(junction
 		(at 119.38 107.95)
 		(diameter 0)
 		(color 0 0 0 0)
@@ -2053,6 +2059,16 @@
 			(type default)
 		)
 		(uuid "05c8297d-fee8-4d25-9a43-0b919bfab345")
+	)
+	(wire
+		(pts
+			(xy 97.79 82.55) (xy 97.79 118.11)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "05e6715c-caa9-430b-931a-bd1f91e3588c")
 	)
 	(wire
 		(pts
@@ -2516,6 +2532,16 @@
 	)
 	(wire
 		(pts
+			(xy 105.41 82.55) (xy 97.79 82.55)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "3365e717-ccf4-4904-a493-c8b962c5b0e5")
+	)
+	(wire
+		(pts
 			(xy 195.58 63.5) (xy 195.58 66.04)
 		)
 		(stroke
@@ -2623,6 +2649,16 @@
 			(type default)
 		)
 		(uuid "3d94956f-e3d3-4b0b-a4ae-6e4bd290fb8b")
+	)
+	(wire
+		(pts
+			(xy 176.53 111.76) (xy 208.28 111.76)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "3db1654d-2cdf-48c3-8f53-9372494d8beb")
 	)
 	(wire
 		(pts
@@ -2903,6 +2939,16 @@
 			(type default)
 		)
 		(uuid "54e1e65b-0f71-444a-a599-a517a0864942")
+	)
+	(wire
+		(pts
+			(xy 97.79 118.11) (xy 176.53 118.11)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "5581e92e-f9bc-4e45-a5a9-536111ebc34a")
 	)
 	(wire
 		(pts
@@ -3416,6 +3462,16 @@
 	)
 	(wire
 		(pts
+			(xy 176.53 118.11) (xy 176.53 111.76)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "927afb2f-b273-47ad-97c8-25890e85bb34")
+	)
+	(wire
+		(pts
 			(xy 104.14 97.79) (xy 104.14 95.25)
 		)
 		(stroke
@@ -3656,6 +3712,16 @@
 	)
 	(wire
 		(pts
+			(xy 208.28 111.76) (xy 208.28 48.26)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "b46d0b6e-9b37-44da-8034-9f8c2b93e1d7")
+	)
+	(wire
+		(pts
 			(xy 166.37 85.09) (xy 168.91 85.09)
 		)
 		(stroke
@@ -3726,7 +3792,7 @@
 	)
 	(wire
 		(pts
-			(xy 166.37 95.25) (xy 168.91 95.25)
+			(xy 166.37 95.25) (xy 176.53 95.25)
 		)
 		(stroke
 			(width 0)
@@ -3946,6 +4012,16 @@
 	)
 	(wire
 		(pts
+			(xy 208.28 48.26) (xy 194.31 48.26)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "d6ee68aa-c8ab-41a6-a8b6-6ae9c83db275")
+	)
+	(wire
+		(pts
 			(xy 129.54 104.14) (xy 129.54 105.41)
 		)
 		(stroke
@@ -4023,6 +4099,16 @@
 			(type default)
 		)
 		(uuid "e0cbd563-2f71-466f-9444-a919268bd815")
+	)
+	(wire
+		(pts
+			(xy 176.53 95.25) (xy 176.53 111.76)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "e10971ac-7e86-49b1-a209-e5bb77ee11e5")
 	)
 	(wire
 		(pts
@@ -4296,7 +4382,7 @@
 	)
 	(text "Pin I2C SPI\n5   SDA MOSI\n6   SCL SCK\n7   IO  NCS\n8   IO  MISO\n"
 		(exclude_from_sim no)
-		(at 188.722 116.332 0)
+		(at 189.738 118.364 0)
 		(effects
 			(font
 				(size 1.27 1.27)

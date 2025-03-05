@@ -1,7 +1,7 @@
 # My programs for ARM boards
 
 For Raspberry PI Pico:
-- [Raspberry PI pico2 universal measuring tool](pi_pico/pico2_meter).
+- [Universal measurements tool](meter_ui).
 ------------------------------------------------------------------------------
 - [Raspberry PI pico 2 channel PWM generator](pi_pico/pico_generator).
 - [Raspberry PI pico tester for various devices](pi_pico/pico_device_tester).
