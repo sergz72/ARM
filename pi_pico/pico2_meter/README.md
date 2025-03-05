@@ -1,7 +1,7 @@
-# Raspberry PI pico2 board for [Universal measuring tool](../../meter_ui)
+# Raspberry PI pico2 board for [Universal measurements tool](../../meter_ui)
 
 ## Features:
-1. All [Core firmware for Universal measuring tool](../../meter_core) features.
+1. All [Core firmware for Universal measurements tool](../../meter_core) features.
 2. Supports 3 10pin modules and 2 14pin modules.
 3. External I2C device support:
   - 2-channel 1Hz-37MHz frequency counter using PIO module.
