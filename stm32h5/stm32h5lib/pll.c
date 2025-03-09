@@ -202,7 +202,7 @@ int InitRCC(const RCCConfig *config)
 
   /* Configure the main PLL */
   temp = RCC_PLL1CFGR_PLL1PEN |
-                  ((config->pllm == 1 ? 0 : config->pllm) << 8) |
+                  (config->pllm << 8) |
                   medium_vco_frequency_range |
                   // PLL1FRACEn is 0
                   pll_clock_range | // clock range frequency between 2 and 4 MHz

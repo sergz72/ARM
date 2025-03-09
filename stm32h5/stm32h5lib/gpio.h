@@ -45,6 +45,7 @@
 #define  GPIO_PULLDOWN      ((uint32_t)0x00000002U)   /*!< Pull-down activation                */
 
 #define GPIO_AF12_FMC 12 //FMC Alternate Function mapping
+#define GPIO_AF10_USB 10 //USB Alternate Function mapping
 
 typedef struct
 {

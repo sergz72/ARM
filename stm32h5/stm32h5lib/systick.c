@@ -20,12 +20,6 @@ unsigned int systick_get_value(void)
   return SysTick->VAL;
 }
 
-void systick_set_clocksource(int clocksource)
-{
-  if (clocksource < 2)
-    SysTick->CTRL |= (clocksource << STK_CTRL_CLKSOURCE_LSB);
-}
-
 void systick_interrupt_enable(void)
 {
   SysTick->CTRL |= SysTick_CTRL_TICKINT;
