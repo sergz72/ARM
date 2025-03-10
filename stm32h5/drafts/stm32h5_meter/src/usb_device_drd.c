@@ -46,7 +46,7 @@ void USBEnableEndpoint(unsigned int endpoint)
   //todo
 }
 
-void USBActivateEndpoint(unsigned int endpoint)
+void USBActivateEndpoint(unsigned int endpoint, unsigned int length)
 {
   //todo
 }
