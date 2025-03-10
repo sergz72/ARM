@@ -118,3 +118,13 @@ static void cdc_descriptor_builder(void)
     cdc_interface_descriptor();
   }
 }
+
+void InTransactionHandler(int endpoint)
+{
+  //todo
+}
+
+void InterfaceRequestHandler(int endpoint, USBDeviceRequest *request)
+{
+  //todo
+}

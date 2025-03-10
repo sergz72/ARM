@@ -68,6 +68,11 @@ void *USBGetEndpointOutBuffer(int endpoint)
   return NULL;
 }
 
+void USBSetEndpointTransferType(int endpoint, USBEndpointTransferType transfer_type)
+{
+  //todo
+}
+
 void USBClearInterruptFlags(void)
 {
   // clear all interrupt requests

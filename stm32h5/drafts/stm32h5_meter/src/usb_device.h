@@ -146,6 +146,7 @@ typedef struct
   unsigned int max_power;
 } USBConfigurationDescriptor;
 
+//usb device core functions
 void USBDeviceInit(const USBDeviceConfiguration *config);
 void USBDeviceInterruptHandler(void);
 void AddConfigurationDescriptor(const USBConfigurationDescriptor *configuration);
@@ -155,6 +156,11 @@ void AddClassInterfaceDescriptor4(unsigned char subtype, unsigned char data1);
 unsigned int AddInterfaceDescriptor(const USBInterfaceDescriptor *interface);
 unsigned int AddEndpointDescriptor(const USBEndpointDescriptor *endpoint);
 
+//weak functions
+void InTransactionHandler(int endpoint);
+void InterfaceRequestHandler(int endpoint, USBDeviceRequest *request);
+
+// hal functions
 void USBClearInterruptFlags(void);
 int USBReadInterruptEndpointNumber(void);
 int USBIsTransactionDirectionIN(int endpoint);
@@ -164,5 +170,6 @@ void USBActivateEndpoint(unsigned int endpoint);
 void USBStallEndpoint(unsigned int endpoint);
 void *USBGetEndpointInBuffer(int endpoint);
 void *USBGetEndpointOutBuffer(int endpoint);
+void USBSetEndpointTransferType(int endpoint, USBEndpointTransferType transfer_type);
 
 #endif
