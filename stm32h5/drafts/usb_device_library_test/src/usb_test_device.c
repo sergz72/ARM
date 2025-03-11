@@ -76,7 +76,7 @@ void USBClearInterruptFlags(void)
   puts("USBClearInterruptFlags");
 }
 
-int SendDescriptorRequest(USBDescriptorType type, unsigned short index, unsigned short length, unsigned char *buffer)
+int SendDescriptorRequest(USBDescriptorType type, unsigned short id, unsigned short index, unsigned short length, unsigned char *buffer)
 {
   interrupt_endpoint_number = 0;
   is_setup_transaction = 1;
@@ -84,7 +84,7 @@ int SendDescriptorRequest(USBDescriptorType type, unsigned short index, unsigned
   USBDeviceRequest *request = (USBDeviceRequest *)in_transaction_data[0];
   request->request_type = 0x80;
   request->request = usb_request_type_get_descriptor;
-  request->value = type << 8;
+  request->value = (type << 8) | id;
   request->index = index;
   request->length = length;
   USBDeviceInterruptHandler();
@@ -92,11 +92,13 @@ int SendDescriptorRequest(USBDescriptorType type, unsigned short index, unsigned
   transaction_direction_in = 0;
   while (length)
   {
+    memcpy(buffer, out_transaction_data[0], out_packet_size);
+    if (out_packet_size < USB_FS_MAX_PACKET_SIZE)
+      break;
     if (out_packet_size <= length)
       length -= out_packet_size;
     else
       return 1;
-    memcpy(buffer, out_transaction_data[0], out_packet_size);
     buffer += out_packet_size;
     if (length)
       USBDeviceInterruptHandler();

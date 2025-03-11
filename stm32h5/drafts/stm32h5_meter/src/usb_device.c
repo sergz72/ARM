@@ -216,14 +216,18 @@ void *USBGetDescriptor(USBDescriptorType type, unsigned int id, unsigned int *le
       *length = USB_DEVICE_DESCRIPTOR_SIZE;
       return device_descriptor;
     case configuration_descriptor_type:
+      if (id >= next_configuration_id)
+        return NULL;
       l = total_length[id];
-      if (id >= next_configuration_id || !l)
+      if (!l)
         return NULL;
       *length = l;
       return device_configuration[id];
     case string_descriptor_type:
+      if (!id || id >= next_string_id)
+        return NULL;
       l = string_length[id - 1];
-      if (!id || id >= next_string_id || !l)
+      if (!l)
         return NULL;
       *length = l;
       return string_table[id - 1];
