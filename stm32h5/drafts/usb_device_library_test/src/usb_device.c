@@ -282,7 +282,7 @@ static void DeviceRequestHandler(int endpoint, USBDeviceRequest *request)
 
 void __attribute__((weak)) InterfaceRequestHandler(int endpoint, USBDeviceRequest *request)
 {
-
+  USBStallEndpoint(endpoint);
 }
 
 static void InSetupTransactionHandler(int endpoint)
@@ -303,7 +303,7 @@ static void InSetupTransactionHandler(int endpoint)
 
 void __attribute__((weak)) InTransactionHandler(int endpoint)
 {
-
+  USBStallEndpoint(endpoint);
 }
 
 void USBDeviceInterruptHandler(void)

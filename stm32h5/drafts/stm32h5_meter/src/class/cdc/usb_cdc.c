@@ -122,9 +122,11 @@ static void cdc_descriptor_builder(void)
 void InTransactionHandler(int endpoint)
 {
   //todo
+  USBStallEndpoint(endpoint);
 }
 
 void InterfaceRequestHandler(int endpoint, USBDeviceRequest *request)
 {
   //todo
+  USBStallEndpoint(endpoint);
 }
