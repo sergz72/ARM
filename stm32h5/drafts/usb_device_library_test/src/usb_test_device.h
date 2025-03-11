@@ -4,6 +4,6 @@
 #include <usb_device.h>
 
 void USBTestDeviceInit(void);
-unsigned char *SendDescriptorRequest(USBDescriptorType type);
+int SendDescriptorRequest(USBDescriptorType type, unsigned short index, unsigned short length, unsigned char *buffer);
 
 #endif

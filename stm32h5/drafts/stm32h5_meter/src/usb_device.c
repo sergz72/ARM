@@ -137,9 +137,9 @@ void AddConfigurationDescriptor(const USBConfigurationDescriptor *configuration)
 
 static void update_total_length(unsigned short value)
 {
-  total_length[next_configuration_id] += value;
-  total_length_ptr[0] = total_length[next_configuration_id] & 0xFF;
-  total_length_ptr[1] = total_length[next_configuration_id] >> 8;
+  total_length[next_configuration_id - 1] += value;
+  total_length_ptr[0] = total_length[next_configuration_id - 1] & 0xFF;
+  total_length_ptr[1] = total_length[next_configuration_id - 1] >> 8;
 }
 
 void AddInterfaceAssociationDescriptor(const USBInterfaceAssociationDescriptor *interface_association)
@@ -307,7 +307,7 @@ void USBDeviceInterruptHandler(void)
   int endpoint = USBReadInterruptEndpointNumber();
   if (endpoint >= 0)
   {
-    int in_transaction = USBIsTransactionDirectionIN(endpoint);
+    unsigned int in_transaction = USBIsTransactionDirectionIN(endpoint);
     if (USBIsSetupTransaction(endpoint))
     {
       if (in_transaction)
