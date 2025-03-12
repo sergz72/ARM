@@ -22,7 +22,11 @@ int main(void)
 {
   led_state = 0;
 
-  USB_CDC_Init(1, 0, 0, 100, cdc_rx_callback);
+  if (USB_CDC_Init(1, 0, 0, 100, cdc_rx_callback))
+  {
+    while (1)
+      ;
+  }
   USBDeviceDrdInit();
 
   while (1)

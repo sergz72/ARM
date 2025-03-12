@@ -81,7 +81,7 @@ static const USBEndpointDescriptor cdc_data_in_endpoint =
 static void (*cdc_rx_callback)(unsigned int port_id, unsigned char *buffer, unsigned int buffer_length);
 USBConfigurationDescriptor configuration_descriptor;
 
-void USB_CDC_Init(int ports_count, int self_powered, int remote_wakeup, unsigned int max_power,
+int USB_CDC_Init(int ports_count, int self_powered, int remote_wakeup, unsigned int max_power,
                   void (*rx_callback)(unsigned int port_id, unsigned char *buffer, unsigned int buffer_length))
 {
   cdc_rx_callback = rx_callback;
@@ -90,7 +90,7 @@ void USB_CDC_Init(int ports_count, int self_powered, int remote_wakeup, unsigned
   configuration_descriptor.num_interfaces = ports_count * 2;
   configuration_descriptor.remote_wakeup = remote_wakeup;
   configuration_descriptor.self_powered = self_powered;
-  USBDeviceInit(&configuration);
+  return USBDeviceInit(&configuration);
 }
 
 static void cdc_interface_descriptor(void)

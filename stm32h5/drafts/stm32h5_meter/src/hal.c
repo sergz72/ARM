@@ -65,8 +65,6 @@ static void GPIOInit(void)
 {
   GPIO_InitTypeDef init;
 
-  RCC->AHB2ENR |= RCC_AHB2ENR_GPIOCEN;
-
   LED_OFF;
   init.Pin = GPIO_Pin_13;
   init.Mode = GPIO_MODE_OUTPUT_PP;
@@ -102,6 +100,8 @@ void SystemInit(void)
   }
 
   NVIC_PriorityGroupConfig(NVIC_PriorityGroup_1);
+
+  RCC->AHB2ENR |= RCC_AHB2ENR_GPIOCEN | RCC_AHB2ENR_GPIOAEN;
 
   GPIOInit();
   USB_Init();

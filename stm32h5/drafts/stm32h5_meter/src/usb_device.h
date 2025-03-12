@@ -149,7 +149,7 @@ typedef struct
 } USBConfigurationDescriptor;
 
 //usb device core functions
-void USBDeviceInit(const USBDeviceConfiguration *config);
+int USBDeviceInit(const USBDeviceConfiguration *config);
 void USBDeviceInterruptHandler(void);
 void AddConfigurationDescriptor(const USBConfigurationDescriptor *configuration);
 void AddInterfaceAssociationDescriptor(const USBInterfaceAssociationDescriptor *interface_association);
@@ -173,5 +173,6 @@ void USBStallEndpoint(unsigned int endpoint);
 void *USBGetEndpointInBuffer(int endpoint);
 void *USBGetEndpointOutBuffer(int endpoint);
 void USBSetEndpointTransferType(int endpoint, USBEndpointTransferType transfer_type);
+int USBIsErrorInterrupt(void);
 
 #endif

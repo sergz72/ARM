@@ -105,3 +105,8 @@ int SendDescriptorRequest(USBDescriptorType type, unsigned short id, unsigned sh
   }
   return 0;
 }
+
+int USBIsErrorInterrupt(void)
+{
+  return 0;
+}

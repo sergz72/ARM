@@ -12,7 +12,8 @@ void cdc_rx_callback(unsigned int port_id, unsigned char *buffer, unsigned int b
 
 int main(void)
 {
-  USB_CDC_Init(1, 0, 0, 100, cdc_rx_callback);
+  if (USB_CDC_Init(1, 0, 0, 100, cdc_rx_callback))
+    return 1;
   USBTestDeviceInit();
   if (SendDescriptorRequest(device_descriptor_type, 0, 0, 18, usb_buffer))
     return 1;

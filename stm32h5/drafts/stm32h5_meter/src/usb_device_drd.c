@@ -25,56 +25,80 @@ void USBDeviceDrdInit(void)
 
 int USBReadInterruptEndpointNumber(void)
 {
-  //todo
-  return 0;
+  return USB_DRD_FS->ISTR & 0x0F;
 }
 
 int USBIsTransactionDirectionIN(int endpoint)
 {
-  //todo
-  return 0;
+  return USB_DRD_FS->ISTR & 0x10 == 0;
 }
 
 int USBIsSetupTransaction(int endpoint)
 {
-  //todo
-  return 0;
+  volatile unsigned long *reg = &USB_DRD_FS->CHEP0R + endpoint;
+  return *reg & (1 << 11);
 }
 
 void USBEnableEndpoint(unsigned int endpoint)
 {
-  //todo
+  volatile unsigned long *reg = &USB_DRD_FS->CHEP0R + endpoint;
+  unsigned long value = *reg;
+  value &= ~(1 << 4);
+  value |= 1 << 5;
+  *reg = value;
 }
 
 void USBActivateEndpoint(unsigned int endpoint, unsigned int length)
 {
-  //todo
+  volatile unsigned long *reg = &USB_DRD_FS->CHEP0R + endpoint;
+  *reg |= 3 << 4;
 }
 
 void USBStallEndpoint(unsigned int endpoint)
 {
-  //todo
+  volatile unsigned long *reg = &USB_DRD_FS->CHEP0R + endpoint;
+  unsigned long value = *reg;
+  value &= ~(1 << 5);
+  value |= 1 << 4;
+  *reg = value;
 }
 
 void *USBGetEndpointInBuffer(int endpoint)
 {
-  //todo
-  return NULL;
+  void *buf = (void*)USB_DRD_PMAADDR;
+  return buf + endpoint * 128;
 }
 
 void *USBGetEndpointOutBuffer(int endpoint)
 {
-  //todo
-  return NULL;
+  void *buf = (void*)USB_DRD_PMAADDR;
+  return buf + endpoint * 128 + 64;
 }
 
 void USBSetEndpointTransferType(int endpoint, USBEndpointTransferType transfer_type)
 {
-  //todo
+  endpoint &= 0x0F;
+  unsigned long epkind;
+  switch (transfer_type)
+  {
+    case usb_endpoint_transfer_type_control: epkind = 1 << 9; break;
+    case usb_endpoint_transfer_type_isochronous: epkind = 2 << 9; break;
+    case usb_endpoint_transfer_type_interrupt: epkind = 3 << 9; break;
+    default: epkind = 0; break;
+  }
+  volatile unsigned long *reg = &USB_DRD_FS->CHEP0R + endpoint;
+  unsigned long value = *reg;
+  value |= endpoint | epkind | (3<<12); //statrx = valid
+  *reg = value;
 }
 
 void USBClearInterruptFlags(void)
 {
   // clear all interrupt requests
   USB_DRD_FS->ISTR = 0;
+}
+
+int USBIsErrorInterrupt(void)
+{
+  return USB_DRD_FS->ISTR & (1 << 13);
 }

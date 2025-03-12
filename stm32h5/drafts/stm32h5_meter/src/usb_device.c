@@ -95,7 +95,7 @@ static void InitEndpoints(void)
   memset(endpoints, 0, sizeof(endpoints));
 }
 
-void USBDeviceInit(const USBDeviceConfiguration *config)
+int USBDeviceInit(const USBDeviceConfiguration *config)
 {
   next_string_id = 1;
   next_configuration_id = 0;
@@ -110,6 +110,7 @@ void USBDeviceInit(const USBDeviceConfiguration *config)
   USBSetEndpointTransferType(0, usb_endpoint_transfer_type_control);
   USBEnableEndpoint(0);
   config->descriptor_builder();
+  return next_descriptor_ptr < next_string_ptr ? 0 : 1;
 }
 
 
@@ -308,6 +309,11 @@ void __attribute__((weak)) InTransactionHandler(int endpoint)
 
 void USBDeviceInterruptHandler(void)
 {
+  if (USBIsErrorInterrupt())
+  {
+    USBClearInterruptFlags();
+    return;
+  }
   int endpoint = USBReadInterruptEndpointNumber();
   if (endpoint >= 0)
   {
