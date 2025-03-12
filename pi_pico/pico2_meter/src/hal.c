@@ -436,7 +436,7 @@ void init_interrupt_pin(const struct _DeviceObject *o)
   gpio_set_dir(pin, GPIO_IN);
 }
 
-bool get_interrupt_pin_level(const struct _DeviceObject *o)
+int get_interrupt_pin_level(const struct _DeviceObject *o)
 {
   int pin = module_predefined_info[o->idx].pins[o->transfer == i2c_transfer ? 2 : 4];
   return gpio_get(pin);

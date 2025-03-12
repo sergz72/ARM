@@ -34,6 +34,6 @@ int spi_transfer(struct _DeviceObject *o, const void *txdata, unsigned int txdat
                         unsigned int rxdatalength);
 void init_spi(int module_id);
 void init_interrupt_pin(const struct _DeviceObject *o);
-bool get_interrupt_pin_level(const struct _DeviceObject *o);
+int get_interrupt_pin_level(const struct _DeviceObject *o);
 
 #endif
