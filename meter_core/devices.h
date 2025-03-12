@@ -11,6 +11,7 @@ struct _DeviceObject;
 typedef struct {
   int device_id;
   int public_id;
+  int (*is_allowed_for_module_id)(int module_id);
   void (*initializer)(struct _DeviceObject *object);
   int (*save_config)(struct _DeviceObject *object, void *buffer);
   int (*timer_event)(struct _DeviceObject *object, int step, unsigned char *buffer);
@@ -39,5 +40,6 @@ void InitDeviceLists(void);
 int BuildMeterConfig(void *buffer, const MeterConfig *config, const char *name);
 int BuildPowerMeterConfig(void *buffer, const PowerMeterConfig *config, const char *name);
 int BuildPWMConfig(void *buffer, const PWMConfig *config, const char *name);
+int AlwaysAllowed(int module_id);
 
 #endif

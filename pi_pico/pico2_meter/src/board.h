@@ -64,7 +64,8 @@
     .initializer = internal_pwm_initializer,\
     .timer_event = NULL,\
     .message_processor = pwm_message_processor,\
-    .save_config = internal_pwm_save_config\
+    .save_config = internal_pwm_save_config,\
+    .is_allowed_for_module_id = AlwaysAllowed\
 },\
 {\
     .device_id = INTERNAL_FREQUENCY_METER_DEVICE_ID,\
@@ -72,7 +73,8 @@
     .initializer = internal_frequency_meter_initializer,\
     .timer_event = internal_frequency_meter_timer_event,\
     .message_processor = NULL,\
-    .save_config = internal_frequency_meter_save_config\
+    .save_config = internal_frequency_meter_save_config,\
+    .is_allowed_for_module_id = AlwaysAllowed\
 }
 
 #define INTERNAL_DEVICES_COUNT 2

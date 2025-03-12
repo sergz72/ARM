@@ -27,7 +27,7 @@ static void FindI2CDeviceIds(DeviceObject *o)
   d = devices;
   for (i = 0; i < MAX_KNOWN_DEVICES; i++)
   {
-    if (d->device_id <= 255)
+    if (d->is_allowed_for_module_id(o->idx) && d->device_id <= 255)
     {
       int rc = I2CCheck(o->idx, d->device_id);
       if (rc)
@@ -45,7 +45,7 @@ static void FindI2CDeviceIds(DeviceObject *o)
     d = devices;
     for (i = 0; i < MAX_KNOWN_DEVICES; i++)
     {
-      if (d->device_id > 255 && d->device_id == d_id)
+      if (d->is_allowed_for_module_id(o->idx) && d->device_id > 255 && d->device_id == d_id)
       {
         d->initializer(o);
         if (o->device_config)
@@ -72,7 +72,7 @@ static void FindSPIDeviceIds(DeviceObject *o)
     const Device *d = devices;
     for (int i = 0; i < MAX_KNOWN_DEVICES; i++)
     {
-      if (d->device_id == id)
+      if (d->is_allowed_for_module_id(o->idx) && d->device_id == id)
       {
         d->initializer(o);
         if (o->device_config)
@@ -164,4 +164,9 @@ int BuildPWMConfig(void *buffer, const PWMConfig *config, const char *name)
   int l = strlen(name);
   memcpy(buffer + sizeof(PWMConfig), name, l);
   return l + sizeof(PWMConfig);
+}
+
+int AlwaysAllowed(int module_id)
+{
+  return 1;
 }
