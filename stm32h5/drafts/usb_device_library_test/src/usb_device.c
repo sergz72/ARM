@@ -309,11 +309,6 @@ void __attribute__((weak)) InTransactionHandler(int endpoint)
 
 void USBDeviceInterruptHandler(void)
 {
-  if (USBIsErrorInterrupt())
-  {
-    USBClearInterruptFlags();
-    return;
-  }
   int endpoint = USBReadInterruptEndpointNumber();
   if (endpoint >= 0)
   {

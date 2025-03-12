@@ -85,8 +85,8 @@ static void USB_Init(void)
   init.Alternate = GPIO_AF10_USB;
   GPIO_Init(GPIOA, &init);
 
-  RCC->APB2ENR |= RCC_APB2ENR_USBEN;
   RCC->CCIPR4 |= RCC_CCIPR4_USBSEL_0; // pll1_q_ck selected as usb kernel clock
+  RCC->APB2ENR |= RCC_APB2ENR_USBEN;
 
   NVIC_Init(USB_DRD_FS_IRQn, 1, 3, ENABLE);
 }

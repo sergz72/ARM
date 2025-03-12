@@ -173,6 +173,5 @@ void USBStallEndpoint(unsigned int endpoint);
 void *USBGetEndpointInBuffer(int endpoint);
 void *USBGetEndpointOutBuffer(int endpoint);
 void USBSetEndpointTransferType(int endpoint, USBEndpointTransferType transfer_type);
-int USBIsErrorInterrupt(void);
 
 #endif

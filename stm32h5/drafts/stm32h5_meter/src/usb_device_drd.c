@@ -21,11 +21,24 @@ void USBDeviceDrdInit(void)
 {
   AssignEndpointsBuffers();
   USB_DRD_FS->CNTR = USB_CNTR_ERRM | USB_CNTR_PMAOVRM | USB_CNTR_CTRM | USB_CNTR_THR512M;
+  USB_DRD_FS->BCDR = 1 << 15; // enable the embedded pull-up on DP line
 }
 
 int USBReadInterruptEndpointNumber(void)
 {
-  return USB_DRD_FS->ISTR & 0x0F;
+  int endpoint = USB_DRD_FS->ISTR & 0x0F;
+  if (endpoint > 7)
+    return -1;
+  volatile unsigned long *reg = &USB_DRD_FS->CHEP0R + endpoint;
+  unsigned long value = *reg;
+  if (value & 0x8080) //vttx or vtrx
+  {
+    value &= ~0x8080;
+    *reg = value;
+  }
+  else
+    return -1;
+  return endpoint;
 }
 
 int USBIsTransactionDirectionIN(int endpoint)
@@ -96,9 +109,4 @@ void USBClearInterruptFlags(void)
 {
   // clear all interrupt requests
   USB_DRD_FS->ISTR = 0;
-}
-
-int USBIsErrorInterrupt(void)
-{
-  return USB_DRD_FS->ISTR & (1 << 13);
 }
