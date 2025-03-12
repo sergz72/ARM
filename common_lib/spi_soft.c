@@ -24,12 +24,16 @@ unsigned char spi_byte(int channel, unsigned char data, int count)
     if (SPI_CHECK_MISO(channel)) //check MISO
       out_data |= 1;
     SPI_CLK_SET(channel); // set CLK
+#ifndef SPI_SOFT_CLK_IDLE_LOW
     if (count || i != 7)
     {
+#endif
       spi_delay(channel);
       SPI_CLK_CLR(channel); // clr CLK
       data <<= 1;
+#ifndef SPI_SOFT_CLK_IDLE_LOW
     }
+#endif
   }
 
   return out_data;
