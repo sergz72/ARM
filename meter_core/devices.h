@@ -6,6 +6,14 @@
 #include <generic_meter.h>
 #include <generic_pwm.h>
 
+#define PIN_SDA 0
+#define PIN_SCL 1
+
+#define PIN_MOSI 0
+#define PIN_SCK  1
+#define PIN_MISO 2
+#define PIN_NCS  3
+
 struct _DeviceObject;
 
 typedef struct {

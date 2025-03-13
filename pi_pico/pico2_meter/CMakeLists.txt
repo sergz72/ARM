@@ -20,6 +20,7 @@ add_executable(pico2_meter
         src/hal.c
         src/internal_devices/dev_internal_pwm.c
         src/internal_devices/dev_internal_frequency_meter.c
+        ../../meter_core/i2c_soft_hal.c
         ../../meter_core/core_main.c
         ../../meter_core/device_config.c
         ../../meter_core/device_list.c
