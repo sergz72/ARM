@@ -21,7 +21,7 @@ public class EmulatorInterface: IDeviceInterface
         _logger = logger;
         _devices = new Dictionary<byte, IDeviceEmulator>
         {
-            //{ 1, new DdsEmulator(logger) },
+            //{ 1, new DdsEmulator(logger) }
             //{ 2, new MeterEmulator(logger) }
             { 2, new PwmEmulator(logger) }
         };

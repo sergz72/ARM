@@ -13,6 +13,7 @@ typedef struct __attribute__((packed))
   unsigned int  mclk;
   unsigned char channels;
   unsigned char bits;
+  unsigned char prescaler_bits;
   unsigned char dds_clock;
 } PWMConfig;
 
@@ -23,7 +24,8 @@ typedef struct __attribute__((__packed__)) {
 typedef struct __attribute__((__packed__)) {
   unsigned int period;
   unsigned int duty;
-} pwm_cmd8;
+  unsigned short prescaler;
+} pwm_cmd10;
 
 
 typedef struct __attribute__((__packed__)) {
@@ -33,7 +35,7 @@ typedef struct __attribute__((__packed__)) {
   union
   {
     pwm_cmd1 c1;
-    pwm_cmd8 c8;
+    pwm_cmd10 c10;
   };
 } pwm_i2c_command;
 

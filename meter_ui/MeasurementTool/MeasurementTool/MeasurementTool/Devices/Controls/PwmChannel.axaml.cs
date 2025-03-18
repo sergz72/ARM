@@ -10,7 +10,7 @@ public partial class PwmChannel : UserControl
     private readonly NumberUpDownManager _frequencyManager, _dutyManager;
     private readonly int _channel;
     private readonly Pwm _pwm;
-    private FactPwmValues _facts;
+    private FactPwmValues? _facts;
 
     public PwmChannel()
     {
@@ -35,14 +35,14 @@ public partial class PwmChannel : UserControl
     {
         UpdateFactFrequencyAndDuty();
         if (OutputEnable.IsChecked == true && SetOnChange.IsChecked == true)
-            _pwm.SetFrequencyAndDuty(_channel, _facts);
+            _pwm.SetFrequencyAndDuty(_channel, _facts!);
     }
 
     private void FrequencyManagerOnValueChanged(object? sender, RoutedEventArgs e)
     {
         UpdateFactFrequencyAndDuty();
         if (OutputEnable.IsChecked == true && SetOnChange.IsChecked == true)
-            _pwm.SetFrequencyAndDuty(_channel, _facts);
+            _pwm.SetFrequencyAndDuty(_channel, _facts!);
     }
     
     private void UpdateFactFrequencyAndDuty()
@@ -51,6 +51,7 @@ public partial class PwmChannel : UserControl
         Clock.Content = _facts.Clock.ToString();
         FactFrequency.Content = _facts.Frequency.ToString();
         FactDuty.Content = _facts.Duty.ToString(CultureInfo.InvariantCulture);
+        Prescaler.Content = _facts.Prescaler.ToString();
         FrequencyCode.Content = _facts.FrequencyCode.ToString();
         DutyCode.Content = _facts.DutyCode.ToString();
     }
@@ -59,7 +60,7 @@ public partial class PwmChannel : UserControl
     {
         if (OutputEnable.IsChecked != true)
             _pwm.OutputEnable(_channel, false);
-        else
+        else if (_facts != null)
         {
             try
             {

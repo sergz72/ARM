@@ -4,7 +4,8 @@
 #include <devices.h>
 
 typedef struct {
-    int (*set_frequency_and_duty)(DeviceObject *o, int channel, unsigned int frequency, unsigned int duty);
+    int (*set_frequency_and_duty)(DeviceObject *o, int channel, unsigned short prescaler, unsigned int frequency,
+                                  unsigned int duty);
     int (*enable_output)(DeviceObject *o, int channel, int enable);
     PWMConfig cfg;
 } dev_pwm;

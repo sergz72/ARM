@@ -4,11 +4,6 @@
 #include "generic_dds.h"
 #include <generic_pwm.h>
 
-typedef struct
-{
-
-} ExternalPWMConfig;
-
 static unsigned char last_command;
 static unsigned char command_buffer[20];
 static unsigned char *command_buffer_p;
@@ -35,6 +30,7 @@ static int exec_command(DeviceObject *o, unsigned char *buffer)
   int rc = 1;
   int channel = *command_buffer_p++;
   unsigned int frequency, duty;
+  unsigned short prescaler;
 
   switch (last_command)
   {
@@ -43,7 +39,9 @@ static int exec_command(DeviceObject *o, unsigned char *buffer)
       memcpy(&frequency, command_buffer_p, 4);
       command_buffer_p += 4;
       memcpy(&duty, command_buffer_p, 4);
-      rc = dev->set_frequency_and_duty(o, channel, frequency, duty) ? 3 : 0;
+      command_buffer_p += 2;
+      memcpy(&prescaler, command_buffer_p, 2);
+      rc = dev->set_frequency_and_duty(o, channel, prescaler, frequency, duty) ? 3 : 0;
       break;
     case 'e': // enable output
       rc = dev->enable_output(o, channel, *command_buffer_p) ? 2 : 0;
@@ -98,15 +96,17 @@ int pwm_message_processor(DeviceObject *o, unsigned char *buffer, int len)
   return 0;
 }
 
-static int external_pwm_set_frequency_and_duty(DeviceObject *o, int channel, unsigned int frequency, unsigned int duty)
+static int external_pwm_set_frequency_and_duty(DeviceObject *o, int channel, unsigned short prescaler,
+                                                unsigned int frequency, unsigned int duty)
 {
   pwm_i2c_command cmd;
   cmd.device_command = DEVICE_COMMAND_PWM_COMMAND;
   cmd.command = PWM_COMMAND_SET_PERIOD_AND_DUTY;
   cmd.channel = channel;
-  cmd.c8.period = frequency;
-  cmd.c8.duty = duty;
-  return o->transfer(o, (unsigned char*)&cmd, 11, NULL, 0);;
+  cmd.c10.prescaler = prescaler;
+  cmd.c10.period = frequency;
+  cmd.c10.duty = duty;
+  return o->transfer(o, (unsigned char*)&cmd, 13, NULL, 0);
 }
 
 static int external_pwm_enable_output(DeviceObject *o, int channel, int enable)

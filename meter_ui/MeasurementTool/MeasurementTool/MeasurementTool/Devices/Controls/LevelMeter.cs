@@ -24,7 +24,6 @@ public class LevelMeter : Control
     private const int AxisOffsetX = 20;
     private const int FontSize = 12;
 
-    private readonly int _minDb, _maxDb;
     private readonly MeterInfo _meterInfo;
     private readonly Typeface _typeface;
     private readonly Pen _axisPen, _gridPen, _dataPen, _selectionPen;

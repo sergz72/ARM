@@ -14,14 +14,15 @@ public sealed class Pwm: GenericDevice
     private List<PwmChannel> _channelsUi;
     private readonly int _channels;
     private readonly bool _ddsClock;
-    private readonly int _bits;
+    private readonly int _bits, _prescalerBits;
+    private readonly long _maxFrequencyCode, _maxPrescaler;
     private readonly string _name;
 
     internal readonly int MClk;
     
     public Pwm(DeviceManager dm, byte[] config, byte channel) : base(dm, channel)
     {
-        if (config.Length < 8)
+        if (config.Length < 9)
             throw new ArgumentException($"PWM channel {channel}: Invalid configuration length {config.Length}");
         _channelsUi = [];
         using var stream = new MemoryStream(config);
@@ -30,7 +31,10 @@ public sealed class Pwm: GenericDevice
         _channels = reader.ReadByte();
         _ddsClock = reader.ReadByte() != 0;
         _bits = reader.ReadByte();
-        _name = Encoding.UTF8.GetString(config[7..]);
+        _prescalerBits = reader.ReadByte();
+        _name = Encoding.UTF8.GetString(config[8..]);
+        _maxFrequencyCode = (1 << _bits) - 1;
+        _maxPrescaler = 1 << _prescalerBits;
     }
 
     internal override Control? CreateUi()
@@ -64,9 +68,9 @@ public sealed class Pwm: GenericDevice
     public FactPwmValues CalculateFactValues(long frequency, double duty)
     {
         var clock = CalculateClock(frequency, duty);
-        var (fc, f) = CalculateFrequencyCode(clock, (int)frequency);
+        var (fc, f, p) = CalculateFrequencyCodeAndPrescaler(clock, (int)frequency);
         var (dc, d) = CalculateDutyCode(fc, duty);
-        return new FactPwmValues(clock, f, d, fc, dc);
+        return new FactPwmValues(clock, f, d, p, fc, dc);
     }
     
     public void SetFrequencyAndDuty(int channel, FactPwmValues values)
@@ -78,6 +82,7 @@ public sealed class Pwm: GenericDevice
         bw.Write((uint)values.Clock);
         bw.Write((uint)values.FrequencyCode);
         bw.Write((uint)values.DutyCode);
+        bw.Write((ushort)values.Prescaler);
         Dm.QueueCommand(Channel, ms.ToArray(), CheckError);
     }
 
@@ -94,11 +99,17 @@ public sealed class Pwm: GenericDevice
         return (code, d);
     }
 
-    private (long, long) CalculateFrequencyCode(long clock, long frequency)
+    private (long, long, int) CalculateFrequencyCodeAndPrescaler(long clock, long frequency)
     {
         var code = clock / frequency;
-        var f = code == 0 ? 0 : clock / code;
-        return (code, f);
+        var prescaler = code / _maxFrequencyCode + 1;
+        if (prescaler > _maxPrescaler)
+            prescaler = _maxPrescaler;
+        code = clock / (frequency * prescaler);
+        if (code > _maxFrequencyCode)
+            code = _maxFrequencyCode;
+        var f = code == 0 ? 0 : clock / prescaler / code;
+        return (code, f, (int)prescaler);
     }
 }
 
@@ -108,4 +119,4 @@ internal enum PwmCommands
     EnableOutput = 'e'
 }
 
-public record FactPwmValues(long Clock, long Frequency, double Duty, long FrequencyCode, long DutyCode);
+public record FactPwmValues(long Clock, long Frequency, double Duty, int Prescaler, long FrequencyCode, long DutyCode);

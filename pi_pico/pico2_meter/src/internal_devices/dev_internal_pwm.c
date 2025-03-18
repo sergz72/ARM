@@ -8,21 +8,19 @@
 static const PWMConfig config =
 {
   .bits = 32,
+  .prescaler_bits = 0,
   .channels = 2,
   .dds_clock = 0,
   .mclk = 50000000
 };
-
-static int pwm_enable_output(DeviceObject *o, int channel, int enable);
-
-static int pwm_set_frequency_duty(DeviceObject *o, int channel, unsigned int frequency, unsigned int duty);
 
 static int pwm_enable_output(DeviceObject *o, int channel, int enable)
 {
   return pwm_enable(o->idx, channel, enable);
 }
 
-static int pwm_set_frequency_duty(DeviceObject *o, int channel, unsigned int frequency, unsigned int duty)
+static int pwm_set_frequency_duty(DeviceObject *o, int channel, unsigned short prescaler, unsigned int frequency,
+                                  unsigned int duty)
 {
   return pwm_set_frequency_and_duty(o->idx, channel, frequency, duty);
 }

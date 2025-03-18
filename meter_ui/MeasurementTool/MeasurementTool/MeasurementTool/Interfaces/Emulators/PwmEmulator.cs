@@ -14,7 +14,8 @@ public sealed class PwmEmulator(ILogger logger) : IDeviceEmulator
         bw.Write(50000000); //mClk
         bw.Write((byte)2); // channels
         bw.Write((byte)0); // DDS clock
-        bw.Write((byte)32); // bits
+        bw.Write((byte)16); // bits
+        bw.Write((byte)16); // prescaler bits
         bw.Write((byte)'P');
         bw.Write((byte)'W');
         bw.Write((byte)'M');
@@ -37,8 +38,9 @@ public sealed class PwmEmulator(ILogger logger) : IDeviceEmulator
                 var clock = br.ReadInt32();
                 var frequency = br.ReadInt32();
                 var duty = br.ReadInt32();
+                var prescaler = br.ReadInt16();
                 logger.Info(
-                    $"PWM set frequency and duty command channel={command[1]} clock={clock} frequency={frequency} duty={duty}");
+                    $"PWM set frequency and duty command channel={command[1]} clock={clock} prescaler={prescaler} frequency={frequency} duty={duty}");
                 break;
             }
             case (byte)PwmCommands.EnableOutput:

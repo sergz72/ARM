@@ -28,6 +28,8 @@
         <StackPanel Orientation="Horizontal" Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="3">
             <Label Content="Clock:"/>
             <Label x:Name="Clock" Content="0"/>
+            <Label Content="Prescaler:"/>
+            <Label x:Name="Prescaler" Content="1"/>
             <Label Content="Frequency code:"/>
             <Label x:Name="FrequencyCode" Content="0"/>
             <Label Content="Duty code:"/>
