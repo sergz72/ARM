@@ -29,9 +29,9 @@ public sealed class Pwm: GenericDevice
         using var reader = new BinaryReader(stream);
         MClk = reader.ReadInt32();
         _channels = reader.ReadByte();
-        _ddsClock = reader.ReadByte() != 0;
         _bits = reader.ReadByte();
         _prescalerBits = reader.ReadByte();
+        _ddsClock = reader.ReadByte() != 0;
         _name = Encoding.UTF8.GetString(config[8..]);
         _maxFrequencyCode = (1 << _bits) - 1;
         _maxPrescaler = 1 << _prescalerBits;

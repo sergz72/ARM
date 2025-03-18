@@ -13,9 +13,9 @@ public sealed class PwmEmulator(ILogger logger) : IDeviceEmulator
         using var bw = new BinaryWriter(ms);
         bw.Write(50000000); //mClk
         bw.Write((byte)2); // channels
-        bw.Write((byte)0); // DDS clock
         bw.Write((byte)16); // bits
         bw.Write((byte)16); // prescaler bits
+        bw.Write((byte)0); // DDS clock
         bw.Write((byte)'P');
         bw.Write((byte)'W');
         bw.Write((byte)'M');
