@@ -46,7 +46,7 @@ int adf4351_set_freq(int channel, unsigned long long freq)
     n /= channels[channel].mod;
     if (n < 75 || n > 65535)
         return 2;
-    if ((channels[channel].registers[4] >> 20) & 7 != rfdiv)
+    if (((channels[channel].registers[4] >> 20) & 7) != rfdiv)
     {
         channels[channel].registers[4] &= ~(7 << 20);
         channels[channel].registers[4] |= rfdiv << 20;
@@ -54,6 +54,7 @@ int adf4351_set_freq(int channel, unsigned long long freq)
     }
     channels[channel].registers[0] = (n << 15) + (frac << 3);
     write_register(channel, 0);
+    return 0;
 }
 
 static unsigned int build_register0(const ADF4351Config *config)

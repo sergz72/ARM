@@ -5,6 +5,7 @@ For Raspberry PI Pico:
 ------------------------------------------------------------------------------
 - [Raspberry PI pico 2 channel PWM generator](pi_pico/pico_generator).
 - [Test program for AD9910 board](pi_pico/pico2_ad9910)
+- [Test program for ADF4351 board](pi_pico/pico2_adf4351)
 - [Raspberry PI pico tester for various devices](pi_pico/pico_device_tester).
 - [Raspberry PI pico logic probe](pi_pico/pico_logic_probe).
 - [Raspberry PI pico logic probe for USB](pi_pico/pico_logic_probe2).
