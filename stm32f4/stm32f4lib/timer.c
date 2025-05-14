@@ -37,7 +37,10 @@ void TIM_TimeBaseInit(TIM_TypeDef* TIMx, TIM_TimeBaseInitTypeDef* TIM_TimeBaseIn
 
   tmpcr1 = TIMx->CR1;  
 
-  if((TIMx == TIM1) || (TIMx == TIM8)||
+  if((TIMx == TIM1) ||
+#ifdef TIM8
+      (TIMx == TIM8)||
+#endif
      (TIMx == TIM2) || (TIMx == TIM3)||
      (TIMx == TIM4) || (TIMx == TIM5)) 
   {
@@ -46,12 +49,14 @@ void TIM_TimeBaseInit(TIM_TypeDef* TIMx, TIM_TimeBaseInitTypeDef* TIM_TimeBaseIn
     tmpcr1 |= (uint32_t)TIM_TimeBaseInitStruct->TIM_CounterMode;
   }
  
+#if defined(TIM6) || defined(TIM7)
   if((TIMx != TIM6) && (TIMx != TIM7))
   {
     /* Set the clock division */
     tmpcr1 &=  (uint16_t)(~TIM_CR1_CKD);
     tmpcr1 |= (uint32_t)TIM_TimeBaseInitStruct->TIM_ClockDivision;
   }
+#endif
 
   TIMx->CR1 = tmpcr1;
 
@@ -61,7 +66,11 @@ void TIM_TimeBaseInit(TIM_TypeDef* TIMx, TIM_TimeBaseInitTypeDef* TIM_TimeBaseIn
   /* Set the Prescaler value */
   TIMx->PSC = TIM_TimeBaseInitStruct->TIM_Prescaler;
     
-  if ((TIMx == TIM1) || (TIMx == TIM8))  
+  if ((TIMx == TIM1)
+#ifdef TIM8
+  || (TIMx == TIM8)
+#endif
+  )
   {
     /* Set the Repetition Counter value */
     TIMx->RCR = TIM_TimeBaseInitStruct->TIM_RepetitionCounter;
@@ -342,7 +351,11 @@ void TIM_OC1Init(TIM_TypeDef* TIMx, TIM_OCInitTypeDef* TIM_OCInitStruct)
   /* Set the Output State */
   tmpccer |= TIM_OCInitStruct->TIM_OutputState;
     
-  if((TIMx == TIM1) || (TIMx == TIM8))
+  if((TIMx == TIM1)
+#ifdef TIM8
+  || (TIMx == TIM8)
+#endif
+  )
   {
     /* Reset the Output N Polarity level */
     tmpccer &= (uint16_t)~TIM_CCER_CC1NP;
@@ -413,7 +426,11 @@ void TIM_OC2Init(TIM_TypeDef* TIMx, TIM_OCInitTypeDef* TIM_OCInitStruct)
   /* Set the Output State */
   tmpccer |= (uint16_t)(TIM_OCInitStruct->TIM_OutputState << 4);
     
-  if((TIMx == TIM1) || (TIMx == TIM8))
+  if((TIMx == TIM1)
+#ifdef TIM8
+  || (TIMx == TIM8)
+#endif
+  )
   {
     /* Reset the Output N Polarity level */
     tmpccer &= (uint16_t)~TIM_CCER_CC2NP;
@@ -482,7 +499,11 @@ void TIM_OC3Init(TIM_TypeDef* TIMx, TIM_OCInitTypeDef* TIM_OCInitStruct)
   /* Set the Output State */
   tmpccer |= (uint16_t)(TIM_OCInitStruct->TIM_OutputState << 8);
     
-  if((TIMx == TIM1) || (TIMx == TIM8))
+  if((TIMx == TIM1)
+#ifdef TIM8
+  || (TIMx == TIM8)
+#endif
+  )
   {
     /* Reset the Output N Polarity level */
     tmpccer &= (uint16_t)~TIM_CCER_CC3NP;
@@ -552,7 +573,11 @@ void TIM_OC4Init(TIM_TypeDef* TIMx, TIM_OCInitTypeDef* TIM_OCInitStruct)
   /* Set the Output State */
   tmpccer |= (uint16_t)(TIM_OCInitStruct->TIM_OutputState << 12);
   
-  if((TIMx == TIM1) || (TIMx == TIM8))
+  if((TIMx == TIM1)
+#ifdef TIM8
+  || (TIMx == TIM8)
+#endif
+  )
   {
     /* Reset the Output Compare IDLE State */
     tmpcr2 &=(uint16_t) ~TIM_CR2_OIS4;

@@ -439,4 +439,7 @@ void I2C_ClearFlag(I2C_TypeDef* I2Cx, uint32_t I2C_FLAG);
 ITStatus I2C_GetITStatus(I2C_TypeDef* I2Cx, uint32_t I2C_IT);
 void I2C_ClearITPendingBit(I2C_TypeDef* I2Cx, uint32_t I2C_IT);
 
+int I2CWriteReg(I2C_TypeDef* I2Cx, unsigned char address, unsigned char reg, unsigned char data, unsigned int timeout);
+int I2CReadReg(I2C_TypeDef* I2Cx, unsigned char address, unsigned char reg, unsigned char *data, unsigned int timeout);
+
 #endif /*_I2C_H */

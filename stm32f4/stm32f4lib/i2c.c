@@ -206,6 +206,7 @@ void I2C_Cmd(I2C_TypeDef* I2Cx, FunctionalState NewState)
             the I2C Peripheral.
   * @retval None
   */
+#ifdef I2C_FLTR_ANOFF
 void I2C_AnalogFilterCmd(I2C_TypeDef* I2Cx, FunctionalState NewState)
 {
   if (NewState != DISABLE)
@@ -219,6 +220,7 @@ void I2C_AnalogFilterCmd(I2C_TypeDef* I2Cx, FunctionalState NewState)
     I2Cx->FLTR |= I2C_FLTR_ANOFF;
   }
 }
+#endif
 
 /**
   * @brief  Configures the Digital noise filter of I2C peripheral.
@@ -232,6 +234,7 @@ void I2C_AnalogFilterCmd(I2C_TypeDef* I2Cx, FunctionalState NewState)
             the I2C Peripheral.
   * @retval None
   */
+#ifdef I2C_FLTR_ANOFF
 void I2C_DigitalFilterConfig(I2C_TypeDef* I2Cx, uint16_t I2C_DigitalFilter)
 {
   uint16_t tmpreg = 0;
@@ -248,6 +251,7 @@ void I2C_DigitalFilterConfig(I2C_TypeDef* I2Cx, uint16_t I2C_DigitalFilter)
   /* Store the new register value */
   I2Cx->FLTR = tmpreg;
 }
+#endif
 
 /**
   * @brief  Generates I2Cx communication START condition.
@@ -1055,4 +1059,85 @@ void I2C_ClearITPendingBit(I2C_TypeDef* I2Cx, uint32_t I2C_IT)
 
   /* Clear the selected I2C flag */
   I2Cx->SR1 = (uint16_t)~flagpos;
+}
+
+static int check_event(I2C_TypeDef* I2Cx, uint32_t event, unsigned int timeout)
+{
+  while (I2C_CheckEvent(I2Cx, event) && timeout)
+  {
+    if (I2Cx->SR1 & I2C_SR1_AF)
+      return 0;
+    timeout--;
+  }
+  return timeout;
+}
+
+int I2CWriteReg(I2C_TypeDef* I2Cx, unsigned char address, unsigned char reg, unsigned char data, unsigned int timeout) {
+  I2Cx->SR1 = 0;
+
+  I2C_AcknowledgeConfig(I2Cx, ENABLE);
+
+  I2C_GenerateSTART(I2Cx, ENABLE);
+  if (!check_event(I2Cx, I2C_EVENT_MASTER_MODE_SELECT, timeout))
+    return 1;
+
+  I2C_Send7bitAddress(I2Cx, address, I2C_Direction_Transmitter);
+  if (!check_event(I2Cx, I2C_EVENT_MASTER_TRANSMITTER_MODE_SELECTED, timeout))
+    return 2;
+
+  I2C_SendData(I2Cx, reg);
+  if (!check_event(I2Cx, I2C_EVENT_MASTER_BYTE_TRANSMITTED, timeout))
+    return 3;
+
+  I2C_SendData(I2Cx, data);
+  if (!check_event(I2Cx, I2C_EVENT_MASTER_BYTE_TRANSMITTED, timeout))
+    return 4;
+
+  I2C_NACKPositionConfig(I2Cx, I2C_NACKPosition_Current);
+  I2C_AcknowledgeConfig(I2Cx, DISABLE);
+
+  I2C_GenerateSTOP(I2Cx, ENABLE);
+  while (I2C_GetFlagStatus(I2Cx, I2C_FLAG_STOPF) && timeout)
+    timeout--;
+
+  return timeout == 0 ? 5 : 0;
+}
+
+int I2CReadReg(I2C_TypeDef* I2Cx, unsigned char address, unsigned char reg, unsigned char *data, unsigned int timeout) {
+  I2Cx->SR1 = 0;
+
+  I2C_AcknowledgeConfig(I2Cx, ENABLE);
+
+  I2C_GenerateSTART(I2Cx, ENABLE);
+  if (!check_event(I2Cx, I2C_EVENT_MASTER_MODE_SELECT, timeout))
+    return 1;
+
+  I2C_Send7bitAddress(I2Cx, address, I2C_Direction_Transmitter);
+  if (!check_event(I2Cx, I2C_EVENT_MASTER_TRANSMITTER_MODE_SELECTED, timeout))
+    return 2;
+
+  I2C_SendData(I2Cx, reg);
+  if (!check_event(I2Cx, I2C_EVENT_MASTER_BYTE_TRANSMITTED, timeout))
+    return 3;
+
+  I2C_GenerateSTART(I2Cx, ENABLE);
+  if (!check_event(I2Cx, I2C_EVENT_MASTER_MODE_SELECT, timeout))
+    return 4;
+
+  I2C_Send7bitAddress(I2Cx, address, I2C_Direction_Receiver);
+  if (!check_event(I2Cx, I2C_EVENT_MASTER_RECEIVER_MODE_SELECTED, timeout))
+    return 5;
+
+  if (!check_event(I2Cx, I2C_EVENT_MASTER_BYTE_RECEIVED, timeout))
+    return 6;
+
+  I2C_NACKPositionConfig(I2Cx, I2C_NACKPosition_Current);
+  I2C_AcknowledgeConfig(I2Cx, DISABLE);
+  *data = I2C_ReceiveData(I2Cx);
+
+  I2C_GenerateSTOP(I2Cx, ENABLE);
+  while (I2C_GetFlagStatus(I2Cx, I2C_FLAG_STOPF) && timeout)
+    timeout--;
+
+  return timeout == 0 ? 7 : 0;
 }
