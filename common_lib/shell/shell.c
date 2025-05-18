@@ -218,7 +218,7 @@ int shell_execute(const char *command)
         item++;
         current_parameter++;
       }
-      if (item->text || item->handler || !item->final_handler || current_parameter < last_parameter)
+      if (item->text || !item->final_handler || current_parameter < last_parameter)
       {
         printf("usage: %s\n", get_help_text(*current_command));
         return 1;
