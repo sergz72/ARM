@@ -86,3 +86,31 @@ void InitRCC(unsigned int oscill_freq, unsigned int hclk_freq, unsigned int late
  
   while ((RCC->CFGR & RCC_CFGR_SWS) != RCC_CFGR_SWS_PLL);
 }
+
+int InitPLL_I2S(unsigned int i2s_freq, unsigned int sai_freq)
+{
+  unsigned int start = i2s_freq * (100000000 / i2s_freq + 1);
+  for (unsigned int f = start; f <= 432000000; f += i2s_freq)
+  {
+    if (!(f % 1000000) && !(f % sai_freq))
+    {
+      unsigned int n = f / 1000000;
+      unsigned int r = f / i2s_freq;
+      if (r < 2 || r > 7)
+        return 2;
+      unsigned int q = f / sai_freq;
+      if (q < 2 || q > 15)
+        return 3;
+      RCC->PLLI2SCFGR = (n << 6) | (q << 24) | (r << 28);
+
+      RCC->CR |= RCC_CR_PLLI2SON;
+
+      while(!(RCC->CR & RCC_CR_PLLI2SRDY))
+        ;
+
+      return 0;
+    }
+  }
+
+  return 1;
+}
