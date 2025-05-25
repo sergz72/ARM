@@ -148,6 +148,18 @@ typedef struct
 #define TLV320DAC3100_VOLUME_CONTROL_RIGHT_TO_LEFT 1
 #define TLV320DAC3100_VOLUME_CONTROL_LEFT_TO_RIGHT 2
 
+#define TLV320DAC3100_HP_COMMON_MODE_VOLTAGE_1350 0
+#define TLV320DAC3100_HP_COMMON_MODE_VOLTAGE_1500 4
+#define TLV320DAC3100_HP_COMMON_MODE_VOLTAGE_1650 8
+#define TLV320DAC3100_HP_COMMON_MODE_VOLTAGE_1800 12
+
+typedef struct
+{
+  int driver_power_up[2];
+  int short_circuit_protection_enable;
+  unsigned char common_mode_voltage;
+} TLV320DAC3100_HPControl;
+
 int tlv320dac3100_read(unsigned char register_number, unsigned char *value); //should be defined in hal.c
 int tlv320dac3100_write(unsigned char register_number, unsigned char value); //should be defined in hal.c
 
@@ -163,5 +175,8 @@ int tlv320dac3100_set_datapath(const TLV320DAC3100_DataPath *path);
 int tlv320dac3100_set_routing(const TLV320DAC3100_Routing *routing);
 int tlv320dac3100_dac_volume_control(int mute_left, int mute_right, unsigned char volume_control);
 int tlv320dac3100_dac_volume(int channel, int dbx10);
+int tlv320dac3100_set_headphone_driver(const TLV320DAC3100_HPControl *control);
+int tlv320dac3100_set_headphone_volume(int channel, int enable, unsigned char value);
+int tlv320dac3100_set_headphone_pga(int channel, int unmute, unsigned char gain);
 
 #endif

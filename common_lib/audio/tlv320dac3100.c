@@ -172,3 +172,40 @@ int tlv320dac3100_dac_volume(int channel, int dbx10)
   return tlv320dac3100_write(channel == CHANNEL_LEFT ?
     TLV320DAC3100_REGISTER_DAC_LEFT_VOLUME : TLV320DAC3100_REGISTER_DAC_RIGHT_VOLUME, (unsigned char)dbx10);
 }
+
+int tlv320dac3100_set_headphone_driver(const TLV320DAC3100_HPControl *control)
+{
+  int rc = tlv320dac3100_set_page(1);
+  if (rc)
+    return rc;
+  unsigned char value = control->common_mode_voltage;
+  if (control->driver_power_up[CHANNEL_LEFT])
+    value |= 0x80;
+  if (control->driver_power_up[CHANNEL_RIGHT])
+    value |= 0x40;
+  if (control->short_circuit_protection_enable)
+    value |= 2;
+  return tlv320dac3100_write(TLV320DAC3100_REGISTER_HEADPHONE_DRIVERS, value);
+}
+
+int tlv320dac3100_set_headphone_volume(int channel, int enable, unsigned char value)
+{
+  if (value > 0x7F)
+    return 1;
+  if (enable)
+    value |= 0x80;
+  return tlv320dac3100_write(channel == CHANNEL_LEFT ?
+    TLV320DAC3100_REGISTER_ANALOG_VOLUME_HPL : TLV320DAC3100_REGISTER_ANALOG_VOLUME_HPR, value);
+}
+
+int tlv320dac3100_set_headphone_pga(int channel, int unmute, unsigned char gain)
+{
+  if (gain > 9)
+    return 1;
+  unsigned char value = gain << 3;
+  value |= 2;
+  if (unmute)
+    value |= 4;
+  return tlv320dac3100_write(channel == CHANNEL_LEFT ?
+    TLV320DAC3100_REGISTER_HPL_DRIVER : TLV320DAC3100_REGISTER_HPR_DRIVER, value);
+}
