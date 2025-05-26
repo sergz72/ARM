@@ -160,6 +160,16 @@ typedef struct
   unsigned char common_mode_voltage;
 } TLV320DAC3100_HPControl;
 
+#define TLV320DAC3100_GPIO1_DISABLED 0
+#define TLV320DAC3100_GPIO1_CLKOUT   0x10
+
+#define TLV320DAC3100_CLKOUT_SOURCE_MCLK        0
+#define TLV320DAC3100_CLKOUT_SOURCE_BCLK        1
+#define TLV320DAC3100_CLKOUT_SOURCE_DIN         2
+#define TLV320DAC3100_CLKOUT_SOURCE_PLL         3
+#define TLV320DAC3100_CLKOUT_SOURCE_DAC_CLK     4
+#define TLV320DAC3100_CLKOUT_SOURCE_DAC_MOD_CLK 5
+
 int tlv320dac3100_read(unsigned char register_number, unsigned char *value); //should be defined in hal.c
 int tlv320dac3100_write(unsigned char register_number, unsigned char value); //should be defined in hal.c
 
@@ -178,5 +188,6 @@ int tlv320dac3100_dac_volume(int channel, int dbx10);
 int tlv320dac3100_set_headphone_driver(const TLV320DAC3100_HPControl *control);
 int tlv320dac3100_set_headphone_volume(int channel, int enable, unsigned char value);
 int tlv320dac3100_set_headphone_pga(int channel, int unmute, unsigned char gain);
+int tlv320dac3100_set_clkout(int enable, unsigned char source, unsigned char divider);
 
 #endif

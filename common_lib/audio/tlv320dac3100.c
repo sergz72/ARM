@@ -88,10 +88,12 @@ static int tlv320dac3100_set_div7(unsigned char reg, int enable, unsigned char d
     return 1;
   if (divider == 128)
     divider = 0;
+  if (enable)
+    divider |= 0x80;
   int rc = tlv320dac3100_set_page(0);
   if (rc)
     return rc;
-  return tlv320dac3100_write(reg, enable ? divider : 0x80);
+  return tlv320dac3100_write(reg, divider);
 }
 
 int tlv320dac3100_set_ndac(int enable, unsigned char divider)
@@ -113,10 +115,10 @@ int tlv320dac3100_set_dosr(unsigned short value)
   int rc = tlv320dac3100_set_page(0);
   if (rc)
     return rc;
-  rc = tlv320dac3100_write(TLV320DAC3100_REGISTER_PLL_D_MSB, (unsigned char)(value >> 8));
+  rc = tlv320dac3100_write(TLV320DAC3100_REGISTER_DOSR_MSB, (unsigned char)(value >> 8));
   if (rc)
     return rc;
-  return tlv320dac3100_write(TLV320DAC3100_REGISTER_PLL_D_LSB, (unsigned char)value);
+  return tlv320dac3100_write(TLV320DAC3100_REGISTER_DOSR_LSB, (unsigned char)value);
 }
 
 int tlv320dac3100_set_datapath(const TLV320DAC3100_DataPath *path)
@@ -194,6 +196,9 @@ int tlv320dac3100_set_headphone_volume(int channel, int enable, unsigned char va
     return 1;
   if (enable)
     value |= 0x80;
+  int rc = tlv320dac3100_set_page(1);
+  if (rc)
+    return rc;
   return tlv320dac3100_write(channel == CHANNEL_LEFT ?
     TLV320DAC3100_REGISTER_ANALOG_VOLUME_HPL : TLV320DAC3100_REGISTER_ANALOG_VOLUME_HPR, value);
 }
@@ -206,6 +211,31 @@ int tlv320dac3100_set_headphone_pga(int channel, int unmute, unsigned char gain)
   value |= 2;
   if (unmute)
     value |= 4;
+  int rc = tlv320dac3100_set_page(1);
+  if (rc)
+    return rc;
   return tlv320dac3100_write(channel == CHANNEL_LEFT ?
     TLV320DAC3100_REGISTER_HPL_DRIVER : TLV320DAC3100_REGISTER_HPR_DRIVER, value);
+}
+
+int tlv320dac3100_set_clkout(int enable, unsigned char source, unsigned char divider)
+{
+  if (source > 5)
+    return 1;
+  if (divider > 128)
+    return 2;
+  if (divider == 128)
+    divider = 0;
+  if (enable)
+    divider |= 0x80;
+  int rc = tlv320dac3100_set_page(0);
+  if (rc)
+    return rc;
+  rc = tlv320dac3100_write(TLV320DAC3100_REGISTER_CLKOUT_MUX, source);
+  if (rc)
+    return rc;
+  rc = tlv320dac3100_write(TLV320DAC3100_REGISTER_CLKOUT_M, divider);
+  if (rc)
+    return rc;
+  return tlv320dac3100_write(TLV320DAC3100_REGISTER_GPIO1_CONTROL, enable ? TLV320DAC3100_GPIO1_CLKOUT : TLV320DAC3100_GPIO1_DISABLED);
 }
