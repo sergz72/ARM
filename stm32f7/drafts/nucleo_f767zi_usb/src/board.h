@@ -43,10 +43,8 @@
 // set PB14
 #define LD3_ON GPIOB->BSRR = 0x4000
 
-#define USB_MAX_DESCRIPTOR_BUILDERS 1
-#define USB_MAX_CONFIGURATION_INTERFACES 1
-#define USB_MAX_INTERFACE_ENDPOINTS 2
 #define USB_MAX_DEVICES 1
+#define USB_DEVICE_MAX_PACKET_SIZE USB_FS_MAX_PACKET_SIZE
 
 void delay(unsigned int);
 void delayms(unsigned int);

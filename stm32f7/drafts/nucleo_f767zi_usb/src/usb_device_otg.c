@@ -1,6 +1,12 @@
 #include <board.h>
 #include <usb_device_otg.h>
 
+#define STS_GOUT_NAK                           1U
+#define STS_DATA_UPDT                          2U
+#define STS_XFER_COMP                          3U
+#define STS_SETUP_COMP                         4U
+#define STS_SETUP_UPDT                         6U
+
 #define DCFG_FRAME_INTERVAL_80                 0U
 #define DCFG_FRAME_INTERVAL_85                 1U
 #define DCFG_FRAME_INTERVAL_90                 2U
@@ -23,7 +29,18 @@
 #define USB_MASK_INTERRUPT(instance, __INTERRUPT__)     (instance->GINTMSK &= ~(__INTERRUPT__))
 #define USB_UNMASK_INTERRUPT(instance, __INTERRUPT__)   (instance->GINTMSK |= (__INTERRUPT__))
 
+typedef struct
+{
+  unsigned char xfer_buff[USB_DEVICE_MAX_PACKET_SIZE];     /*!< Pointer to transfer buffer                                               */
+} USB_OTG_EPTypeDef;
+
 const char otg_endpoints[USB_MAX_ENDPOINTS] = {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1};
+
+typedef struct
+{
+  USB_OTG_EPTypeDef in_endpoints[USB_MAX_ENDPOINTS];
+  USB_OTG_EPTypeDef out_endpoints[USB_MAX_ENDPOINTS];
+} USB_OTG_Data;
 
 static void USB_CoreReset(USB_OTG_GlobalTypeDef *instance)
 {
@@ -132,7 +149,7 @@ static void USB_FlushRxFifo(USB_OTG_GlobalTypeDef *instance)
   while ((instance->GRSTCTL & USB_OTG_GRSTCTL_RXFFLSH) == USB_OTG_GRSTCTL_RXFFLSH);
 }
 
-static void USB_DevInit(const USB_OTG_CfgTypeDef *cfg)
+static void USB_DevInit(const USB_OTG_CfgTypeDef *cfg, unsigned int dev_endpoints)
 {
   unsigned int i;
 
@@ -219,7 +236,7 @@ static void USB_DevInit(const USB_OTG_CfgTypeDef *cfg)
   USBx_DEVICE(cfg->instance)->DAINT = 0xFFFFFFFF;
   USBx_DEVICE(cfg->instance)->DAINTMSK = 0;
 
-  for (i = 0; i < cfg->dev_endpoints; i++)
+  for (i = 0; i < dev_endpoints; i++)
   {
     // if endpoint is enabled
     if ((USBx_INEP(cfg->instance, i)->DIEPCTL & USB_OTG_DIEPCTL_EPENA) == USB_OTG_DIEPCTL_EPENA)
@@ -236,7 +253,7 @@ static void USB_DevInit(const USB_OTG_CfgTypeDef *cfg)
     USBx_INEP(cfg->instance, i)->DIEPINT  = 0xFF;
   }
 
-  for (i = 0; i < cfg->dev_endpoints; i++)
+  for (i = 0; i < dev_endpoints; i++)
   {
     if ((USBx_OUTEP(cfg->instance, i)->DOEPCTL & USB_OTG_DOEPCTL_EPENA) == USB_OTG_DOEPCTL_EPENA)
     {
@@ -331,13 +348,13 @@ void USB_SetTxFiFo(USB_OTG_GlobalTypeDef *instance, unsigned int fifo, unsigned 
   }
 }
 
-static void USB_FIFO_Init(const USB_OTG_CfgTypeDef *cfg)
+static void USB_FIFO_Init(const USB_OTG_CfgTypeDef *cfg, unsigned int dev_endpoints)
 {
   unsigned int i;
 
   USB_SetRxFiFo(cfg->instance, 0x40);
   USB_SetTxFiFo(cfg->instance, 0, 0x40);
-  for (i = 1; i < cfg->dev_endpoints; i++)
+  for (i = 1; i < dev_endpoints; i++)
     USB_SetTxFiFo(cfg->instance, i, 0x40);
 }
 
@@ -350,7 +367,7 @@ static void USB_DevConnect(USB_OTG_GlobalTypeDef *instance)
   delayms(3);
 }
 
-void USBDeviceOtgInit(const USB_OTG_CfgTypeDef *cfg)
+void USBDeviceOtgInit(const USB_OTG_CfgTypeDef *cfg, unsigned int dev_endpoints)
 {
   USB_CoreInit(cfg);
 
@@ -358,34 +375,16 @@ void USBDeviceOtgInit(const USB_OTG_CfgTypeDef *cfg)
   delayms(50);
 
   /* Init Device */
-  USB_DevInit(cfg);
+  USB_DevInit(cfg, dev_endpoints);
 
-  USB_FIFO_Init(cfg);
+  USB_FIFO_Init(cfg, dev_endpoints);
 
   USB_DevConnect(cfg->instance);
 
   USB_EnableGlobalInt(cfg->instance);
 }
 
-int USBReadInterruptEndpointNumber(void *data)
-{
-  //todo
-  return 0;
-}
-
-int USBIsTransactionDirectionIN(void *data, int endpoint)
-{
-  //todo
-  return 0;
-}
-
-int USBIsSetupTransaction(void *data)
-{
-  //todo
-  return 0;
-}
-
-void USBEnableEndpoint(void *data, unsigned int endpoint)
+void USBEnableEndpoint(void *data, unsigned int endpoint, USBEndpointDirection direction)
 {
   //todo
 }
@@ -412,20 +411,21 @@ void *USBGetEndpointOutBuffer(void *data, int endpoint)
   return NULL;
 }
 
-void USBSetEndpointTransferType(void *data, int endpoint, USBEndpointTransferType transfer_type)
+void USBSetAddress(void *data, unsigned short address)
 {
   //todo
 }
 
-void USBClearInterruptFlags(void *data)
+void USBSetEndpointTransferType(void *data, int endpoint, unsigned int max_packet_size, USBEndpointTransferType transfer_type)
 {
   const USB_OTG_CfgTypeDef *cfg = data;
-  cfg->instance->GINTSTS = 0xFFFFFFFF;
-}
+  unsigned int temp = USBx_INEP(cfg->instance, endpoint)->DIEPCTL & ~(USB_OTG_DIEPCTL_MPSIZ | USB_OTG_DIEPCTL_EPTYP);
+  temp |= (max_packet_size & USB_OTG_DIEPCTL_MPSIZ) | (transfer_type << 18);
+  USBx_INEP(cfg->instance, endpoint)->DIEPCTL = temp;
 
-void USBSetAddress(void *data, unsigned short address)
-{
-  //USBFSD->DEV_ADDR = (unsigned char)address;
+  temp = USBx_OUTEP(cfg->instance, endpoint)->DOEPCTL & ~(USB_OTG_DOEPCTL_MPSIZ | USB_OTG_DOEPCTL_EPTYP);
+  temp |= (max_packet_size & USB_OTG_DOEPCTL_MPSIZ) | (transfer_type << 18);
+  USBx_OUTEP(cfg->instance, endpoint)->DOEPCTL = temp;
 }
 
 /**
@@ -696,8 +696,8 @@ void USBDeviceInterruptHandler(int device_no)
     /* Clear the Remote Wake-up Signaling */
     USBx_DEVICE(instance)->DCTL &= ~USB_OTG_DCTL_RWUSIG;
 
-    if (device->Resume_Callback)
-      device->Resume_Callback();
+    if (device->config->Resume_Callback)
+      device->config->Resume_Callback(device_no);
 
     instance->GINTSTS = USB_OTG_GINTSTS_WKUINT;
   }
@@ -707,8 +707,8 @@ void USBDeviceInterruptHandler(int device_no)
   {
     if((USBx_DEVICE(instance)->DSTS & USB_OTG_DSTS_SUSPSTS) == USB_OTG_DSTS_SUSPSTS)
     {
-      if (device->Suspend_Callback)
-        device->Suspend_Callback();
+      if (device->config->Suspend_Callback)
+        device->config->Suspend_Callback(device_no);
     }
     instance->GINTSTS = USB_OTG_GINTSTS_USBSUSP;
   }
@@ -719,20 +719,24 @@ void USBDeviceInterruptHandler(int device_no)
   {
     instance->GINTSTS = USB_OTG_GINTSTS_LPMINT;
 
-    if (device->LPM_Callback)
-      device->LPM_Callback();
+    for (int i = 0; i < USB_DEVICE_MAX_CLASSES; i++)
+    {
+      usb_callback c = device->LPM_Callbacks[i];
+      if (c)
+        c(device_no);
+      else
+        break;
+    }
   }
 #endif
 
   if (status & USB_OTG_GINTSTS_ENUMDNE)
   {
-    USB_ActivateSetup();
-    instance->GUSBCFG &= ~USB_OTG_GUSBCFG_TRDT;
+    USBDeviceActivateSetup(device_no, device);
 
+    instance->GUSBCFG &= ~USB_OTG_GUSBCFG_TRDT;
     unsigned int trdt = instance == USB_OTG_FS ? 6 : 9;
     instance->GUSBCFG |= trdt << 10;
-
-    device->Reset_Callback();
 
     instance->GINTSTS = USB_OTG_GINTSTS_ENUMDNE;
   }
@@ -765,8 +769,14 @@ void USBDeviceInterruptHandler(int device_no)
   /* Handle SOF Interrupt */
   if(status & USB_OTG_GINTSTS_SOF)
   {
-    if (device->SOF_Callback)
-      device->SOF_Callback();
+    for (int i = 0; i < USB_DEVICE_MAX_CLASSES; i++)
+    {
+      usb_callback c = device->SOF_Callbacks[i];
+      if (c)
+        c(device_no);
+      else
+        break;
+    }
     instance->GINTSTS = USB_OTG_GINTSTS_SOF;
   }
 
@@ -789,8 +799,8 @@ void USBDeviceInterruptHandler(int device_no)
   /* Handle Connection event Interrupt */
   if(status & USB_OTG_GINTSTS_SRQINT)
   {
-    if (device->Connect_Callback)
-      device->Connect_Callback();
+    if (device->config->Connect_Callback)
+      device->config->Connect_Callback(device_no);
     instance->GINTSTS = USB_OTG_GINTSTS_SRQINT;
   }
 
@@ -799,8 +809,8 @@ void USBDeviceInterruptHandler(int device_no)
   {
     unsigned int temp = instance->GOTGINT;
 
-    if ((temp & USB_OTG_GOTGINT_SEDET) && device->Disconnect_Callback)
-      device->Disconnect_Callback();
+    if ((temp & USB_OTG_GOTGINT_SEDET) && device->config->Disconnect_Callback)
+      device->config->Disconnect_Callback(device_no);
     instance->GOTGINT |= temp;
   }
 }

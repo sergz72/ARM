@@ -4,9 +4,7 @@
 
 static const USB_OTG_CfgTypeDef usbfs_cfg = {
   .instance = USB_OTG_FS,
-  .dev_endpoints = 3,
   .vbus_sensing_enable = 1,
-  .dev_remote_wakeup = 0,
   .dma_enable = 0,
   .Sof_enable = 0,
   .use_dedicated_ep1 = 0,
@@ -63,7 +61,7 @@ int main(void)
     while (1)
       ;
   }
-  USBDeviceOtgInit(&usbfs_cfg);
+  USBDeviceOtgInit(&usbfs_cfg, GetNumberOfEndpoints(device_id));
 
   while (1)
   {

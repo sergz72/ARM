@@ -9,16 +9,16 @@
 
 #define USB_MAX_ENDPOINTS 16
 
-#ifndef USB_DEVICE_MAX_CONFIGURATIONS
-#define USB_DEVICE_MAX_CONFIGURATIONS 1
-#endif
-
 #ifndef USB_DEVICE_CONFIGURATION_SIZE
 #define USB_DEVICE_CONFIGURATION_SIZE 256
 #endif
 
 #ifndef USB_DEVICE_STRINGTABLE_SIZE
 #define USB_DEVICE_STRINGTABLE_SIZE 16
+#endif
+
+#ifndef USB_DEVICE_MAX_CLASSES
+#define USB_DEVICE_MAX_CLASSES 4
 #endif
 
 #define USB_DEVICE_DESCRIPTOR_SIZE 18
@@ -105,6 +105,13 @@ typedef enum
   usb_request_recipient_endpoint = 2
 } USBRequestRecipient;
 
+typedef enum
+{
+  usb_endpoint_direction_in = 0,
+  usb_endpoint_direction_out = 1,
+  usb_endpoint_direction_inout = 2,
+} USBEndpointDirection;
+
 typedef struct __attribute__((__packed__))
 {
   unsigned char request_type;
@@ -117,6 +124,7 @@ typedef struct __attribute__((__packed__))
 struct _USBDevice;
 
 typedef int (*usb_descriptor_builder)(unsigned int device_id, struct _USBDevice *device);
+typedef void (*usb_callback)(unsigned int device_id);
 
 typedef struct
 {
@@ -128,10 +136,10 @@ typedef struct
   const char *serial_number;
   const char *enabled_endpoints;
   void *data;
-  void (*Resume_Callback)(void);
-  void (*Suspend_Callback)(void);
-  void (*Connect_Callback)(void);
-  void (*Disconnect_Callback)(void);
+  usb_callback Resume_Callback;
+  usb_callback Suspend_Callback;
+  usb_callback Connect_Callback;
+  usb_callback Disconnect_Callback;
 } USBDeviceConfiguration;
 
 typedef struct
@@ -195,39 +203,33 @@ typedef struct _USBDevice
   USBEndpoint endpoints[USB_MAX_ENDPOINTS];
   const USBDeviceConfiguration *config;
   void *data;
-  void (*Resume_Callback)(void);
-  void (*Suspend_Callback)(void);
-  void (*LPM_Callback)(void);
-  void (*Reset_Callback)(void);
-  void (*SOF_Callback)(void);
-  void (*Connect_Callback)(void);
-  void (*Disconnect_Callback)(void);
+  usb_callback Reset_Callbacks[USB_DEVICE_MAX_CLASSES];
+  usb_callback LPM_Callbacks[USB_DEVICE_MAX_CLASSES];
+  usb_callback SOF_Callbacks[USB_DEVICE_MAX_CLASSES];
 } USBDevice;
 
 //usb device core functions
 unsigned int USBDeviceInit(const USBDeviceConfiguration *config, USBConfigurationDescriptor *configuration_descriptor);
 int USBDeviceValidate(unsigned int device_id);
+void USBDeviceActivateSetup(unsigned int device_no, USBDevice *device);
 void AddInterfaceAssociationDescriptor(USBDevice *device,const USBInterfaceAssociationDescriptor *interface_association);
 void AddClassInterfaceDescriptor(USBDevice *device,unsigned char subtype, unsigned char data1, unsigned char data2);
 void AddClassInterfaceDescriptor4(USBDevice *device,unsigned char subtype, unsigned char data1);
 unsigned int AddInterfaceDescriptor(USBDevice *device, const USBInterfaceDescriptor *interface);
 int AddEndpointDescriptor(USBDevice *device, const USBEndpointDescriptor *endpoint);
+unsigned int GetNumberOfEndpoints(unsigned int device_id);
 
 //weak functions
 void OutTransactionHandler(void *data, int endpoint);
 void InterfaceRequestHandler(void *data, USBDeviceRequest *request);
 
 // hal functions
-void USBClearInterruptFlags(void *data);
-int USBReadInterruptEndpointNumber(void *data);
-int USBIsTransactionDirectionIN(void *data, int endpoint);
-int USBIsSetupTransaction(void *data);
-void USBEnableEndpoint(void *data, unsigned int endpoint);
+void USBEnableEndpoint(void *data, unsigned int endpoint, USBEndpointDirection direction);
 void USBActivateEndpoint(void *data, unsigned int endpoint, unsigned int length);
 void USBStallEndpoint(void *data, unsigned int endpoint);
 void *USBGetEndpointInBuffer(void *data, int endpoint);
 void *USBGetEndpointOutBuffer(void *data, int endpoint);
-void USBSetEndpointTransferType(void *data, int endpoint, USBEndpointTransferType transfer_type);
+void USBSetEndpointTransferType(void *data, int endpoint, unsigned int max_packet_size, USBEndpointTransferType transfer_type);
 void USBSetAddress(void *data, unsigned short address);
 void USBDeviceInterruptHandler(int device_no);
 

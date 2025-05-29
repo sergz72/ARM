@@ -112,8 +112,7 @@ unsigned int USBDeviceInit(const USBDeviceConfiguration *config, USBConfiguratio
   device->total_length = 0;
   memset(device->string_length, 0, sizeof(device->string_length));
   BuildDeviceDescriptor(device);
-  USBSetEndpointTransferType(config->data, 0, usb_endpoint_transfer_type_control);
-  //USBEnableEndpoint(data, 0);
+  USBSetEndpointTransferType(config->data, 0, USB_FS_MAX_PACKET_SIZE, usb_endpoint_transfer_type_control);
   AddConfigurationDescriptor(device, configuration_descriptor);
   return next_usb_device_id++;
 }
@@ -193,13 +192,25 @@ int AddEndpointDescriptor(USBDevice *device, const USBEndpointDescriptor *endpoi
   *device->next_descriptor_ptr++ = endpoint->max_packet_size >> 8;
   *device->next_descriptor_ptr++ = endpoint->interval;
 
-  USBSetEndpointTransferType(device, device->next_endpoint_id, endpoint->transfer_type);
-  USBEnableEndpoint(device, device->next_endpoint_id);
+  USBSetEndpointTransferType(device, device->next_endpoint_id, endpoint->max_packet_size, endpoint->transfer_type);
 
   int ep = device->next_endpoint_id;
   if (endpoint->endpoint_number_increment)
     device->next_endpoint_id = USBGetNextEndpoint(device, device->next_endpoint_id);
   return ep;
+}
+
+void USBDeviceActivateSetup(unsigned int device_no, USBDevice *device)
+{
+  USBEnableEndpoint(device->data, 0, usb_endpoint_direction_inout);
+  for (int i = 0; i < USB_DEVICE_MAX_CLASSES; i++)
+  {
+    usb_callback c = device->Reset_Callbacks[i];
+    if (c)
+      c(device_no);
+    else
+      break;
+  }
 }
 
 void *USBGetDescriptor(USBDevice *device, USBDescriptorType type, unsigned int id, unsigned int *length)
@@ -297,6 +308,12 @@ static void SetupTransactionHandler(USBDevice *device)
 void __attribute__((weak)) OutTransactionHandler(void *data, int endpoint)
 {
   USBStallEndpoint(data, endpoint);
+}
+
+unsigned int GetNumberOfEndpoints(unsigned int device_id)
+{
+  USBDevice *device = &usb_devices[device_id];
+  return device->next_endpoint_id;
 }
 
 /*void USBDeviceInterruptHandler(int device_no)
