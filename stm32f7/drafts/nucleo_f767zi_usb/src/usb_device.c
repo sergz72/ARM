@@ -267,10 +267,10 @@ void USBDeviceStartTransfer(USBDevice *device, int endpoint, const void *buffer,
 int USBDeviceContinueTransfer(USBDevice *device, int endpoint)
 {
   unsigned int l = device->endpoints[endpoint].transfer_length > USB_FS_MAX_PACKET_SIZE ? USB_FS_MAX_PACKET_SIZE : device->endpoints[endpoint].transfer_length;
-  if (!l)
-    return 0;
   memcpy(USBGetEndpointInBuffer(device->data, endpoint), device->endpoints[endpoint].transfer_buffer, l);
   USBActivateEndpoint(device->data, endpoint, l);
+  if (!l)
+    return 0;
   device->endpoints[endpoint].transfer_length -= l;
   device->endpoints[endpoint].transfer_buffer += l;
   return 1;

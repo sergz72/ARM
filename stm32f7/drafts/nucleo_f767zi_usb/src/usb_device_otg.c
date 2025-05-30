@@ -450,7 +450,7 @@ void USB_WritePacket(const USB_OTG_CfgTypeDef *cfg, unsigned char *src, unsigned
 {
   unsigned int count32b, i;
 
-  if (cfg->dma_enable)
+  if (!cfg->dma_enable)
   {
     count32b = (len + 3) / 4;
     for (i = 0; i < count32b; i++, src += 4)
@@ -517,10 +517,15 @@ void USBActivateEndpoint(void *data, unsigned int endpoint, unsigned int length)
   /* EP enable, IN data in FIFO */
   USBx_INEP(instance, endpoint)->DIEPCTL |= (USB_OTG_DIEPCTL_CNAK | USB_OTG_DIEPCTL_EPENA);
 
-  if (iso)
-  {
+  //if (iso)
+  //{
     USB_WritePacket(cfg, cfg->in_xfer_buffers[endpoint].buffer, endpoint, length);
-  }
+  //}
+
+  /* Prepare endpoint for premature end of transfer */
+  USB_EP_Receive (0,
+                      NULL,
+                      0);
 }
 
 void USBEnableEndpoint(void *data, unsigned int endpoint, USBEndpointDirection direction)
@@ -686,12 +691,12 @@ static unsigned int USB_ReadDevInEPInterrupt (USB_OTG_GlobalTypeDef *instance, u
   * @param  epnum : endpoint number
   * @retval none
   */
-/*static void USB_WriteEmptyTxFifo(USB_OTG_GlobalTypeDef *instance, unsigned int epnum)
+static void USB_WriteEmptyTxFifo(USB_OTG_GlobalTypeDef *instance, unsigned int epnum)
 {
-  USB_OTG_EPTypeDef *ep;
+  unsigned int fifoemptymsk;
+  /*USB_OTG_EPTypeDef *ep;
   unsigned int len;
   unsigned int len32b;
-  unsigned int fifoemptymsk;
 
   ep = &USBHandle.IN_ep[epnum];
   len = ep->xfer_len - ep->xfer_count;
@@ -724,11 +729,11 @@ static unsigned int USB_ReadDevInEPInterrupt (USB_OTG_GlobalTypeDef *instance, u
   }
 
   if(len <= 0)
-  {
+  {*/
     fifoemptymsk = 0x1 << epnum;
     USBx_DEVICE(instance)->DIEPEMPMSK &= ~fifoemptymsk;
-  }
-}*/
+  //}
+}
 
 static void IEPINTHandler(USBDevice *device, const USB_OTG_CfgTypeDef *cfg)
 {
@@ -788,7 +793,8 @@ static void IEPINTHandler(USBDevice *device, const USB_OTG_CfgTypeDef *cfg)
       if(( epint & USB_OTG_DIEPINT_TXFE) == USB_OTG_DIEPINT_TXFE)
       {
         //todo
-        //USB_WriteEmptyTxFifo(cfg->instance, epnum);
+        //USBDeviceContinueTransfer(device, epnum);
+        USB_WriteEmptyTxFifo(cfg->instance, epnum);
       }
     }
     epnum++;
