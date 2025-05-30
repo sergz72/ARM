@@ -1,5 +1,6 @@
 SET(CMAKE_SYSTEM_NAME Generic)
 SET(CMAKE_SYSTEM_VERSION 1)
+set(CMAKE_C_STANDARD 23)
 cmake_minimum_required(VERSION 3.14)
 
 # specify the cross compiler

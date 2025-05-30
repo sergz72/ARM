@@ -102,6 +102,7 @@ static void AddConfigurationDescriptor(USBDevice *device, const USBConfiguration
 unsigned int USBDeviceInit(const USBDeviceConfiguration *config, USBConfigurationDescriptor *configuration_descriptor)
 {
   USBDevice *device = &usb_devices[next_usb_device_id];
+  device->config = config;
   InitEndpoints(device, config->enabled_endpoints);
   device->next_string_id = 1;
   device->next_interface_id = 0;
@@ -112,8 +113,15 @@ unsigned int USBDeviceInit(const USBDeviceConfiguration *config, USBConfiguratio
   device->total_length = 0;
   memset(device->string_length, 0, sizeof(device->string_length));
   BuildDeviceDescriptor(device);
-  USBSetEndpointTransferType(config->data, 0, USB_FS_MAX_PACKET_SIZE, usb_endpoint_transfer_type_control);
+  USBInitEndpoint(config->data, 0, USB_FS_MAX_PACKET_SIZE, usb_endpoint_transfer_type_control);
   AddConfigurationDescriptor(device, configuration_descriptor);
+  memset(device->Reset_Callbacks, 0, sizeof(device->Reset_Callbacks));
+  memset(device->SOF_Callbacks, 0, sizeof(device->SOF_Callbacks));
+  memset(device->LPM_Callbacks, 0, sizeof(device->LPM_Callbacks));
+  memset(device->endpoint_packet_lengths, 0, sizeof(device->endpoint_packet_lengths));
+  device->endpoint_packet_lengths[0] = USB_FS_MAX_PACKET_SIZE;
+  memset(device->interface_handlers, 0, sizeof(device->interface_handlers));
+  memset(device->endpoint_handlers, 0, sizeof(device->endpoint_handlers));
   return next_usb_device_id++;
 }
 
@@ -162,7 +170,7 @@ void AddClassInterfaceDescriptor4(USBDevice *device, unsigned char subtype, unsi
   *device->next_descriptor_ptr++ = data1;
 }
 
-unsigned int AddInterfaceDescriptor(USBDevice *device, const USBInterfaceDescriptor *interface)
+unsigned int AddInterfaceDescriptor(USBDevice *device, const USBInterfaceDescriptor *interface, void *data)
 {
   update_total_length(device, 9);
   *device->next_descriptor_ptr++ = 9; // length
@@ -174,11 +182,13 @@ unsigned int AddInterfaceDescriptor(USBDevice *device, const USBInterfaceDescrip
   *device->next_descriptor_ptr++ = interface->interface_subclass;
   *device->next_descriptor_ptr++ = interface->interface_protocol;
   *device->next_descriptor_ptr++ = BuildString(device, interface->interface_name);
-  *device->num_interfaces_ptr++;
+  *device->num_interfaces_ptr = (unsigned char)device->next_interface_id;
+  device->interface_handlers[device->next_interface_id].handler = interface->handler;
+  device->interface_handlers[device->next_interface_id].data = data;
   return device->next_interface_id++;
 }
 
-int AddEndpointDescriptor(USBDevice *device, const USBEndpointDescriptor *endpoint)
+int AddEndpointDescriptor(USBDevice *device, const USBEndpointDescriptor *endpoint, void *data)
 {
   if (device->next_endpoint_id < 0)
     return -1;
@@ -192,18 +202,23 @@ int AddEndpointDescriptor(USBDevice *device, const USBEndpointDescriptor *endpoi
   *device->next_descriptor_ptr++ = endpoint->max_packet_size >> 8;
   *device->next_descriptor_ptr++ = endpoint->interval;
 
-  USBSetEndpointTransferType(device, device->next_endpoint_id, endpoint->max_packet_size, endpoint->transfer_type);
+  USBInitEndpoint(device, device->next_endpoint_id, endpoint->max_packet_size, endpoint->transfer_type);
 
   int ep = device->next_endpoint_id;
   if (endpoint->endpoint_number_increment)
     device->next_endpoint_id = USBGetNextEndpoint(device, device->next_endpoint_id);
+
+  device->endpoint_packet_lengths[ep] = endpoint->max_packet_size;
+  device->endpoint_handlers[ep].handler = endpoint->handler;
+  device->endpoint_handlers[ep].handler = data;
+
   return ep;
 }
 
 void USBDeviceActivateSetup(unsigned int device_no, USBDevice *device)
 {
   USBEnableEndpoint(device->data, 0, usb_endpoint_direction_inout);
-  for (int i = 0; i < USB_DEVICE_MAX_CLASSES; i++)
+  for (int i = 0; i < device->next_reset_callback; i++)
   {
     usb_callback c = device->Reset_Callbacks[i];
     if (c)
@@ -236,10 +251,10 @@ void *USBGetDescriptor(USBDevice *device, USBDescriptorType type, unsigned int i
   }
 }
 
-static void StartTransfer(USBDevice *device, int endpoint, const void *buffer, unsigned int length)
+void USBDeviceStartTransfer(USBDevice *device, int endpoint, const void *buffer, unsigned int length)
 {
   unsigned int l = length > USB_FS_MAX_PACKET_SIZE ? USB_FS_MAX_PACKET_SIZE : length;
-  memcpy(USBGetEndpointOutBuffer(device->data, endpoint), buffer, l);
+  memcpy(USBGetEndpointInBuffer(device->data, endpoint), buffer, l);
   USBActivateEndpoint(device->data, endpoint, l);
   length -= l;
   if (length)
@@ -249,12 +264,12 @@ static void StartTransfer(USBDevice *device, int endpoint, const void *buffer, u
   }
 }
 
-static int ContinueTransfer(USBDevice *device, int endpoint)
+int USBDeviceContinueTransfer(USBDevice *device, int endpoint)
 {
   unsigned int l = device->endpoints[endpoint].transfer_length > USB_FS_MAX_PACKET_SIZE ? USB_FS_MAX_PACKET_SIZE : device->endpoints[endpoint].transfer_length;
   if (!l)
     return 0;
-  memcpy(USBGetEndpointOutBuffer(device->data, endpoint), device->endpoints[endpoint].transfer_buffer, l);
+  memcpy(USBGetEndpointInBuffer(device->data, endpoint), device->endpoints[endpoint].transfer_buffer, l);
   USBActivateEndpoint(device->data, endpoint, l);
   device->endpoints[endpoint].transfer_length -= l;
   device->endpoints[endpoint].transfer_buffer += l;
@@ -269,7 +284,7 @@ static void DeviceRequestHandler(USBDevice *device, USBDeviceRequest *request)
     case usb_request_type_get_descriptor:
       void *descriptor = USBGetDescriptor(device, request->value >> 8, request->value & 0xFF, &length);
       if (descriptor)
-        StartTransfer(device, 0, descriptor, request->length > length ? length : request->length);
+        USBDeviceStartTransfer(device, 0, descriptor, request->length > length ? length : request->length);
       else
         USBStallEndpoint(device->data, 0);
       break;
@@ -284,14 +299,20 @@ static void DeviceRequestHandler(USBDevice *device, USBDeviceRequest *request)
   }
 }
 
-void __attribute__((weak)) InterfaceRequestHandler(void *data, USBDeviceRequest *request)
+static void InterfaceRequestHandler(void *data, USBDeviceRequest *request)
 {
+  //todo
   USBStallEndpoint(data, 0);
 }
 
-static void SetupTransactionHandler(USBDevice *device)
+void USBDeviceDataPacketReceived(USBDevice *device, unsigned int endpoint, unsigned char *buffer, unsigned int length)
 {
-  USBDeviceRequest *request = (USBDeviceRequest *)USBGetEndpointInBuffer(device->data, 0);
+  //todo
+}
+
+void USBDeviceSetupPacketReceived(USBDevice *device, unsigned char *buffer, unsigned int length)
+{
+  USBDeviceRequest *request = (USBDeviceRequest *)buffer;
   switch (request->request_type & 0x1F)
   {
     case usb_request_recipient_device:
@@ -305,15 +326,55 @@ static void SetupTransactionHandler(USBDevice *device)
   }
 }
 
-void __attribute__((weak)) OutTransactionHandler(void *data, int endpoint)
-{
-  USBStallEndpoint(data, endpoint);
-}
-
 unsigned int GetNumberOfEndpoints(unsigned int device_id)
 {
   USBDevice *device = &usb_devices[device_id];
   return device->next_endpoint_id;
+}
+
+int *GetEndpointPacketLengths(unsigned int device_id)
+{
+  USBDevice *device = &usb_devices[device_id];
+  return device->endpoint_packet_lengths;
+}
+
+void AddResetCallback(USBDevice *device, usb_callback callback)
+{
+  device->Reset_Callbacks[device->next_reset_callback++] = callback;
+}
+
+void AddSofCallback(USBDevice *device, usb_callback callback)
+{
+  device->Reset_Callbacks[device->next_sof_callback++] = callback;
+}
+
+void AddLPMCallback(USBDevice *device, usb_callback callback)
+{
+  device->Reset_Callbacks[device->next_lpm_callback++] = callback;
+}
+
+void USBDeviceCallLPMCallbacks(int device_no, USBDevice *device)
+{
+  for (int i = 0; i < device->next_lpm_callback; i++)
+  {
+    usb_callback c = device->LPM_Callbacks[i];
+    if (c)
+      c(device_no);
+    else
+      break;
+  }
+}
+
+void USBDeviceCallSofCallbacks(int device_no, USBDevice *device)
+{
+  for (int i = 0; i < device->next_sof_callback; i++)
+  {
+    usb_callback c = device->SOF_Callbacks[i];
+    if (c)
+      c(device_no);
+    else
+      break;
+  }
 }
 
 /*void USBDeviceInterruptHandler(int device_no)

@@ -29,18 +29,9 @@
 #define USB_MASK_INTERRUPT(instance, __INTERRUPT__)     (instance->GINTMSK &= ~(__INTERRUPT__))
 #define USB_UNMASK_INTERRUPT(instance, __INTERRUPT__)   (instance->GINTMSK |= (__INTERRUPT__))
 
-typedef struct
-{
-  unsigned char xfer_buff[USB_DEVICE_MAX_PACKET_SIZE];     /*!< Pointer to transfer buffer                                               */
-} USB_OTG_EPTypeDef;
+#define USBx_DFIFO(instance, i)   *(__IO unsigned int*)((unsigned int)instance + USB_OTG_FIFO_BASE + (i) * USB_OTG_FIFO_SIZE)
 
 const char otg_endpoints[USB_MAX_ENDPOINTS] = {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1};
-
-typedef struct
-{
-  USB_OTG_EPTypeDef in_endpoints[USB_MAX_ENDPOINTS];
-  USB_OTG_EPTypeDef out_endpoints[USB_MAX_ENDPOINTS];
-} USB_OTG_Data;
 
 static void USB_CoreReset(USB_OTG_GlobalTypeDef *instance)
 {
@@ -149,7 +140,7 @@ static void USB_FlushRxFifo(USB_OTG_GlobalTypeDef *instance)
   while ((instance->GRSTCTL & USB_OTG_GRSTCTL_RXFFLSH) == USB_OTG_GRSTCTL_RXFFLSH);
 }
 
-static void USB_DevInit(const USB_OTG_CfgTypeDef *cfg, unsigned int dev_endpoints)
+static void USB_DevInit(const USB_OTG_CfgTypeDef *cfg)
 {
   unsigned int i;
 
@@ -236,7 +227,7 @@ static void USB_DevInit(const USB_OTG_CfgTypeDef *cfg, unsigned int dev_endpoint
   USBx_DEVICE(cfg->instance)->DAINT = 0xFFFFFFFF;
   USBx_DEVICE(cfg->instance)->DAINTMSK = 0;
 
-  for (i = 0; i < dev_endpoints; i++)
+  for (i = 0; i < cfg->dev_endpoints; i++)
   {
     // if endpoint is enabled
     if ((USBx_INEP(cfg->instance, i)->DIEPCTL & USB_OTG_DIEPCTL_EPENA) == USB_OTG_DIEPCTL_EPENA)
@@ -253,7 +244,7 @@ static void USB_DevInit(const USB_OTG_CfgTypeDef *cfg, unsigned int dev_endpoint
     USBx_INEP(cfg->instance, i)->DIEPINT  = 0xFF;
   }
 
-  for (i = 0; i < dev_endpoints; i++)
+  for (i = 0; i < cfg->dev_endpoints; i++)
   {
     if ((USBx_OUTEP(cfg->instance, i)->DOEPCTL & USB_OTG_DOEPCTL_EPENA) == USB_OTG_DOEPCTL_EPENA)
     {
@@ -348,13 +339,13 @@ void USB_SetTxFiFo(USB_OTG_GlobalTypeDef *instance, unsigned int fifo, unsigned 
   }
 }
 
-static void USB_FIFO_Init(const USB_OTG_CfgTypeDef *cfg, unsigned int dev_endpoints)
+static void USB_FIFO_Init(const USB_OTG_CfgTypeDef *cfg)
 {
   unsigned int i;
 
   USB_SetRxFiFo(cfg->instance, 0x40);
   USB_SetTxFiFo(cfg->instance, 0, 0x40);
-  for (i = 1; i < dev_endpoints; i++)
+  for (i = 1; i < cfg->dev_endpoints; i++)
     USB_SetTxFiFo(cfg->instance, i, 0x40);
 }
 
@@ -367,64 +358,204 @@ static void USB_DevConnect(USB_OTG_GlobalTypeDef *instance)
   delayms(3);
 }
 
-void USBDeviceOtgInit(const USB_OTG_CfgTypeDef *cfg, unsigned int dev_endpoints)
+int USBDeviceOtgInit(USB_OTG_CfgTypeDef *cfg, unsigned int dev_endpoints, unsigned int *xfer_buffers,
+                      int xfer_buffers_length, int *endpoint_packet_lengths)
 {
+  cfg->dev_endpoints = dev_endpoints;
+
+  for (int i = 0; i < dev_endpoints; i++)
+  {
+    cfg->in_xfer_buffers[i].buffer = (unsigned char*)xfer_buffers;
+    int l = (*endpoint_packet_lengths + 3) / 4;
+    xfer_buffers += l;
+    cfg->out_xfer_buffers[i].buffer = (unsigned char*)xfer_buffers;
+    xfer_buffers += l;
+    xfer_buffers_length -= l;
+  }
+  if (xfer_buffers_length < 0)
+    return 1;
+
   USB_CoreInit(cfg);
 
   cfg->instance->GUSBCFG |= USB_OTG_GUSBCFG_FDMOD;
   delayms(50);
 
   /* Init Device */
-  USB_DevInit(cfg, dev_endpoints);
+  USB_DevInit(cfg);
 
-  USB_FIFO_Init(cfg, dev_endpoints);
+  USB_FIFO_Init(cfg);
 
   USB_DevConnect(cfg->instance);
 
   USB_EnableGlobalInt(cfg->instance);
+
+  return 0;
 }
 
-void USBEnableEndpoint(void *data, unsigned int endpoint, USBEndpointDirection direction)
+/**
+  * @brief  USB_EPSetStall : set a stall condition over an EP
+  * @param  num endpoint number
+  * @param  is_in endpoint direction
+  * @retval none
+  */
+static void USB_EPSetStall(USB_OTG_GlobalTypeDef *instance, unsigned int is_in, unsigned int num)
 {
-  //todo
-}
-
-void USBActivateEndpoint(void *data, unsigned int endpoint, unsigned int length)
-{
-  //todo
+  if (is_in)
+  {
+    if (((USBx_INEP(instance, num)->DIEPCTL) & USB_OTG_DIEPCTL_EPENA) == 0)
+    {
+      USBx_INEP(instance, num)->DIEPCTL &= ~(USB_OTG_DIEPCTL_EPDIS);
+    }
+    USBx_INEP(instance, num)->DIEPCTL |= USB_OTG_DIEPCTL_STALL;
+  }
+  else
+  {
+    if (((USBx_OUTEP(instance, num)->DOEPCTL) & USB_OTG_DOEPCTL_EPENA) == 0)
+    {
+      USBx_OUTEP(instance, num)->DOEPCTL &= ~(USB_OTG_DOEPCTL_EPDIS);
+    }
+    USBx_OUTEP(instance, num)->DOEPCTL |= USB_OTG_DOEPCTL_STALL;
+  }
 }
 
 void USBStallEndpoint(void *data, unsigned int endpoint)
 {
-  //todo
+  const USB_OTG_CfgTypeDef *cfg = data;
+  USB_EPSetStall(cfg->instance, 1, endpoint);
+  USB_EPSetStall(cfg->instance, 0, endpoint);
 }
 
-void *USBGetEndpointInBuffer(void *data, int endpoint)
+void *USBGetEndpointInBuffer(void *data, unsigned int endpoint)
 {
-  //todo
-  return NULL;
-}
-
-void *USBGetEndpointOutBuffer(void *data, int endpoint)
-{
-  //todo
-  return NULL;
+  const USB_OTG_CfgTypeDef *cfg = data;
+  return cfg->in_xfer_buffers[endpoint].buffer;
 }
 
 void USBSetAddress(void *data, unsigned short address)
 {
-  //todo
+  const USB_OTG_CfgTypeDef *cfg = data;
+  USBx_DEVICE(cfg->instance)->DCFG &= ~ (USB_OTG_DCFG_DAD);
+  USBx_DEVICE(cfg->instance)->DCFG |= (address << 4) & USB_OTG_DCFG_DAD ;
 }
 
-void USBSetEndpointTransferType(void *data, int endpoint, unsigned int max_packet_size, USBEndpointTransferType transfer_type)
+/**
+  * @brief  USB_WritePacket : Writes a packet into the Tx FIFO associated
+  *         with the EP/channel
+  * @param  src :  pointer to source buffer
+  * @param  ch_ep_num : endpoint or host channel number
+  * @param  len : Number of bytes to write
+  * @retval none
+  */
+void USB_WritePacket(const USB_OTG_CfgTypeDef *cfg, unsigned char *src, unsigned int ch_ep_num, unsigned int len)
+{
+  unsigned int count32b, i;
+
+  if (cfg->dma_enable)
+  {
+    count32b = (len + 3) / 4;
+    for (i = 0; i < count32b; i++, src += 4)
+      USBx_DFIFO(cfg->instance, ch_ep_num) = *(unsigned int*)src;
+  }
+}
+
+void USBActivateEndpoint(void *data, unsigned int endpoint, unsigned int length)
 {
   const USB_OTG_CfgTypeDef *cfg = data;
+  USB_OTG_GlobalTypeDef *instance = cfg->instance;
+  int iso = ((USBx_INEP(cfg->instance, endpoint)->DIEPCTL >> 18) & 3) == usb_endpoint_transfer_type_isochronous;
+
+  /* Zero Length Packet? */
+  unsigned int temp = USBx_INEP(instance, endpoint)->DIEPTSIZ &= ~(USB_OTG_DIEPTSIZ_PKTCNT | USB_OTG_DIEPTSIZ_XFRSIZ);
+  if (!length)
+    USBx_INEP(instance, endpoint)->DIEPTSIZ = temp | (USB_OTG_DIEPTSIZ_PKTCNT & (1 << 19));
+  else
+  {
+    /* Program the transfer size and packet count
+    * as follows: xfersize = N * maxpacket +
+    * short_packet pktcnt = N + (short_packet
+    * exist ? 1 : 0)
+    */
+    USBx_INEP(instance, endpoint)->DIEPTSIZ = temp
+      | (USB_OTG_DIEPTSIZ_PKTCNT & (((length + USB_FS_MAX_PACKET_SIZE -1)/ USB_FS_MAX_PACKET_SIZE) << 19))
+      | (USB_OTG_DIEPTSIZ_XFRSIZ & length);
+
+    //todo
+    if (iso)
+    {
+      USBx_INEP(instance, endpoint)->DIEPTSIZ &= ~(USB_OTG_DIEPTSIZ_MULCNT);
+      USBx_INEP(instance, endpoint)->DIEPTSIZ |= (USB_OTG_DIEPTSIZ_MULCNT & (1 << 29));
+    }
+  }
+
+  if (cfg->dma_enable)
+  {
+    //todo
+    //USBx_INEP(num)->DIEPDMA = ep->dma_addr;
+  }
+  else
+  {
+    if (!iso)
+    {
+      /* Enable the Tx FIFO Empty Interrupt for this EP */
+      if (length)
+        USBx_DEVICE(instance)->DIEPEMPMSK |= 1 << endpoint;
+    }
+  }
+
+  if (iso)
+  {
+    if ((USBx_DEVICE(instance)->DSTS & ( 1 << 8 )) == 0)
+    {
+      USBx_INEP(instance, endpoint)->DIEPCTL |= USB_OTG_DIEPCTL_SODDFRM;
+    }
+    else
+    {
+      USBx_INEP(instance, endpoint)->DIEPCTL |= USB_OTG_DIEPCTL_SD0PID_SEVNFRM;
+    }
+  }
+
+  /* EP enable, IN data in FIFO */
+  USBx_INEP(instance, endpoint)->DIEPCTL |= (USB_OTG_DIEPCTL_CNAK | USB_OTG_DIEPCTL_EPENA);
+
+  if (iso)
+  {
+    USB_WritePacket(cfg, cfg->in_xfer_buffers[endpoint].buffer, endpoint, length);
+  }
+}
+
+void USBEnableEndpoint(void *data, unsigned int endpoint, USBEndpointDirection direction)
+{
+  const USB_OTG_CfgTypeDef *cfg = data;
+
+  unsigned int ep_int_pos = 1 << endpoint;
+
+  if (direction == usb_endpoint_direction_in || direction == usb_endpoint_direction_inout)
+  {
+    USBx_DEVICE(cfg->instance)->DAINTMSK |= USB_OTG_DAINTMSK_IEPM & ep_int_pos;
+    USBx_INEP(cfg->instance, endpoint)->DIEPCTL |= USB_OTG_DIEPCTL_USBAEP;
+  }
+
+  if (direction == usb_endpoint_direction_out || direction == usb_endpoint_direction_inout)
+  {
+    USBx_DEVICE(cfg->instance)->DAINTMSK |= USB_OTG_DAINTMSK_OEPM & (ep_int_pos << 16);
+    USBx_OUTEP(cfg->instance, endpoint)->DOEPCTL |= USB_OTG_DOEPCTL_USBAEP;
+  }
+}
+
+
+void USBInitEndpoint(void *data, unsigned int endpoint, unsigned int max_packet_size,
+                      USBEndpointTransferType transfer_type)
+{
+  const USB_OTG_CfgTypeDef *cfg = data;
+
   unsigned int temp = USBx_INEP(cfg->instance, endpoint)->DIEPCTL & ~(USB_OTG_DIEPCTL_MPSIZ | USB_OTG_DIEPCTL_EPTYP);
-  temp |= (max_packet_size & USB_OTG_DIEPCTL_MPSIZ) | (transfer_type << 18);
+  temp |= (max_packet_size & USB_OTG_DIEPCTL_MPSIZ) | (transfer_type << 18) | (endpoint << 22) |
+          USB_OTG_DIEPCTL_SD0PID_SEVNFRM;
   USBx_INEP(cfg->instance, endpoint)->DIEPCTL = temp;
 
   temp = USBx_OUTEP(cfg->instance, endpoint)->DOEPCTL & ~(USB_OTG_DOEPCTL_MPSIZ | USB_OTG_DOEPCTL_EPTYP);
-  temp |= (max_packet_size & USB_OTG_DOEPCTL_MPSIZ) | (transfer_type << 18);
+  temp |= (max_packet_size & USB_OTG_DOEPCTL_MPSIZ) | (transfer_type << 18) |
+          USB_OTG_DIEPCTL_SD0PID_SEVNFRM;
   USBx_OUTEP(cfg->instance, endpoint)->DOEPCTL = temp;
 }
 
@@ -463,7 +594,7 @@ static unsigned int USB_ReadDevOutEPInterrupt(USB_OTG_GlobalTypeDef *instance, u
   return v;
 }
 
-static void OEPINTHandler(const USB_OTG_CfgTypeDef *cfg)
+static void OEPINTHandler(USBDevice *device, USB_OTG_CfgTypeDef *cfg)
 {
   unsigned int epnum, ep_intr, epint;
 
@@ -482,27 +613,27 @@ static void OEPINTHandler(const USB_OTG_CfgTypeDef *cfg)
       {
         CLEAR_OUT_EP_INTR(cfg->instance, epnum, USB_OTG_DOEPINT_XFRC);
 
-        if(cfg->dma_enable)
+        /*if(cfg->dma_enable)
         {
-          USBHandle.OUT_ep[epnum].xfer_count = USB_FS_MAX_PACKET_SIZE - (USBx_OUTEP(epnum)->DOEPTSIZ & USB_OTG_DOEPTSIZ_XFRSIZ);
+          USBHandle.OUT_ep[epnum].xfer_count = USB_FS_MAX_PACKET_SIZE - (USBx_OUTEP(cfg->instance, epnum)->DOEPTSIZ & USB_OTG_DOEPTSIZ_XFRSIZ);
           USBHandle.OUT_ep[epnum].xfer_buff += USB_FS_MAX_PACKET_SIZE;
-        }
+        }*/
 
-        USBHandle.Callbacks->DataOutStage_Callback(epnum);
-        if(cfg->dma_enable)
+        USBDeviceDataPacketReceived(device, epnum, cfg->out_xfer_buffers[epnum].buffer, cfg->out_xfer_buffers[epnum].xfer_len);
+        /*if(cfg->dma_enable)
         {
           if((epnum == 0) && (USBHandle.OUT_ep[epnum].xfer_len == 0))
           {
             // this is ZLP, so prepare EP0 for next setup
             USB_EP0_OutStart();
           }
-        }
+        }*/
       }
 
       if(( epint & USB_OTG_DOEPINT_STUP) == USB_OTG_DOEPINT_STUP)
       {
         // Inform the upper layer that a setup packet is available
-        USBHandle.Callbacks->SetupStage_Callback();
+        USBDeviceSetupPacketReceived(device, cfg->out_xfer_buffers[0].buffer, cfg->out_xfer_buffers[0].xfer_len);
         CLEAR_OUT_EP_INTR(cfg->instance, epnum, USB_OTG_DOEPINT_STUP);
       }
 
@@ -555,7 +686,7 @@ static unsigned int USB_ReadDevInEPInterrupt (USB_OTG_GlobalTypeDef *instance, u
   * @param  epnum : endpoint number
   * @retval none
   */
-static void USB_WriteEmptyTxFifo(USB_OTG_GlobalTypeDef *instance, unsigned int epnum)
+/*static void USB_WriteEmptyTxFifo(USB_OTG_GlobalTypeDef *instance, unsigned int epnum)
 {
   USB_OTG_EPTypeDef *ep;
   unsigned int len;
@@ -577,7 +708,7 @@ static void USB_WriteEmptyTxFifo(USB_OTG_GlobalTypeDef *instance, unsigned int e
            ep->xfer_count < ep->xfer_len &&
            ep->xfer_len != 0)
   {
-    /* Write the FIFO */
+    // Write the FIFO
     len = ep->xfer_len - ep->xfer_count;
 
     if (len > USB_FS_MAX_PACKET_SIZE)
@@ -597,9 +728,9 @@ static void USB_WriteEmptyTxFifo(USB_OTG_GlobalTypeDef *instance, unsigned int e
     fifoemptymsk = 0x1 << epnum;
     USBx_DEVICE(instance)->DIEPEMPMSK &= ~fifoemptymsk;
   }
-}
+}*/
 
-static void IEPINTHandler(const USB_OTG_CfgTypeDef *cfg)
+static void IEPINTHandler(USBDevice *device, const USB_OTG_CfgTypeDef *cfg)
 {
   unsigned int epnum, ep_intr, epint, fifoemptymsk;
 
@@ -621,22 +752,22 @@ static void IEPINTHandler(const USB_OTG_CfgTypeDef *cfg)
 
         CLEAR_IN_EP_INTR(cfg->instance, epnum, USB_OTG_DIEPINT_XFRC);
 
-        if (cfg->dma_enable)
+        /*if (cfg->dma_enable)
         {
           USBHandle.IN_ep[epnum].xfer_buff += USB_FS_MAX_PACKET_SIZE;
-        }
+        }*/
 
-        USBHandle.Callbacks->DataInStage_Callback(epnum);
+        USBDeviceContinueTransfer(device, epnum);
 
-        if (cfg->dma_enable)
+        /*if (cfg->dma_enable)
         {
-          /* this is ZLP, so prepare EP0 for next setup */
+          // this is ZLP, so prepare EP0 for next setup
           if((epnum == 0) && (USBHandle.IN_ep[epnum].xfer_len == 0))
           {
-            /* prepare to rx more setup packets */
+            // prepare to rx more setup packets
             USB_EP0_OutStart();
           }
-        }
+        }*/
       }
       if(( epint & USB_OTG_DIEPINT_TOC) == USB_OTG_DIEPINT_TOC)
       {
@@ -656,7 +787,8 @@ static void IEPINTHandler(const USB_OTG_CfgTypeDef *cfg)
       }
       if(( epint & USB_OTG_DIEPINT_TXFE) == USB_OTG_DIEPINT_TXFE)
       {
-        USB_WriteEmptyTxFifo(cfg->instance, epnum);
+        //todo
+        //USB_WriteEmptyTxFifo(cfg->instance, epnum);
       }
     }
     epnum++;
@@ -664,10 +796,84 @@ static void IEPINTHandler(const USB_OTG_CfgTypeDef *cfg)
   }
 }
 
+/**
+  * @brief  USB_ReadPacket : read a packet from the Tx FIFO associated
+  *         with the EP/channel
+  * @param  dest : destination pointer
+  * @param  len : Number of bytes to read
+  * @retval pointer to destination buffer
+  */
+void *USB_ReadPacket(USB_OTG_GlobalTypeDef *instance, unsigned char *dest, unsigned int len)
+{
+  unsigned int i;
+  unsigned int count32b = (len + 3) / 4;
+
+  for ( i = 0; i < count32b; i++, dest += 4 )
+  {
+    *((unsigned int*)dest) = USBx_DFIFO(instance, 0);
+  }
+
+  return dest;
+}
+
+/**
+  * @brief  Prepare the EP0 to start the first control setup
+  * @retval none
+  */
+void USB_EP0_OutStart(const USB_OTG_CfgTypeDef *cfg, USB_OTG_GlobalTypeDef *instance)
+{
+  USBx_OUTEP(instance, 0)->DOEPTSIZ = 0;
+  USBx_OUTEP(instance, 0)->DOEPTSIZ |= (USB_OTG_DOEPTSIZ_PKTCNT & (1 << 19)) ;
+  USBx_OUTEP(instance, 0)->DOEPTSIZ |= (3 * 8);
+  USBx_OUTEP(instance, 0)->DOEPTSIZ |=  USB_OTG_DOEPTSIZ_STUPCNT;
+
+  if (cfg->dma_enable)
+  {
+    USBx_OUTEP(instance, 0)->DOEPDMA = (unsigned int)cfg->out_xfer_buffers[0].buffer;
+    /* EP enable */
+    USBx_OUTEP(instance, 0)->DOEPCTL = 0x80008000;
+  }
+}
+
+static void USBRSTHandler(const USB_OTG_CfgTypeDef *cfg, USB_OTG_GlobalTypeDef *instance)
+{
+  unsigned int i;
+
+  USBx_DEVICE(instance)->DCTL &= ~USB_OTG_DCTL_RWUSIG;
+  USB_FlushTxFifo(instance, 0);
+
+  for (i = 0; i < cfg->dev_endpoints; i++)
+  {
+    USBx_INEP(instance, i)->DIEPINT = 0xFF;
+    USBx_OUTEP(instance, i)->DOEPINT = 0xFF;
+  }
+  USBx_DEVICE(instance)->DAINT = 0xFFFFFFFF;
+  USBx_DEVICE(instance)->DAINTMSK |= 0x10001;
+
+  if(cfg->use_dedicated_ep1)
+  {
+    USBx_DEVICE(instance)->DOUTEP1MSK |= (USB_OTG_DOEPMSK_STUPM | USB_OTG_DOEPMSK_XFRCM | USB_OTG_DOEPMSK_EPDM);
+    USBx_DEVICE(instance)->DINEP1MSK |= (USB_OTG_DIEPMSK_TOM | USB_OTG_DIEPMSK_XFRCM | USB_OTG_DIEPMSK_EPDM);
+  }
+  else
+  {
+    USBx_DEVICE(instance)->DOEPMSK |= (USB_OTG_DOEPMSK_STUPM | USB_OTG_DOEPMSK_XFRCM | USB_OTG_DOEPMSK_EPDM | USB_OTG_DOEPMSK_OTEPSPRM);
+    USBx_DEVICE(instance)->DIEPMSK |= (USB_OTG_DIEPMSK_TOM | USB_OTG_DIEPMSK_XFRCM | USB_OTG_DIEPMSK_EPDM);
+  }
+
+  /* Set Default Address to 0 */
+  USBx_DEVICE(instance)->DCFG &= ~USB_OTG_DCFG_DAD;
+
+  /* setup EP0 to receive SETUP packets */
+  USB_EP0_OutStart(cfg, instance);
+
+  instance->GINTSTS = USB_OTG_GINTSTS_USBRST;
+}
+
 void USBDeviceInterruptHandler(int device_no)
 {
   USBDevice *device = &usb_devices[device_no];
-  const USB_OTG_CfgTypeDef *cfg = device->data;
+  USB_OTG_CfgTypeDef *cfg = device->data;
   USB_OTG_GlobalTypeDef *instance = cfg->instance;
   unsigned int status = USB_ReadInterrupts(instance);
 
@@ -681,14 +887,10 @@ void USBDeviceInterruptHandler(int device_no)
   }
 
   if (status & USB_OTG_GINTSTS_OEPINT)
-  {
-    OEPINTHandler(cfg);
-  }
+    OEPINTHandler(device, cfg);
 
   if (status & USB_OTG_GINTSTS_IEPINT)
-  {
-    IEPINTHandler(cfg);
-  }
+    IEPINTHandler(device, cfg);
 
   /* Handle Resume Interrupt */
   if (status & USB_OTG_GINTSTS_WKUINT)
@@ -719,16 +921,13 @@ void USBDeviceInterruptHandler(int device_no)
   {
     instance->GINTSTS = USB_OTG_GINTSTS_LPMINT;
 
-    for (int i = 0; i < USB_DEVICE_MAX_CLASSES; i++)
-    {
-      usb_callback c = device->LPM_Callbacks[i];
-      if (c)
-        c(device_no);
-      else
-        break;
-    }
+    USBDeviceCallLPMCallbacks(device_no, device);
   }
 #endif
+
+  /* Handle Reset Interrupt */
+  if (status & USB_OTG_GINTSTS_USBRST)
+    USBRSTHandler(cfg, instance);
 
   if (status & USB_OTG_GINTSTS_ENUMDNE)
   {
@@ -745,22 +944,17 @@ void USBDeviceInterruptHandler(int device_no)
   if (status & USB_OTG_GINTSTS_RXFLVL)
   {
     USB_MASK_INTERRUPT(instance, USB_OTG_GINTSTS_RXFLVL);
-    unsigned int temp = instance->GRXSTSP;
-    unsigned int ep = &USBHandle.OUT_ep[temp & USB_OTG_GRXSTSP_EPNUM];
 
-    if(((temp & USB_OTG_GRXSTSP_PKTSTS) >> 17) ==  STS_DATA_UPDT)
+    unsigned int temp = instance->GRXSTSP;
+    unsigned int type = (temp & USB_OTG_GRXSTSP_PKTSTS) >> 17;
+    unsigned int size = (temp & USB_OTG_GRXSTSP_BCNT) >> 4;
+    unsigned int ep_no = temp & USB_OTG_GRXSTSP_EPNUM;
+    USB_OTG_XferBuffer *xfer_buff = &cfg->out_xfer_buffers[ep_no];
+
+    if (type == STS_SETUP_UPDT || type == STS_DATA_UPDT)
     {
-      if((temp & USB_OTG_GRXSTSP_BCNT) != 0)
-      {
-        USB_ReadPacket(ep->xfer_buff, (temp & USB_OTG_GRXSTSP_BCNT) >> 4);
-        ep->xfer_buff += (temp & USB_OTG_GRXSTSP_BCNT) >> 4;
-        ep->xfer_count += (temp & USB_OTG_GRXSTSP_BCNT) >> 4;
-      }
-    }
-    else if (((temp & USB_OTG_GRXSTSP_PKTSTS) >> 17) ==  STS_SETUP_UPDT)
-    {
-      USB_ReadPacket(USBHandle.Setup.data, 8);
-      ep->xfer_count += (temp & USB_OTG_GRXSTSP_BCNT) >> 4;
+      USB_ReadPacket(cfg->instance, xfer_buff->buffer, size);
+      xfer_buff->xfer_len = size;
     }
 
     USB_UNMASK_INTERRUPT(instance, USB_OTG_GINTSTS_RXFLVL);
@@ -769,14 +963,7 @@ void USBDeviceInterruptHandler(int device_no)
   /* Handle SOF Interrupt */
   if(status & USB_OTG_GINTSTS_SOF)
   {
-    for (int i = 0; i < USB_DEVICE_MAX_CLASSES; i++)
-    {
-      usb_callback c = device->SOF_Callbacks[i];
-      if (c)
-        c(device_no);
-      else
-        break;
-    }
+    USBDeviceCallSofCallbacks(device_no, device);
     instance->GINTSTS = USB_OTG_GINTSTS_SOF;
   }
 
