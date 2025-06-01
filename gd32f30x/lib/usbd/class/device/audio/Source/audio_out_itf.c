@@ -157,6 +157,14 @@ static uint8_t audio_cmd(uint8_t *pbuf, uint32_t size, uint8_t cmd)
             return AD_OK;
         }
 
+    case AD_CMD_MUTE:
+       audio_mute(size);
+       break;
+
+    case AD_CMD_VOLUME:
+       audio_set_volume(size);
+       break;
+
     /* unsupported command */
     default:
         break;

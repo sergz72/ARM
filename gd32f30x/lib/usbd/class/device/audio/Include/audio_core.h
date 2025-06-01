@@ -232,7 +232,7 @@ typedef struct {
     usb_desc_itf                std_itf;                           /*!< interface descriptor */
     usb_desc_AC_itf             ac_itf;                            /*!< auido controller interface descriptor */
     usb_desc_input_terminal     in_terminal;                       /*!< input terminal descriptor */
-    usb_desc_mono_feature_unit  feature_unit;                      /*!< feature unit descriptor */
+    usb_desc_stereo_feature_unit  feature_unit;                      /*!< feature unit descriptor */
     usb_desc_output_terminal    out_terminal;                      /*!< output terminal descriptor */
     usb_desc_itf                std_as_itf_zeroband;               /*!< zeroband configuration standard audio streaming interface descriptor */
     usb_desc_itf                std_as_itf_opera;                  /*!< standard audio streaming interface descriptor */
@@ -257,6 +257,10 @@ typedef struct {
     uint8_t  audioctl[64];                                         /*!< audio control requests transfers buff */
     uint8_t  audioctl_unit;                                        /*!< audio control requests unit */
     uint32_t audioctl_len;                                         /*!< audio control requests length */
+    uint16_t audioctl_value;                                       /*!< audio control requests value */
+    uint8_t  audioctl_req_type;                                    /*!< audio control requests type */
+    uint32_t volume;                                               /*!< audio volume */
+    uint32_t mute;                                                 /*!< audio mute */
 
     uint32_t play_flag;                                            /*!< audio device play flag */
 } usbd_audio_handler;

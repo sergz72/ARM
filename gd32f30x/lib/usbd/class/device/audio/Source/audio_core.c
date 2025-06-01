@@ -41,10 +41,13 @@ OF SUCH DAMAGE.
 #define USBD_VID                     0x28E9U
 #define USBD_PID                     0x9574U
 
-#define VOL_MIN                      0U    /* volume minimum value */
-#define VOL_MAX                      100U  /* volume maximum value */
-#define VOL_RES                      1U    /* volume resolution */
-#define VOL_0dB                      70U   /* 0dB is in the middle of VOL_MIN and VOL_MAX */
+#define VOL_MIN_LO                   0U    /* volume minimum value */
+#define VOL_MIN_HI                   0xA0U    /* volume minimum value */
+#define VOL_MAX_LO                   0U  /* volume maximum value */
+#define VOL_MAX_HI                   0U  /* volume maximum value */
+#define VOL_RES_LO                   0U    /* volume resolution */
+#define VOL_RES_HI                   1U    /* volume resolution */
+#define VOL_0dB                      0xFFFFD000U   /* 0dB is in the middle of VOL_MIN and VOL_MAX */
 
 /* local function prototypes ('static') */
 static uint8_t audio_sof(usb_dev *udev);
@@ -158,7 +161,7 @@ usb_desc_config_set audio_config_set = {
     {
         .header =
         {
-            .bLength         = sizeof(usb_desc_mono_feature_unit),
+            .bLength         = sizeof(usb_desc_stereo_feature_unit),
             .bDescriptorType = AD_DESCTYPE_INTERFACE
         },
         .bDescriptorSubtype  = AD_CONTROL_FEATURE_UNIT,
@@ -361,6 +364,7 @@ static uint8_t audio_init(usb_dev *udev, uint8_t config_index)
 
     audio_handler.isoc_out_rdptr = audio_handler.isoc_out_buff;
     audio_handler.isoc_out_wrptr = audio_handler.isoc_out_buff;
+    audio_handler.volume = 50;
 
     /* initialize the audio output hardware layer */
     if(USBD_OK != audio_out_fops.audio_init(USBD_SPEAKER_FREQ, DEFAULT_VOLUME)) {
@@ -416,6 +420,23 @@ static uint8_t audio_req_handler(usb_dev *udev, usb_req *req)
         break;
 
     case AD_REQ_GET_CUR:
+        if ((req->bmRequestType & 0x1F) == 1) // audio control request
+        {
+            switch (BYTE_HIGH(req->wValue))
+            {
+                case AD_CONTROL_MUTE:
+                    audio->audioctl[0] = (uint8_t)audio->mute;
+                    break;
+                case AD_CONTROL_VOLUME:
+                    audio->audioctl[0] = (uint8_t)audio->volume;
+                    audio->audioctl[1] = (uint8_t)(audio->volume >> 8);
+                    break;
+                default:
+                    audio->audioctl[0] = 0;
+                    audio->audioctl[1] = 0;
+                    break;
+            }
+        }
         usb_transc_config(&udev->transc_in[0], audio->audioctl, req->wLength, 0U);
 
         status = REQ_SUPP;
@@ -429,27 +450,32 @@ static uint8_t audio_req_handler(usb_dev *udev, usb_req *req)
 
             audio->audioctl_len = req->wLength;
             audio->audioctl_unit = BYTE_HIGH(req->wIndex);
+            audio->audioctl_value = req->wValue;
+            audio->audioctl_req_type = req->bmRequestType & 0x1F;
 
             status = REQ_SUPP;
         }
         break;
 
     case AD_REQ_GET_MIN:
-        audio->audioctl[0] = VOL_MIN;
+        audio->audioctl[0] = VOL_MIN_LO;
+        audio->audioctl[1] = VOL_MIN_HI;
         usb_transc_config(&udev->transc_in[0], audio->audioctl, req->wLength, 0U);
 
         status = REQ_SUPP;
         break;
 
     case AD_REQ_GET_MAX:
-        audio->audioctl[0] = VOL_MAX;
+        audio->audioctl[0] = VOL_MAX_LO;
+        audio->audioctl[1] = VOL_MAX_HI;
         usb_transc_config(&udev->transc_in[0], audio->audioctl, req->wLength, 0U);
 
         status = REQ_SUPP;
         break;
 
     case AD_REQ_GET_RES:
-        audio->audioctl[0] = VOL_RES;
+        audio->audioctl[0] = VOL_RES_LO;
+        audio->audioctl[1] = VOL_RES_HI;
         usb_transc_config(&udev->transc_in[0], audio->audioctl, req->wLength, 0U);
 
         status = REQ_SUPP;
@@ -589,8 +615,21 @@ static uint8_t audio_ctlx_out(usb_dev *udev)
 
         /* check for which addressed unit the audio_control request has been issued */
         if(AD_OUT_STREAMING_CTRL == audio->audioctl_unit) {
-            /* in this driver, to simplify code, only one unit is manage */
-
+            if (audio->audioctl_req_type == 1) // audio control request
+            {
+                uint16_t value = *(uint16_t*)(udev->transc_out[0].xfer_buf - audio->audioctl_len);
+                switch (BYTE_HIGH(audio->audioctl_value))
+                {
+                    case AD_CONTROL_MUTE:
+                        audio->mute = value & 0xFF;
+                        audio_out_fops.audio_cmd(NULL, audio->mute, AD_CMD_MUTE);
+                        break;
+                    case AD_CONTROL_VOLUME:
+                        audio->volume = value;
+                        audio_out_fops.audio_cmd(NULL, value, AD_CMD_VOLUME);
+                        break;
+                }
+            }
             /* reset the audioctl_cmd variable to prevent re-entering this function */
             udev->class_core->req_cmd = 0U;
 
