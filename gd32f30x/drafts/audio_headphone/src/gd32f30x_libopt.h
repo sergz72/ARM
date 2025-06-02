@@ -37,6 +37,8 @@ OF SUCH DAMAGE.
 
 #define __SYSTEM_CLOCK_48M_PLL_HXTAL (uint32_t)(48000000)
 
+#define I2S_SPI2
+
 #include "gd32f30x_rcu.h"
 #include "gd32f30x_dma.h"
 #include "gd32f30x_gpio.h"

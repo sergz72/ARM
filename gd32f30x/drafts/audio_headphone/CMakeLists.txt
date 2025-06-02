@@ -33,16 +33,18 @@ file(GLOB SOURCES
         "../lib/Source/gd32f30x_misc.c"
         "../lib/Source/gd32f30x_spi.c"
         "../lib/Source/gd32f30x_dma.c"
+        "../lib/Source/gd32f30x_i2c.c"
         "../lib/systick.c"
         "../startup_gd32f30x_hd.S"
         "../lib/usbd/class/device/audio/Source/audio_core.c"
         "../lib/usbd/class/device/audio/Source/audio_out_itf.c"
         "../lib/usbd/device/Source/*.c"
         "../lib/usbd/usbd/Source/*.c"
+        "../../common_lib/audio/tlv320dac3100.c"
 )
 
 include_directories(src src/devices ../cmsis ../cmsis/device ../lib/Include ../lib ../lib/usbd/class/device/audio/Include
-        ../lib/usbd/device/Include ../lib/usbd/usbd/Include)
+        ../lib/usbd/device/Include ../lib/usbd/usbd/Include ../../common_lib/audio)
 
 add_executable(${PROJECT_NAME}.elf ${SOURCES} ${LINKER_SCRIPT})
 

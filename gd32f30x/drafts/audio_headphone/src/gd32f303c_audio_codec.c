@@ -105,10 +105,13 @@ void codec_gpio_init(void)
     /* enable GPIO clock */
     rcu_periph_clock_enable(RCU_AF);
     rcu_periph_clock_enable(AD_I2S_GPIO_CLK);
+    rcu_periph_clock_enable(AD_I2S_GPIO_WS_CLK);
+#ifdef IIS_MCLK_ENABLED
     rcu_periph_clock_enable(AD_I2S_MCK_CLK);
+#endif
 
     /* AD_I2S pins configuraiton: WS, SCK and SD pins */
-    gpio_init(AD_I2S_GPIO, GPIO_MODE_AF_PP, GPIO_OSPEED_50MHZ, AD_I2S_WS_PIN);
+    gpio_init(AD_I2S_GPIO_WS, GPIO_MODE_AF_PP, GPIO_OSPEED_50MHZ, AD_I2S_WS_PIN);
     gpio_init(AD_I2S_GPIO, GPIO_MODE_AF_PP, GPIO_OSPEED_50MHZ, AD_I2S_SCK_PIN);
     gpio_init(AD_I2S_GPIO, GPIO_MODE_AF_PP, GPIO_OSPEED_50MHZ, AD_I2S_SD_PIN);
 
@@ -127,7 +130,7 @@ void codec_gpio_init(void)
 void codec_gpio_deinit(void)
 {
     /* deinitialize all the GPIOs used by the driver */
-    gpio_init(AD_I2S_GPIO, GPIO_MODE_IN_FLOATING, GPIO_OSPEED_50MHZ, AD_I2S_WS_PIN );
+    gpio_init(AD_I2S_GPIO_WS, GPIO_MODE_IN_FLOATING, GPIO_OSPEED_50MHZ, AD_I2S_WS_PIN );
     gpio_init(AD_I2S_GPIO, GPIO_MODE_IN_FLOATING, GPIO_OSPEED_50MHZ, AD_I2S_SCK_PIN);
     gpio_init(AD_I2S_GPIO, GPIO_MODE_IN_FLOATING, GPIO_OSPEED_50MHZ, AD_I2S_SD_PIN);
 

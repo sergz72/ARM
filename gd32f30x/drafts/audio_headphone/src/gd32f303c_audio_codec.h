@@ -42,11 +42,41 @@ OF SUCH DAMAGE.
 #define AD_IRQ_SUBRIO               0U
 
 /* uncomment the defines below to select if the master clock mode should be enabled or not */
-#define IIS_MCLK_ENABLED
-/* #define IIS_MCLK_DISABLED */
+//#define IIS_MCLK_ENABLED
+#define IIS_MCLK_DISABLED
 
 /* hardware configuration defines parameters */
 
+#ifdef I2S_SPI2
+/* I2S peripheral configuration defines (data and control interface of the audio codec) */
+#define AD_I2S                      SPI2
+#define AD_I2S_CLK                  RCU_SPI2
+#define AD_I2S_ADDRESS              (SPI2+0x0C)
+#define AD_I2S_IRQ                  SPI2_IRQn
+#define AD_I2S_WS_PIN               GPIO_PIN_15
+#define AD_I2S_SCK_PIN              GPIO_PIN_3
+#define AD_I2S_SD_PIN               GPIO_PIN_5
+#define AD_I2S_MCK_PIN              GPIO_PIN_6
+#define AD_I2S_MCK_GPIO             GPIOC
+#define AD_I2S_GPIO                 GPIOB
+#define AD_I2S_GPIO_WS              GPIOA
+#define AD_I2S_GPIO_CLK             RCU_GPIOB
+#define AD_I2S_GPIO_WS_CLK          RCU_GPIOA
+#define AD_I2S_MCK_CLK              RCU_GPIOC
+
+/* I2S DMA stream definitions */
+#define AD_DMA_CLOCK                RCU_DMA1
+#define AD_DMA_CHANNEL              DMA_CH1
+#define AD_DMA_IRQ                  DMA1_Channel1_IRQn
+#define AD_DMA_FLAG_TC              DMA_FLAG_FTF
+#define AD_DMA_FLAG_HT              DMA_FLAG_HTF
+#define AD_DMA_FLAG_TE              DMA_FLAG_ERR
+#define AD_DMA_FLAG_GL              DMA_INT_FLAG_G
+#define AD_DMA_FLAG_ALL             DMA_INT_FLAG_G
+#define AD_DMA                      DMA1
+
+#define Audio_DMA_IRQHandler        DMA1_Channel1_IRQHandler
+#else
 /* I2S peripheral configuration defines (data and control interface of the audio codec) */
 #define AD_I2S                      SPI1
 #define AD_I2S_CLK                  RCU_SPI1
@@ -58,7 +88,9 @@ OF SUCH DAMAGE.
 #define AD_I2S_MCK_PIN              GPIO_PIN_6
 #define AD_I2S_MCK_GPIO             GPIOC
 #define AD_I2S_GPIO                 GPIOB
+#define AD_I2S_GPIO_WS              GPIOB
 #define AD_I2S_GPIO_CLK             RCU_GPIOB
+#define AD_I2S_GPIO_WS_CLK          RCU_GPIOB
 #define AD_I2S_MCK_CLK              RCU_GPIOC
 
 /* I2S DMA stream definitions */
@@ -73,6 +105,7 @@ OF SUCH DAMAGE.
 #define AD_DMA                      DMA0
 
 #define Audio_DMA_IRQHandler        DMA0_Channel4_IRQHandler
+#endif
 
 /* mute commands */
 #define AD_MUTE                     0x01U

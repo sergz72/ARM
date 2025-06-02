@@ -35,20 +35,16 @@ OF SUCH DAMAGE.
 #include "audio_core.h"
 #include "usbd_hw.h"
 #include "board.h"
+#include "tlv.h"
 
 usb_dev usbd_audio;
 
-static uint32_t audio_commands[1000];
-static uint32_t *audio_command_p = audio_commands;
-
 void audio_mute(uint32_t mute)
 {
-    *audio_command_p++ = mute | 0x80000000;
 }
 
 void audio_set_volume(uint32_t volume)
 {
-    *audio_command_p++ = volume;
 }
 
 /*!
@@ -63,7 +59,13 @@ int main(void)
     rcu_config();
 
     HALInit();
-    //delayms(1000);
+
+    if (tlv_init())
+    {
+        LED_ON;
+        while(1)
+            delayms(100);
+    }
 
     /* USB device configuration */
     usbd_init(&usbd_audio, &audio_desc, &audio_class);
