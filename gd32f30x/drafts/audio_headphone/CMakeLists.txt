@@ -41,10 +41,11 @@ file(GLOB SOURCES
         "../lib/usbd/device/Source/*.c"
         "../lib/usbd/usbd/Source/*.c"
         "../../common_lib/audio/tlv320dac3100.c"
+        "../../common_lib/i2c_soft.c"
 )
 
 include_directories(src src/devices ../cmsis ../cmsis/device ../lib/Include ../lib ../lib/usbd/class/device/audio/Include
-        ../lib/usbd/device/Include ../lib/usbd/usbd/Include ../../common_lib/audio)
+        ../lib/usbd/device/Include ../lib/usbd/usbd/Include ../../common_lib/audio ../../common_lib)
 
 add_executable(${PROJECT_NAME}.elf ${SOURCES} ${LINKER_SCRIPT})
 

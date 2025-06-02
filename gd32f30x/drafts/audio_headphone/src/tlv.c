@@ -1,7 +1,7 @@
 #include "tlv.h"
 #include <tlv320dac3100.h>
-
 #include "audio.h"
+#include "board.h"
 
 static const TLV320DAC3100_DataPath data_path = {
   .channel_power_up = {1,1},
@@ -25,6 +25,9 @@ static const TLV320DAC3100_HPControl hp_control = {
 
 int tlv_init(void)
 {
+  delayms(10);
+  TLV_RESET_RELEASE;
+  delayms(10);
   int rc = tlv320dac3100_init();
   if (rc)
     return rc;
@@ -53,10 +56,10 @@ int tlv_init(void)
   rc = tlv320dac3100_dac_volume_control(0, 0, TLV320DAC3100_VOLUME_CONTROL_INDEPENDENT);
   if (rc)
     return rc;
-  rc = tlv320dac3100_set_headphone_volume(CHANNEL_LEFT, 1, 0);
+  rc = tlv320dac3100_set_headphone_volume(CHANNEL_LEFT, 1, 60); // -20 db
   if (rc)
     return rc;
-  rc = tlv320dac3100_set_headphone_volume(CHANNEL_RIGHT, 1, 0);
+  rc = tlv320dac3100_set_headphone_volume(CHANNEL_RIGHT, 1, 60); // -20 db
   if (rc)
     return rc;
   rc = tlv320dac3100_set_headphone_pga(CHANNEL_LEFT, 1, 0);
