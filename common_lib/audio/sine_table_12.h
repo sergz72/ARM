@@ -3,6 +3,6 @@
 
 #include <generator.h>
 
-extern short sine_table_12[DEFAULT_TABLE_LENGTH];
+extern const short sine_table_12[DEFAULT_TABLE_LENGTH];
 
 #endif
