@@ -9,11 +9,11 @@ typedef struct
   float adder;
   float phase;
   int volume;
-  short *table;
+  const short *table;
   float table_size;
 } SignalGenerator;
 
-void generator_init(SignalGenerator *generator, float sample_rate, short *table, int table_size);
+void generator_init(SignalGenerator *generator, float sample_rate, const short *table, int table_size);
 short generator_calculate_next_value(SignalGenerator *generator);
 void generator_set_frequency(SignalGenerator *generator, float frequency);
 void generator_set_volume(SignalGenerator *generator, int volume);

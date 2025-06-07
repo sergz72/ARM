@@ -1,6 +1,6 @@
 #include "generator.h"
 
-void generator_init(SignalGenerator *generator, float sample_rate, short *table, int table_size)
+void generator_init(SignalGenerator *generator, float sample_rate, const short *table, int table_size)
 {
   generator->sample_rate = sample_rate;
   generator->volume = 0xFFFF;
