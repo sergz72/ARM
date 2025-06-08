@@ -21,6 +21,7 @@
   *
   **************************************************************************
   */
+#include "board.h"
 #include "usbd_sdr.h"
 
 /** @addtogroup AT32F403A_407_middlewares_usbd_drivers
