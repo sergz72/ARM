@@ -130,13 +130,13 @@ static void TIM1Init(void)
 {
   RCC->APB2ENR |= RCC_APB2ENR_TIM1EN;
 
-  // Route COMP1 output to TIM1 via interconnect matrix
-  // tim_ti1 = tim_ti1_in1 (comp1_out)
-  TIM1->TISEL = 1;
-
   // Configure TIM1 in gated mode
   TIM1->SMCR = TIM_SMCR_SMS_0 | TIM_SMCR_SMS_2 |                  // Gated mode
-               TIM_SMCR_TS_0;    // tim_itr1 as trigger source
+               TIM_SMCR_TS_0 | TIM_SMCR_TS_1 | TIM_SMCR_TS_2;    // tim_etrf as trigger source
+
+  TIM1->AF1 = TIM1_AF1_ETRSEL_0; // tim_etr1(comp1_out) as tim_etrf
+
+  TIM1->DIER = TIM_DIER_UIE;
 
   TIM1->SR = 0;
   NVIC_Init(TIM1_UP_TIM16_IRQn, COUNTERS_INTERRUPT_PRIORITY, 0, ENABLE);
@@ -145,23 +145,72 @@ static void TIM1Init(void)
 static void TIM8Init(void)
 {
   RCC->APB2ENR |= RCC_APB2ENR_TIM8EN;
-  //todo
+
+  // Configure TIM8 in gated mode
+  TIM8->SMCR = TIM_SMCR_SMS_0 | TIM_SMCR_SMS_2 |                  // Gated mode
+               TIM_SMCR_TS_0 | TIM_SMCR_TS_1 | TIM_SMCR_TS_2;    // tim_etrf as trigger source
+
+  TIM8->AF1 = TIM1_AF1_ETRSEL_0 | TIM1_AF1_ETRSEL_1; // tim_etr3(comp3_out) as tim_etrf
+
+  TIM8->DIER = TIM_DIER_UIE;
+
   TIM8->SR = 0;
   NVIC_Init(TIM8_UP_IRQn, COUNTERS_INTERRUPT_PRIORITY, 0, ENABLE);
 }
 
-void stop_counters(void)
+static void TIM4Init(void)
 {
+  RCC->APB1ENR1 |= RCC_APB1ENR1_TIM4EN;
+
+  // Configure TIM in external clock mode
+  TIM4->SMCR = TIM_SMCR_SMS_0 | TIM_SMCR_SMS_1 | TIM_SMCR_SMS_2 |
+               TIM_SMCR_TS_0 | TIM_SMCR_TS_1 | TIM_SMCR_TS_2;    // tim_etrf as trigger source
+
+  TIM4->AF1 = TIM1_AF1_ETRSEL_0; // tim_etr1(comp1_out) as tim_etrf
+
+  TIM4->DIER = TIM_DIER_UIE;
+
+  TIM4->SR = 0;
+  NVIC_Init(TIM4_IRQn, COUNTERS_INTERRUPT_PRIORITY, 0, ENABLE);
+}
+
+static void TIM3Init(void)
+{
+  RCC->APB1ENR1 |= RCC_APB1ENR1_TIM3EN;
+
+  // Configure TIM in external clock mode
+  TIM3->SMCR = TIM_SMCR_SMS_0 | TIM_SMCR_SMS_1 | TIM_SMCR_SMS_2 |
+                TIM_SMCR_TS_0 | TIM_SMCR_TS_1 | TIM_SMCR_TS_2;    // tim_etrf as trigger source
+
+  TIM3->AF1 = TIM1_AF1_ETRSEL_0 | TIM1_AF1_ETRSEL_0; // tim_etr3(comp3_out) as tim_etrf
+
+  TIM3->DIER = TIM_DIER_UIE;
+
+  TIM3->SR = 0;
+  NVIC_Init(TIM3_IRQn, COUNTERS_INTERRUPT_PRIORITY, 0, ENABLE);
+}
+
+void __attribute__((section(".RamFunc"))) stop_counters(void)
+{
+  TIM4->CR1 &= ~TIM_CR1_CEN;
+  TIM3->CR1 &= ~TIM_CR1_CEN;
+  TIM2->CR1 &= ~TIM_CR1_CEN;
   TIM1->CR1 &= ~TIM_CR1_CEN;
   TIM8->CR1 &= ~TIM_CR1_CEN;
 }
 
-void start_counters(void)
+void __attribute__((section(".RamFunc"))) start_counters(void)
 {
   TIM1->CNT = 0;
   TIM8->CNT = 0;
+  TIM4->CNT = 0;
+  TIM2->CNT = 0;
+  TIM3->CNT = 0;
   TIM1->CR1 |= TIM_CR1_CEN;
   TIM8->CR1 |= TIM_CR1_CEN;
+  TIM2->CR1 |= TIM_CR1_CEN;
+  TIM4->CR1 |= TIM_CR1_CEN;
+  TIM3->CR1 |= TIM_CR1_CEN;
 }
 
 void pwm_set_frequency_and_duty(unsigned int frequency, unsigned int duty)
@@ -175,31 +224,33 @@ void pwm_set_frequency_and_duty(unsigned int frequency, unsigned int duty)
     duty = 1;
   else if (duty > 99)
     duty = 99;
-  TIM3->ARR = arr - 1;
-  TIM3->CCR3 = arr * duty / 100;
+  TIM15->ARR = arr - 1;
+  TIM15->CCR2 = arr * duty / 100;
 }
 
 // PWM timer
-static void TIM3Init(void)
+static void TIM15Init(void)
 {
-  RCC->APB1ENR1 |= RCC_APB1ENR1_TIM3EN;
+  RCC->APB2ENR |= RCC_APB2ENR_TIM15EN;
 
   GPIO_Init(GPIOB,
-            GPIO_Pin_0,
+            GPIO_Pin_15,
             GPIO_Mode_AF,
             GPIO_Speed_VeryHigh,
             GPIO_OType_PP,
             GPIO_PuPd_NOPULL
   );
-  GPIO_PinAFConfig(GPIOB, GPIO_PinSource0, GPIO_AF_2);
+  GPIO_PinAFConfig(GPIOB, GPIO_PinSource15, GPIO_AF_1);
 
   pwm_set_frequency_and_duty(10000, 50);
 
-  TIM3->CCMR2 = (6 << TIM_CCMR2_OC3M_Pos);  // PWM mode 1 (0110)
+  TIM15->CCMR1 = (6 << TIM_CCMR1_OC2M_Pos) | TIM_CCMR1_OC2PE;  // PWM mode 1 (0110)
 
-  TIM3->CCER |= TIM_CCER_CC3E;
+  TIM15->CCER |= TIM_CCER_CC2E;
 
-  TIM3->CR1 = TIM_CR1_ARPE | TIM_CR1_CEN;
+  TIM15->BDTR = TIM_BDTR_MOE;
+
+  TIM15->CR1 = TIM_CR1_ARPE | TIM_CR1_CEN;
 }
 
 // GATE timer
@@ -280,6 +331,8 @@ void SystemInit(void)
   ComparatorsInit();
   TIM1Init();
   TIM2Init();
+  TIM15Init();
+  TIM4Init();
   TIM3Init();
   TIM8Init();
 }

@@ -71,7 +71,7 @@
 #define COUNTERS_INTERRUPT_PRIORITY 1
 #define TIMER_INTERRUPT_PRIORITY 0
 
-extern unsigned int counter_low, counter_high;
+extern unsigned int counter_low, counter_high, counter_freq_low, counter_freq_high;
 
 unsigned int mv_to_12(unsigned int mv);
 void pwm_set_frequency_and_duty(unsigned int frequency, unsigned int duty);

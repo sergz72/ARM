@@ -14,10 +14,10 @@ static char usart_buffer[USART_BUFFER_SIZE];
 static char *usart_buffer_write_p, *usart_buffer_read_p;
 static char command_line[200];
 static volatile int timer_event;
-static volatile unsigned int timer1_counter, timer8_counter;
-unsigned int counter_low, counter_high;
+static volatile unsigned int timer1_counter, timer8_counter, timer4_counter, timer3_counter;
+unsigned int counter_low, counter_high, counter_freq_low, counter_freq_high;
 
-void USART2_IRQHandler(void)
+void __attribute__((section(".RamFunc"))) USART2_IRQHandler(void)
 {
   while (USART2->ISR & USART_ISR_RXNE_RXFNE)
   {
@@ -28,19 +28,32 @@ void USART2_IRQHandler(void)
   USART2->ICR = 0xFFFFFFFF;
 }
 
-void TIM2_IRQHandler(void)
+void __attribute__((section(".RamFunc"))) TIM2_IRQHandler(void)
 {
+  stop_counters();
   timer_event = 1;
   TIM2->SR = 0;
 }
 
-void TIM1_UP_TIM16_IRQHandler(void)
+void __attribute__((section(".RamFunc"))) TIM4_IRQHandler(void)
+{
+  timer4_counter++;
+  TIM4->SR = 0;
+}
+
+void __attribute__((section(".RamFunc"))) TIM3_IRQHandler(void)
+{
+  timer3_counter++;
+  TIM3->SR = 0;
+}
+
+void __attribute__((section(".RamFunc"))) TIM1_UP_TIM16_IRQHandler(void)
 {
   timer1_counter++;
   TIM1->SR = 0;
 }
 
-void TIM8_UP_IRQHandler(void)
+void __attribute__((section(".RamFunc"))) TIM8_UP_IRQHandler(void)
 {
   timer8_counter++;
   TIM8->SR = 0;
@@ -96,11 +109,13 @@ static void status_proc(void)
     LED_YELLOW_OFF;
 }
 
-static void update_counters(void)
+static void __attribute__((section(".RamFunc"))) update_counters(void)
 {
   counter_low = timer1_counter;
   counter_high = timer8_counter;
-  timer1_counter = timer8_counter = 0;
+  counter_freq_low = TIM4->CNT | (timer4_counter << 16);
+  counter_freq_high = TIM3->CNT | (timer3_counter << 16);
+  timer1_counter = timer8_counter = timer4_counter = timer3_counter = 0;
 }
 
 int main(void)
@@ -122,7 +137,7 @@ int main(void)
   timer_event = 0;
   TIM2->CR1 = TIM_CR1_CEN;
 
-  counter_low = counter_high = 0;
+  counter_low = counter_high = counter_freq_low = counter_freq_high = 0;
   start_counters();
 
   while (1)
@@ -130,7 +145,6 @@ int main(void)
     __WFI();
     if (!timer_event)
       continue;
-    stop_counters();
     update_counters();
     start_counters();
     timer_event = 0;
