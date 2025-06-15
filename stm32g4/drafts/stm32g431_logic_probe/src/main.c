@@ -1,16 +1,21 @@
 #include "board.h"
-#include <delay_systick.h>
+//#include <delay_systick.h>
 #include <shell.h>
 #include <getstring.h>
 #include <stdio.h>
 #include <string.h>
-#include <usart.h>
 #include <common_printf.h>
+#include "dac_commands.h"
+#include "pwm_commands.h"
+#include "counters_commands.h"
 
 static int led_state;
 static char usart_buffer[USART_BUFFER_SIZE];
 static char *usart_buffer_write_p, *usart_buffer_read_p;
 static char command_line[200];
+static volatile int timer_event;
+static volatile unsigned int timer1_counter, timer8_counter;
+unsigned int counter_low, counter_high;
 
 void USART2_IRQHandler(void)
 {
@@ -21,6 +26,24 @@ void USART2_IRQHandler(void)
       usart_buffer_write_p = usart_buffer;
   }
   USART2->ICR = 0xFFFFFFFF;
+}
+
+void TIM2_IRQHandler(void)
+{
+  timer_event = 1;
+  TIM2->SR = 0;
+}
+
+void TIM1_UP_TIM16_IRQHandler(void)
+{
+  timer1_counter++;
+  TIM1->SR = 0;
+}
+
+void TIM8_UP_IRQHandler(void)
+{
+  timer8_counter++;
+  TIM8->SR = 0;
 }
 
 static void led_toggle(void)
@@ -55,6 +78,31 @@ static int getch_(void)
   return EOF;
 }
 
+static void status_proc(void)
+{
+  unsigned int low = !(COMP1->CSR & COMP_CSR_VALUE);
+  if (low)
+    LED_RED_ON;
+  else
+    LED_RED_OFF;
+  unsigned int high = COMP3->CSR & COMP_CSR_VALUE;
+  if (high)
+    LED_GREEN_ON;
+  else
+    LED_GREEN_OFF;
+  if (!low && !high)
+    LED_YELLOW_ON;
+  else
+    LED_YELLOW_OFF;
+}
+
+static void update_counters(void)
+{
+  counter_low = timer1_counter;
+  counter_high = timer8_counter;
+  timer1_counter = timer8_counter = 0;
+}
+
 int main(void)
 {
   int rc;
@@ -65,12 +113,30 @@ int main(void)
 
   shell_init(common_printf, NULL);
 
+  register_dac_commands();
+  register_pwm_commands();
+  register_counters_commands();
+
   getstring_init(command_line, sizeof(command_line), getch_, puts_);
+
+  timer_event = 0;
+  TIM2->CR1 = TIM_CR1_CEN;
+
+  counter_low = counter_high = 0;
+  start_counters();
 
   while (1)
   {
-    delayms(100);
+    __WFI();
+    if (!timer_event)
+      continue;
+    stop_counters();
+    update_counters();
+    start_counters();
+    timer_event = 0;
+
     //usart_proc();
+    status_proc();
 
     if (!getstring_next())
     {
