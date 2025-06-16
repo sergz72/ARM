@@ -7,17 +7,29 @@
 
 #include "stm32g4xx.h"
 
+//#define BOOST_MODE
+
+#ifdef BOOST_MODE
+#define BOARD_PCLK1 168000000
+#define SYSTICK_MULTIPLIER 21
+#define PLLN 42
+#define COUNTERS_MAX 256
+#else
 #define BOARD_PCLK1 144000000
+#define SYSTICK_MULTIPLIER 18
+#define PLLN 36
+#define COUNTERS_MAX 219
+#endif
+
 #define USART_BAUD_RATE 115200
 #define USART_BUFFER_SIZE 1024
-
-#define SYSTICK_MULTIPLIER 18
 
 // clr PC6
 #define LED_OFF GPIOC->BSRR = 0x400000
 // set PC6
 #define LED_ON GPIOC->BSRR = 0x40
 
+/*
 // clr PB3
 #define LED_RED_OFF GPIOB->BSRR = 0x80000
 // set PB3
@@ -47,6 +59,7 @@
 #define LED_WHITE_OFF GPIOB->BSRR = 0x2000000
 // set PB9
 #define LED_WHITE_ON GPIOB->BSRR = 0x200
+*/
 
 //PC13
 #define BUTTON1_PRESSED (GPIOC->IDR & 0x2000)

@@ -91,7 +91,7 @@ static int getch_(void)
   return EOF;
 }
 
-static void status_proc(void)
+/*static void status_proc(void)
 {
   unsigned int low = !(COMP1->CSR & COMP_CSR_VALUE);
   if (low)
@@ -107,7 +107,7 @@ static void status_proc(void)
     LED_YELLOW_ON;
   else
     LED_YELLOW_OFF;
-}
+}*/
 
 static void __attribute__((section(".RamFunc"))) update_counters(void)
 {
@@ -150,7 +150,7 @@ int main(void)
     timer_event = 0;
 
     //usart_proc();
-    status_proc();
+    //status_proc();
 
     if (!getstring_next())
     {

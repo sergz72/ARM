@@ -269,7 +269,7 @@ static void TIM2Init(void)
 // HSE = 8MHz
 static void ClockInit(void)
 {
-  //RCC->APB1ENR1 |= RCC_APB1ENR1_PWREN;
+  RCC->APB1ENR1 |= RCC_APB1ENR1_PWREN;
 
   RCC->CR |= RCC_CR_HSEON;
   while (!(RCC->CR & RCC_CR_HSERDY))
@@ -278,12 +278,14 @@ static void ClockInit(void)
   // voltage scaling range 1
 //  while (PWR->CR1 != 0x200)
 //    ;
-  // boost mode off
-//  while (PWR->CR5 != 0x100)
-//    ;
+#ifdef BOOST_MODE
+  // boost mode on
+  PWR->CR5 = 0;
+#endif
+
   //The regulator is ready in the selected voltage range
-//  while (PWR->SR2 & (PWR_SR2_REGLPF | PWR_SR2_VOSF))
-//    ;
+  while (PWR->SR2 & (PWR_SR2_REGLPF | PWR_SR2_VOSF))
+    ;
 
   // 4 wait states
   unsigned int temp = FLASH->ACR & ~FLASH_ACR_LATENCY;
@@ -293,7 +295,7 @@ static void ClockInit(void)
   // PLLM = 1
   // PLLN = 36
   // PLLR = 2
-  RCC->PLLCFGR = RCC_PLLCFGR_PLLSRC_HSE | (36 << RCC_PLLCFGR_PLLN_Pos) | RCC_PLLCFGR_PLLREN;
+  RCC->PLLCFGR = RCC_PLLCFGR_PLLSRC_HSE | (PLLN << RCC_PLLCFGR_PLLN_Pos) | RCC_PLLCFGR_PLLREN;
 
   RCC->CR |= RCC_CR_PLLON;
   while (!(RCC->CR & RCC_CR_PLLRDY))
@@ -308,7 +310,6 @@ void SystemInit(void)
 {
   ClockInit();
 
-  /* 144MHz / 8 => 18M counts per second */
   systick_set_clocksource(STK_CTRL_CLKSOURCE_AHB_DIV8);
 
   //enable the GPIO clock for port GPIOA
