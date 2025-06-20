@@ -34,14 +34,18 @@ file(GLOB SOURCES
         "../stm32g4lib/systick.c"
         "../stm32g4lib/nvic.c"
         "../stm32g4lib/usart.c"
-#        "../../common_lib/delay_systick.c"
+        "../stm32g4lib/i2c.c"
+        "../stm32g4lib/spi.c"
         "../../common_lib/shell/shell.c"
         "../../common_lib/getstring.c"
         "../../common_lib/fixed_queue.c"
         "../../common_lib/common_printf.c"
+        "../../common_lib/display/lcd_ssd1306.c"
+        "../../common_lib/display/font.c"
+        "../../common_lib/ws2812_spi.c"
 )
 
-include_directories(src .. ../cmsis ../cmsis/device ../stm32g4lib ../../common_lib ../../common_lib/shell)
+include_directories(src .. ../cmsis ../cmsis/device ../stm32g4lib ../../common_lib ../../common_lib/shell ../../common_lib/display)
 
 add_executable(${PROJECT_NAME}.elf ${SOURCES} ${LINKER_SCRIPT})
 

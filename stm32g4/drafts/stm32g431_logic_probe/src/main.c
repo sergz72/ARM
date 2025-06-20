@@ -8,6 +8,8 @@
 #include "dac_commands.h"
 #include "pwm_commands.h"
 #include "counters_commands.h"
+#include "ui.h"
+#include <ws2812_spi.h>
 
 static int led_state;
 static char usart_buffer[USART_BUFFER_SIZE];
@@ -15,6 +17,7 @@ static char *usart_buffer_write_p, *usart_buffer_read_p;
 static char command_line[200];
 static volatile int timer_event;
 static volatile unsigned int timer1_counter, timer8_counter, timer4_counter, timer3_counter;
+static ws2812_rgb led_data[WS2812_MAX_LEDS];
 unsigned int counter_low, counter_high, counter_freq_low, counter_freq_high;
 
 void __attribute__((section(".RamFunc"))) USART2_IRQHandler(void)
@@ -124,7 +127,10 @@ int main(void)
 
   led_state = 0;
   usart_buffer_write_p = usart_buffer_read_p = usart_buffer;
-  int cnt = 0;
+  int cnt_led = 0;
+  int cnt_ui = 0;
+
+  UI_Init();
 
   shell_init(common_printf, NULL);
 
@@ -139,6 +145,14 @@ int main(void)
 
   counter_low = counter_high = counter_freq_low = counter_freq_high = 0;
   start_counters();
+
+  /*memset(led_data, 0, sizeof(led_data));
+  led_data[0].blue = WS2812_MAX_VALUE;
+  led_data[1].red = WS2812_MAX_VALUE;
+  led_data[2].green = WS2812_MAX_VALUE;
+  led_data[3].green = WS2812_MAX_VALUE/2;
+  led_data[3].red = WS2812_MAX_VALUE/2;
+  ws2812_send(0, (const ws2812_rgb *)&led_data, WS2812_MAX_LEDS);*/
 
   while (1)
   {
@@ -176,11 +190,14 @@ int main(void)
       }
     }
 
-    cnt++;
-    if (cnt == 10)
+    cnt_led++;
+    if (cnt_led == TIMER_EVENT_FREQUENCY)
     {
       led_toggle();
-      cnt = 0;
+      cnt_led = 0;
     }
+    cnt_ui++;
+    if (!(cnt_ui & 1))
+      Process_Timer_Event();
   }
 }

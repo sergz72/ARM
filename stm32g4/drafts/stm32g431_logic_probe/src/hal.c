@@ -4,6 +4,28 @@
 #include <nvic.h>
 #include <string.h>
 #include <usart.h>
+#include <i2c.h>
+#include <spi.h>
+#include <lcd_ssd1306.h>
+
+static const SPI_InitStruct spi1_init = {
+  .master = 1,
+  .clock_phase = 0,
+  .clock_polarity = 0,
+  .data_size = 8,
+  .error_interrupt_enable = 0,
+  .rxne_interrupt_enable = 0,
+  .txe_interrupt_enable = 0,
+  .lsb_first = 0,
+  .rxonly = 0,
+  .ss_output_enable = 0,
+  .ti_mode = 0,
+  .tx_dma_enable = 0,
+  .rx_dma_enable = 0,
+  .software_slave_management = 1,
+  .internal_slave_select = 1,
+  .baud_rate = 2500000
+};
 
 static void GPIOInit(void)
 {
@@ -35,13 +57,13 @@ static void GPIOInit(void)
   );
 
   //LEDs
-  GPIO_Init(GPIOB,
+  /*GPIO_Init(GPIOB,
             GPIO_Pin_3 | GPIO_Pin_4 | GPIO_Pin_5 | GPIO_Pin_6 | GPIO_Pin_7 | GPIO_Pin_9,
             GPIO_Mode_OUT,
             GPIO_Speed_Low,
             GPIO_OType_PP,
             GPIO_PuPd_NOPULL
-  );
+  );*/
 }
 
 /*
@@ -266,6 +288,55 @@ static void TIM2Init(void)
   NVIC_Init(TIM2_IRQn, TIMER_INTERRUPT_PRIORITY, 0, ENABLE);
 }
 
+/*
+ * PA7=SPI1_MOSI
+ */
+static void SPI1Init(void)
+{
+  RCC->APB2ENR |= RCC_APB2ENR_SPI1EN;
+
+  GPIO_Init(GPIOA,
+            GPIO_Pin_7,
+            GPIO_Mode_AF,
+            GPIO_Speed_VeryHigh,
+            GPIO_OType_PP,
+            GPIO_PuPd_NOPULL
+  );
+  GPIO_PinAFConfig(GPIOA, GPIO_PinSource7, GPIO_AF_5);
+
+  SPI_Init(SPI1, &spi1_init);
+  SPI_Enable(SPI1);
+}
+
+/*
+ * PA8=SDA
+ * PC4=SCL
+ */
+static void I2C2Init(void)
+{
+  RCC->APB1ENR1 |= RCC_APB1ENR1_I2C2EN;
+
+  GPIO_Init(GPIOA,
+            GPIO_Pin_8,
+            GPIO_Mode_AF,
+            GPIO_Speed_Low,
+            GPIO_OType_OD,
+            GPIO_PuPd_UP
+  );
+  GPIO_Init(GPIOC,
+            GPIO_Pin_4,
+            GPIO_Mode_AF,
+            GPIO_Speed_Low,
+            GPIO_OType_OD,
+            GPIO_PuPd_UP
+  );
+  GPIO_PinAFConfig(GPIOA, GPIO_PinSource8, GPIO_AF_4);
+  GPIO_PinAFConfig(GPIOC, GPIO_PinSource4, GPIO_AF_4);
+
+  I2C_Master_Init(I2C2, I2C_TIMINGS); // calculated by stm32cubemx
+  I2C_Enable(I2C2);
+}
+
 // HSE = 8MHz
 static void ClockInit(void)
 {
@@ -336,6 +407,8 @@ void SystemInit(void)
   TIM4Init();
   TIM3Init();
   TIM8Init();
+  SPI1Init();
+  I2C2Init();
 }
 
 void _init(void)
@@ -344,5 +417,20 @@ void _init(void)
 
 void puts_(const char *s)
 {
-  usart_send(USART2, s, strlen(s));
+  usart_send(USART2, s, (int)strlen(s));
+}
+
+int SSD1306_I2C_Write(int num_bytes, unsigned char control_byte, unsigned char *buffer)
+{
+  static unsigned char i2c_buffer[256];
+
+  i2c_buffer[0] = control_byte;
+  memcpy(i2c_buffer + 1, buffer, num_bytes);
+  return I2C_Write(I2C2, SSD1306_I2C_ADDRESS, i2c_buffer, num_bytes + 1, I2C_TIMEOUT);
+}
+
+void ws2812_spi_send(int channel, const unsigned char *data, unsigned int count)
+{
+  while (count--)
+    SPI_Send8(SPI1, *data++, SPI_TIMEOUT);
 }
