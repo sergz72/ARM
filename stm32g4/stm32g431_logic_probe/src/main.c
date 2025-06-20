@@ -7,6 +7,7 @@
 #include "pwm_commands.h"
 #include "counters_commands.h"
 #include "ui.h"
+#include <delay_systick.h>
 
 static int led_state;
 static char usart_buffer[USART_BUFFER_SIZE];
@@ -142,8 +143,6 @@ int main(void)
   led_state = 0;
   usart_buffer_write_p = usart_buffer_read_p = usart_buffer;
 
-  UI_Init();
-
   shell_init(common_printf, NULL);
 
   register_dac_commands();
@@ -151,6 +150,9 @@ int main(void)
   register_counters_commands();
 
   getstring_init(command_line, sizeof(command_line), getch_, puts_);
+
+  delayms(50);
+  UI_Init();
 
   timer_event = 0;
   TIM2->CR1 = TIM_CR1_CEN;

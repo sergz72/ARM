@@ -6,9 +6,7 @@
 #include <usart.h>
 #include <i2c.h>
 #include <spi.h>
-#include <lcd_ssd1306.h>
-
-#include "ws2812_spi.h"
+#include <ws2812_spi.h>
 
 static const SPI_InitStruct spi1_init = {
   .master = 1,
@@ -179,7 +177,7 @@ static void TIM4Init(void)
 
   // Configure TIM in external clock mode
   TIM4->SMCR = TIM_SMCR_SMS_0 | TIM_SMCR_SMS_1 | TIM_SMCR_SMS_2 |
-               TIM_SMCR_TS_0 | TIM_SMCR_TS_1 | TIM_SMCR_TS_2;    // tim_etrf as trigger source
+               TIM_SMCR_TS_0 | TIM_SMCR_TS_1 | TIM_SMCR_TS_2 | TIM_SMCR_ETF_0;    // tim_etrf as trigger source
 
   TIM4->AF1 = TIM1_AF1_ETRSEL_0; // tim_etr1(comp1_out) as tim_etrf
 
@@ -197,7 +195,7 @@ static void TIM3Init(void)
   TIM3->SMCR = TIM_SMCR_SMS_0 | TIM_SMCR_SMS_1 | TIM_SMCR_SMS_2 |
                 TIM_SMCR_TS_0 | TIM_SMCR_TS_1 | TIM_SMCR_TS_2;    // tim_etrf as trigger source
 
-  TIM3->AF1 = TIM1_AF1_ETRSEL_0 | TIM1_AF1_ETRSEL_0; // tim_etr3(comp3_out) as tim_etrf
+  TIM3->AF1 = TIM1_AF1_ETRSEL_0 | TIM1_AF1_ETRSEL_1; // tim_etr3(comp3_out) as tim_etrf
 
   TIM3->DIER = TIM_DIER_UIE;
 
@@ -239,33 +237,33 @@ void pwm_set_frequency_and_duty(unsigned int frequency, unsigned int duty)
     duty = 1;
   else if (duty > 99)
     duty = 99;
-  TIM15->ARR = arr - 1;
-  TIM15->CCR2 = arr * duty / 100;
+  TIM17->ARR = arr - 1;
+  TIM17->CCR1 = arr * duty / 100;
 }
 
 // PWM timer
-static void TIM15Init(void)
+static void TIM17Init(void)
 {
-  RCC->APB2ENR |= RCC_APB2ENR_TIM15EN;
+  RCC->APB2ENR |= RCC_APB2ENR_TIM17EN;
 
   GPIO_Init(GPIOB,
-            GPIO_Pin_15,
+            GPIO_Pin_9,
             GPIO_Mode_AF,
             GPIO_Speed_VeryHigh,
             GPIO_OType_PP,
             GPIO_PuPd_NOPULL
   );
-  GPIO_PinAFConfig(GPIOB, GPIO_PinSource15, GPIO_AF_1);
+  GPIO_PinAFConfig(GPIOB, GPIO_PinSource9, GPIO_AF_1);
 
   pwm_set_frequency_and_duty(10000, 50);
 
-  TIM15->CCMR1 = (6 << TIM_CCMR1_OC2M_Pos) | TIM_CCMR1_OC2PE;  // PWM mode 1 (0110)
+  TIM17->CCMR1 = (6 << TIM_CCMR1_OC1M_Pos) | TIM_CCMR1_OC1PE;  // PWM mode 1 (0110)
 
-  TIM15->CCER |= TIM_CCER_CC2E;
+  TIM17->CCER |= TIM_CCER_CC1E;
 
-  TIM15->BDTR = TIM_BDTR_MOE;
+  TIM17->BDTR = TIM_BDTR_MOE;
 
-  TIM15->CR1 = TIM_CR1_ARPE | TIM_CR1_CEN;
+  TIM17->CR1 = TIM_CR1_ARPE | TIM_CR1_CEN;
 }
 
 // GATE timer
@@ -330,7 +328,7 @@ static void I2C2Init(void)
   I2C_Enable(I2C2);
 }
 
-static void DMAInitForSPI1(void)
+static void DMAInit(void)
 {
   RCC->AHB1ENR |= RCC_AHB1ENR_DMA1EN | RCC_AHB1ENR_DMAMUX1EN;
 
@@ -342,6 +340,15 @@ static void DMAInitForSPI1(void)
 
   // 11 = SPI1_TX
   DMAMUX1_Channel0->CCR = 11;
+
+  // DMA channel 2 = from mem to I2C2
+  DMA1_Channel2->CCR = DMA_CCR_MINC | // memory increment mode
+                       DMA_CCR_PL | // very high priority level
+                       DMA_CCR_DIR; // read from memory
+  DMA1_Channel2->CPAR = (unsigned int)&I2C2->TXDR;
+
+  // 19 = I2C2_TX
+  DMAMUX1_Channel2->CCR = 19;
 }
 
 
@@ -411,13 +418,13 @@ void SystemInit(void)
   ComparatorsInit();
   TIM1Init();
   TIM2Init();
-  TIM15Init();
+  TIM17Init();
   TIM4Init();
   TIM3Init();
   TIM8Init();
   SPI1Init();
   I2C2Init();
-  DMAInitForSPI1();
+  DMAInit();
 }
 
 void _init(void)
@@ -447,4 +454,14 @@ void __attribute__((section(".RamFunc"))) ws2812_spi_send(int channel, const uns
   DMA1_Channel1->CMAR = (unsigned int)data;
   DMA1_Channel1->CNDTR = count;
   DMA1_Channel1->CCR |= DMA_CCR_EN;
+}
+
+void __attribute__((section(".RamFunc"))) set_h_voltage(unsigned int value)
+{
+  DAC3->DHR12R1 = mv_to_12(value);
+}
+
+void __attribute__((section(".RamFunc"))) set_l_voltage(unsigned int value)
+{
+  DAC1->DHR12R1 = mv_to_12(value);
 }

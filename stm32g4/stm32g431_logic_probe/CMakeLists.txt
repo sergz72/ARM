@@ -37,12 +37,17 @@ file(GLOB SOURCES
         "../stm32g4lib/usart.c"
         "../stm32g4lib/i2c.c"
         "../stm32g4lib/spi.c"
+        "../../common_lib/delay_systick.c"
         "../../common_lib/shell/shell.c"
         "../../common_lib/getstring.c"
         "../../common_lib/fixed_queue.c"
         "../../common_lib/common_printf.c"
+        "../../common_lib/myprintf.c"
+        "../../common_lib/ultoa.c"
         "../../common_lib/display/lcd_ssd1306.c"
         "../../common_lib/display/font.c"
+        "../../common_lib/display/fonts/font10.c"
+        "../../common_lib/display/lcd.c"
         "../../common_lib/ws2812_spi.c"
 )
 

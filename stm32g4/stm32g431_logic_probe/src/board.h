@@ -62,9 +62,13 @@ unsigned int mv_to_12(unsigned int mv);
 void pwm_set_frequency_and_duty(unsigned int frequency, unsigned int duty);
 void stop_counters(void);
 void start_counters(void);
+void set_l_voltage(unsigned int value);
+void set_h_voltage(unsigned int value);
 
 #define SSD1306_128_32
-#define LCD_ORIENTATION LCD_ORIENTATION_LANDSCAPE
+#define LCD_ORIENTATION LCD_ORIENTATION_LANDSCAPE_REVERSED
+
+#include <lcd_ssd1306.h>
 
 #define LCD_PRINTF_BUFFER_LENGTH 30
 #define DRAW_TEXT_MAX 20
