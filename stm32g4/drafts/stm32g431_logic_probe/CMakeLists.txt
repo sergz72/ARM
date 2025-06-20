@@ -7,7 +7,7 @@ SET(CMAKE_C_COMPILER_WORKS 1)
 
 SET(CMAKE_VERBOSE_MAKEFILE ON)
 
-SET(LINKER_SCRIPT ../../stm32g431cbux_flash.ld)
+SET(LINKER_SCRIPT ../../STM32G431XX_FLASH.ld)
 
 SET(FPU_FLAGS "-mfloat-abi=hard -mfpu=fpv4-sp-d16")
 add_definitions(-DARM_MATH_CM4 -DARM_MATH_MATRIX_CHECK -DARM_MATH_ROUNDING)
@@ -26,6 +26,7 @@ project(stm32g431_logic_probe C ASM)
 file(GLOB SOURCES
         "src/main.c"
         "src/hal.c"
+        "src/ui.c"
         "src/dac_commands.c"
         "src/pwm_commands.c"
         "src/counters_commands.c"

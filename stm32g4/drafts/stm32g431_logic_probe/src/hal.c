@@ -8,6 +8,8 @@
 #include <spi.h>
 #include <lcd_ssd1306.h>
 
+#include "ws2812_spi.h"
+
 static const SPI_InitStruct spi1_init = {
   .master = 1,
   .clock_phase = 0,
@@ -20,7 +22,7 @@ static const SPI_InitStruct spi1_init = {
   .rxonly = 0,
   .ss_output_enable = 0,
   .ti_mode = 0,
-  .tx_dma_enable = 0,
+  .tx_dma_enable = 1,
   .rx_dma_enable = 0,
   .software_slave_management = 1,
   .internal_slave_select = 1,
@@ -55,15 +57,6 @@ static void GPIOInit(void)
             GPIO_OType_PP,
             GPIO_PuPd_NOPULL
   );
-
-  //LEDs
-  /*GPIO_Init(GPIOB,
-            GPIO_Pin_3 | GPIO_Pin_4 | GPIO_Pin_5 | GPIO_Pin_6 | GPIO_Pin_7 | GPIO_Pin_9,
-            GPIO_Mode_OUT,
-            GPIO_Speed_Low,
-            GPIO_OType_PP,
-            GPIO_PuPd_NOPULL
-  );*/
 }
 
 /*
@@ -337,6 +330,21 @@ static void I2C2Init(void)
   I2C_Enable(I2C2);
 }
 
+static void DMAInitForSPI1(void)
+{
+  RCC->AHB1ENR |= RCC_AHB1ENR_DMA1EN | RCC_AHB1ENR_DMAMUX1EN;
+
+  // DMA channel 1 = from mem to SPI
+  DMA1_Channel1->CCR = DMA_CCR_MINC | // memory increment mode
+                       DMA_CCR_PL | // very high priority level
+                       DMA_CCR_DIR; // read from memory
+  DMA1_Channel1->CPAR = (unsigned int)&SPI1->DR;
+
+  // 11 = SPI1_TX
+  DMAMUX1_Channel0->CCR = 11;
+}
+
+
 // HSE = 8MHz
 static void ClockInit(void)
 {
@@ -409,6 +417,7 @@ void SystemInit(void)
   TIM8Init();
   SPI1Init();
   I2C2Init();
+  DMAInitForSPI1();
 }
 
 void _init(void)
@@ -420,7 +429,7 @@ void puts_(const char *s)
   usart_send(USART2, s, (int)strlen(s));
 }
 
-int SSD1306_I2C_Write(int num_bytes, unsigned char control_byte, unsigned char *buffer)
+int __attribute__((section(".RamFunc"))) SSD1306_I2C_Write(int num_bytes, unsigned char control_byte, unsigned char *buffer)
 {
   static unsigned char i2c_buffer[256];
 
@@ -429,8 +438,13 @@ int SSD1306_I2C_Write(int num_bytes, unsigned char control_byte, unsigned char *
   return I2C_Write(I2C2, SSD1306_I2C_ADDRESS, i2c_buffer, num_bytes + 1, I2C_TIMEOUT);
 }
 
-void ws2812_spi_send(int channel, const unsigned char *data, unsigned int count)
+void __attribute__((section(".RamFunc"))) ws2812_spi_send(int channel, const unsigned char *data, unsigned int count)
 {
-  while (count--)
-    SPI_Send8(SPI1, *data++, SPI_TIMEOUT);
+  //while (count--)
+    //SPI_Send8(SPI1, *data++, SPI_TIMEOUT);
+
+  DMA1_Channel1->CCR &= ~DMA_CCR_EN;
+  DMA1_Channel1->CMAR = (unsigned int)data;
+  DMA1_Channel1->CNDTR = count;
+  DMA1_Channel1->CCR |= DMA_CCR_EN;
 }
