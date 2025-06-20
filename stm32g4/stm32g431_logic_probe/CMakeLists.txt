@@ -16,10 +16,14 @@ SET(COMMON_FLAGS
         "-mcpu=cortex-m4 ${FPU_FLAGS} -ffunction-sections -fdata-sections -specs=nosys.specs -specs=nano.specs -nostartfiles")
 
 add_definitions(-D__weak=__attribute__\(\(weak\)\) -D__packed=__attribute__\(\(__packed__\)\) -DSTM32G431xx)
+if (CMAKE_BUILD_TYPE MATCHES Debug)
+    add_definitions(-DDEBUG)
+endif()
 
 SET(CMAKE_C_FLAGS_INIT "${COMMON_FLAGS} -std=gnu99")
 SET(CMAKE_ASM_FLAGS_INIT "${COMMON_FLAGS} -std=gnu99")
 SET(CMAKE_EXE_LINKER_FLAGS_INIT "-Wl,-gc-sections,--print-memory-usage -T ${LINKER_SCRIPT}")
+set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -O0")
 
 project(stm32g431_logic_probe C ASM)
 
@@ -46,6 +50,7 @@ file(GLOB SOURCES
         "../../common_lib/ultoa.c"
         "../../common_lib/display/lcd_ssd1306.c"
         "../../common_lib/display/font.c"
+        "../../common_lib/display/fonts/font8_2.c"
         "../../common_lib/display/fonts/font10.c"
         "../../common_lib/display/lcd.c"
         "../../common_lib/ws2812_spi.c"

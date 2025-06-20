@@ -5,15 +5,19 @@
 #include <string.h>
 #include <ws2812_spi.h>
 #include <fonts/font10.h>
+#include <fonts/font8_2.h>
 
 #define MAX_UH_VOLTAGES 5
 #define MAX_UL_VOLTAGES 5
 
 #define LINE2_Y 10
-#define LINE3_Y 22
+#define LINE3_Y 23
 #define F_X 20
-#define UH_X 31
-#define UL_X 97
+#define SYMBOL_WIDTH 9
+#define UH_X SYMBOL_WIDTH
+#define UL_X (SYMBOL_WIDTH*9)
+#define PH_X (SYMBOL_WIDTH*5)
+#define PL_X (SYMBOL_WIDTH*11)
 
 static const unsigned int uh_voltages[MAX_UH_VOLTAGES] = {
   2500,
@@ -52,8 +56,10 @@ void UI_Init(void)
   LcdScreenFill(BLACK_COLOR);
   LcdDrawText(0, 0, "FH", &courierNew10ptFontInfo, WHITE_COLOR, BLACK_COLOR, NULL);
   LcdDrawText(0, LINE2_Y, "FL", &courierNew10ptFontInfo, WHITE_COLOR, BLACK_COLOR, NULL);
-  LcdDrawText(0, LINE3_Y, "UH", &courierNew10ptFontInfo, WHITE_COLOR, BLACK_COLOR, NULL);
-  LcdDrawText(64, LINE3_Y, "UL", &courierNew10ptFontInfo, WHITE_COLOR, BLACK_COLOR, NULL);
+  LcdDrawText(0, LINE3_Y, "U", &courierNew8ptFontInfo, WHITE_COLOR, BLACK_COLOR, NULL);
+  LcdDrawText(SYMBOL_WIDTH*4, LINE3_Y, "%", &courierNew8ptFontInfo, WHITE_COLOR, BLACK_COLOR, NULL);
+  LcdDrawText(SYMBOL_WIDTH*8, LINE3_Y, "H", &courierNew8ptFontInfo, WHITE_COLOR, BLACK_COLOR, NULL);
+  LcdDrawText(SYMBOL_WIDTH*10, LINE3_Y, "%", &courierNew8ptFontInfo, WHITE_COLOR, BLACK_COLOR, NULL);
 }
 
 static void __attribute__((section(".RamFunc"))) calculate_led_data(void)
@@ -81,8 +87,18 @@ void __attribute__((section(".RamFunc"))) ShowFrequency(int x, int y, unsigned i
 
 void __attribute__((section(".RamFunc"))) ShowVoltage(int x, int y, unsigned int voltage)
 {
-  LcdPrintf("%d.%d", x, y, &courierNew10ptFontInfo, 1,
+  LcdPrintf("%d.%d", x, y, &courierNew8ptFontInfo, 1,
             voltage / 1000, (voltage / 100) % 10);
+}
+
+void __attribute__((section(".RamFunc"))) ShowVoltage1(int x, int y, unsigned int voltage)
+{
+  LcdPrintf("%d", x, y, &courierNew8ptFontInfo, 1, voltage / 100);
+}
+
+void __attribute__((section(".RamFunc"))) ShowPercentage(int x, int y, unsigned int percentage)
+{
+  LcdPrintf("%3d", x, y, &courierNew8ptFontInfo, 1, percentage);
 }
 
 void __attribute__((section(".RamFunc"))) Process_Timer_Event(void)
@@ -117,6 +133,8 @@ void __attribute__((section(".RamFunc"))) Process_Timer_Event(void)
     counter = 0;
     ShowFrequency(F_X, 0, counter_freq_high);
     ShowFrequency(F_X, LINE2_Y, counter_freq_low);
+    ShowPercentage(PH_X, LINE3_Y, counter_high * 100 / COUNTERS_MAX);
+    ShowPercentage(PL_X, LINE3_Y, counter_low * 100 / COUNTERS_MAX);
     if (uh_changed_to)
     {
       ShowVoltage(UH_X, LINE3_Y, uh_changed_to);
@@ -124,7 +142,7 @@ void __attribute__((section(".RamFunc"))) Process_Timer_Event(void)
     }
     if (ul_changed_to)
     {
-      ShowVoltage(UL_X, LINE3_Y, ul_changed_to);
+      ShowVoltage1(UL_X, LINE3_Y, ul_changed_to);
       ul_changed_to = 0;
     }
     LcdUpdate();
