@@ -107,7 +107,7 @@ typedef struct
   char *product;
   char *serial_number;
   unsigned char num_configurations;
-  void (*descriptor_builder)(void);
+  int (*descriptor_builder)(void);
 } USBDeviceConfiguration;
 
 typedef struct
@@ -149,29 +149,30 @@ typedef struct
 } USBConfigurationDescriptor;
 
 //usb device core functions
-int USBDeviceInit(const USBDeviceConfiguration *config);
+int USBDeviceInit(const USBDeviceConfiguration *config, const char enabled_endpoints[USB_MAX_ENDPOINTS]);
 void USBDeviceInterruptHandler(void);
 void AddConfigurationDescriptor(const USBConfigurationDescriptor *configuration);
 void AddInterfaceAssociationDescriptor(const USBInterfaceAssociationDescriptor *interface_association);
 void AddClassInterfaceDescriptor(unsigned char subtype, unsigned char data1, unsigned char data2);
 void AddClassInterfaceDescriptor4(unsigned char subtype, unsigned char data1);
 unsigned int AddInterfaceDescriptor(const USBInterfaceDescriptor *interface);
-unsigned int AddEndpointDescriptor(const USBEndpointDescriptor *endpoint);
+int AddEndpointDescriptor(const USBEndpointDescriptor *endpoint);
 
 //weak functions
-void InTransactionHandler(int endpoint);
-void InterfaceRequestHandler(int endpoint, USBDeviceRequest *request);
+void OutTransactionHandler(int endpoint);
+void InterfaceRequestHandler(USBDeviceRequest *request);
 
 // hal functions
 void USBClearInterruptFlags(void);
 int USBReadInterruptEndpointNumber(void);
 int USBIsTransactionDirectionIN(int endpoint);
-int USBIsSetupTransaction(int endpoint);
+int USBIsSetupTransaction(void);
 void USBEnableEndpoint(unsigned int endpoint);
 void USBActivateEndpoint(unsigned int endpoint, unsigned int length);
 void USBStallEndpoint(unsigned int endpoint);
 void *USBGetEndpointInBuffer(int endpoint);
 void *USBGetEndpointOutBuffer(int endpoint);
 void USBSetEndpointTransferType(int endpoint, USBEndpointTransferType transfer_type);
+void USBSetAddress(unsigned short address);
 
 #endif

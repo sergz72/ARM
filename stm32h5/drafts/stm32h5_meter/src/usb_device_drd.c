@@ -1,6 +1,8 @@
 #include <board.h>
 #include <usb_device_drd.h>
 
+const char drd_endpoints[USB_MAX_ENDPOINTS] = {1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0};
+
 static void AssignEndpointBuffers(int endpoint, unsigned int rxaddress, unsigned int txaddress)
 {
   USB_DRD_PMABuffDescTypeDef *buf = USB_DRD_PMA_BUFF + endpoint;
@@ -43,12 +45,12 @@ int USBReadInterruptEndpointNumber(void)
 
 int USBIsTransactionDirectionIN(int endpoint)
 {
-  return USB_DRD_FS->ISTR & 0x10 == 0;
+  return (USB_DRD_FS->ISTR & 0x10) == 0;
 }
 
-int USBIsSetupTransaction(int endpoint)
+int USBIsSetupTransaction(void)
 {
-  volatile unsigned long *reg = &USB_DRD_FS->CHEP0R + endpoint;
+  volatile unsigned long *reg = &USB_DRD_FS->CHEP0R;
   return *reg & (1 << 11);
 }
 

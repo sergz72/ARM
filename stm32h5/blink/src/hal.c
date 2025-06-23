@@ -7,7 +7,7 @@ const RCCConfig rcc_config =
 {
   .hse_frequency = 8000000,
   .hsebypass = 0,
-  .pllm = 4,
+  .pllm = 1,
   .pllp_frequency = 48000000,
   .pllq_frequency = 48000000,
   .hpre = 1,
@@ -81,8 +81,6 @@ void SystemInit(void)
     while (1)
       ;
   }
-
-  systick_set_clocksource(STK_CTRL_CLKSOURCE_AHB_DIV8);
 
   GPIOInit();
 }

@@ -22,22 +22,23 @@ typedef struct
 {
   const void *transfer_buffer;
   unsigned int transfer_length;
+  int enabled;
 } USBEndpoint;
 
-unsigned char next_string_id;
-unsigned int next_configuration_id;
-unsigned int next_interface_id;
-unsigned int next_endpoint_id;
-unsigned char *next_string_ptr;
-unsigned char *next_descriptor_ptr;
-unsigned char *total_length_ptr;
-unsigned short total_length[USB_DEVICE_MAX_CONFIGURATIONS];
-unsigned char device_descriptor[USB_DEVICE_DESCRIPTOR_SIZE];
-unsigned char device_configurations[USB_DEVICE_CONFIGURATIONS_SIZE];
-unsigned char *device_configuration[USB_DEVICE_MAX_CONFIGURATIONS];
-unsigned char *string_table[USB_DEVICE_STRINGTABLE_SIZE];
-unsigned int  string_length[USB_DEVICE_STRINGTABLE_SIZE];
-USBEndpoint endpoints[USB_MAX_ENDPOINTS];
+static unsigned char next_string_id;
+static unsigned int next_configuration_id;
+static unsigned int next_interface_id;
+static int next_endpoint_id;
+static unsigned char *next_string_ptr;
+static unsigned char *next_descriptor_ptr;
+static unsigned char *total_length_ptr;
+static unsigned short total_length[USB_DEVICE_MAX_CONFIGURATIONS];
+static unsigned char device_descriptor[USB_DEVICE_DESCRIPTOR_SIZE];
+static unsigned char device_configurations[USB_DEVICE_CONFIGURATIONS_SIZE];
+static unsigned char *device_configuration[USB_DEVICE_MAX_CONFIGURATIONS];
+static unsigned char *string_table[USB_DEVICE_STRINGTABLE_SIZE];
+static unsigned int  string_length[USB_DEVICE_STRINGTABLE_SIZE];
+static USBEndpoint endpoints[USB_MAX_ENDPOINTS];
 
 static unsigned char BuildString(const char *str)
 {
@@ -90,26 +91,40 @@ static void BuildDeviceDescriptor(const USBDeviceConfiguration *config)
   *ptr = config->num_configurations;
 }
 
-static void InitEndpoints(void)
+static void InitEndpoints(const char enabled_endpoints[USB_MAX_ENDPOINTS])
 {
   memset(endpoints, 0, sizeof(endpoints));
+  for (int i = 0; i < USB_MAX_ENDPOINTS; i++)
+    endpoints[i].enabled = (int)enabled_endpoints[i];
 }
 
-int USBDeviceInit(const USBDeviceConfiguration *config)
+static int USBGetNextEndpoint(int endpoint_id)
 {
+  do
+  {
+    endpoint_id++;
+    if (endpoint_id >= USB_MAX_ENDPOINTS)
+      return -1;
+  } while (!endpoints[endpoint_id].enabled);
+  return endpoint_id;
+}
+
+int USBDeviceInit(const USBDeviceConfiguration *config, const char enabled_endpoints[USB_MAX_ENDPOINTS])
+{
+  InitEndpoints(enabled_endpoints);
   next_string_id = 1;
   next_configuration_id = 0;
   next_interface_id = 0;
-  next_endpoint_id = 1;
+  next_endpoint_id = USBGetNextEndpoint(0);
   next_string_ptr = device_configurations + sizeof(device_configurations);
   next_descriptor_ptr = device_configurations;
   memset(total_length, 0, sizeof(total_length));
   memset(string_length, 0, sizeof(string_length));
   BuildDeviceDescriptor(config);
-  InitEndpoints();
   USBSetEndpointTransferType(0, usb_endpoint_transfer_type_control);
   USBEnableEndpoint(0);
-  config->descriptor_builder();
+  if (config->descriptor_builder())
+    return 1;
   return next_descriptor_ptr < next_string_ptr ? 0 : 1;
 }
 
@@ -190,8 +205,10 @@ unsigned int AddInterfaceDescriptor(const USBInterfaceDescriptor *interface)
   return next_interface_id++;
 }
 
-unsigned int AddEndpointDescriptor(const USBEndpointDescriptor *endpoint)
+int AddEndpointDescriptor(const USBEndpointDescriptor *endpoint)
 {
+  if (next_endpoint_id < 0)
+    return -1;
   update_total_length(7);
   *next_descriptor_ptr++ = 7; // length
   *next_descriptor_ptr++ = endpoint_descriptor_type;
@@ -205,7 +222,10 @@ unsigned int AddEndpointDescriptor(const USBEndpointDescriptor *endpoint)
   USBSetEndpointTransferType(next_endpoint_id, endpoint->transfer_type);
   USBEnableEndpoint(next_endpoint_id);
 
-  return endpoint->endpoint_number_increment ? next_endpoint_id++ : next_endpoint_id;
+  int ep = next_endpoint_id;
+  if (endpoint->endpoint_number_increment)
+    next_endpoint_id = USBGetNextEndpoint(next_endpoint_id);
+  return ep;
 }
 
 void *USBGetDescriptor(USBDescriptorType type, unsigned int id, unsigned int *length)
@@ -261,7 +281,7 @@ static int ContinueTransfer(int endpoint)
   return 1;
 }
 
-static void DeviceRequestHandler(int endpoint, USBDeviceRequest *request)
+static void DeviceRequestHandler(USBDeviceRequest *request)
 {
   unsigned int length;
   switch ((USBRequestType)request->request)
@@ -269,40 +289,43 @@ static void DeviceRequestHandler(int endpoint, USBDeviceRequest *request)
     case usb_request_type_get_descriptor:
       void *descriptor = USBGetDescriptor(request->value >> 8, request->value & 0xFF, &length);
       if (descriptor)
-        StartTransfer(endpoint, descriptor, request->length > length ? length : request->length);
+        StartTransfer(0, descriptor, request->length > length ? length : request->length);
       else
-        USBStallEndpoint(endpoint);
+        USBStallEndpoint(0);
+      break;
+    case usb_request_type_set_address:
+      USBSetAddress(request->value);
       break;
     case usb_request_type_set_configuration:
       break;
     default:
-      USBStallEndpoint(endpoint);
-    break;
+      USBStallEndpoint(0);
+      break;
   }
 }
 
-void __attribute__((weak)) InterfaceRequestHandler(int endpoint, USBDeviceRequest *request)
+void __attribute__((weak)) InterfaceRequestHandler(USBDeviceRequest *request)
 {
-  USBStallEndpoint(endpoint);
+  USBStallEndpoint(0);
 }
 
-static void InSetupTransactionHandler(int endpoint)
+static void SetupTransactionHandler(void)
 {
-  USBDeviceRequest *request = (USBDeviceRequest *)USBGetEndpointInBuffer(endpoint);
+  USBDeviceRequest *request = (USBDeviceRequest *)USBGetEndpointInBuffer(0);
   switch (request->request_type & 0x1F)
   {
     case usb_request_recipient_device:
-      DeviceRequestHandler(endpoint, request);
+      DeviceRequestHandler(request);
       break;
     case usb_request_recipient_interface:
-      InterfaceRequestHandler(endpoint, request);
+      InterfaceRequestHandler(request);
       break;
     default:
-      USBStallEndpoint(endpoint);
+      USBStallEndpoint(0);
   }
 }
 
-void __attribute__((weak)) InTransactionHandler(int endpoint)
+void __attribute__((weak)) OutTransactionHandler(int endpoint)
 {
   USBStallEndpoint(endpoint);
 }
@@ -312,24 +335,26 @@ void USBDeviceInterruptHandler(void)
   int endpoint = USBReadInterruptEndpointNumber();
   if (endpoint >= 0)
   {
-    unsigned int in_transaction = USBIsTransactionDirectionIN(endpoint);
-    if (USBIsSetupTransaction(endpoint))
-    {
-      if (in_transaction)
-        InSetupTransactionHandler(endpoint);
-    }
+    if (USBIsSetupTransaction())
+      SetupTransactionHandler();
     else
     {
+      unsigned int in_transaction = USBIsTransactionDirectionIN(endpoint);
       if (in_transaction)
-      {
-        InTransactionHandler(endpoint);
-      }
-      else
       {
         if (!ContinueTransfer(endpoint))
           USBEnableEndpoint(endpoint);
       }
+      else
+      {
+        OutTransactionHandler(endpoint);
+      }
     }
   }
   USBClearInterruptFlags();
+}
+
+void USBSetAddress(unsigned short address)
+{
+  //USBFSD->DEV_ADDR = (unsigned char)address;
 }
