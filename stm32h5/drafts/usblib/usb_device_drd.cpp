@@ -42,6 +42,9 @@ void USB_Device_DRD::Connect()
   USB_DRD_FS->BCDR = 1 << 15; // enable the embedded pull-up on DP line
 }
 
+#define CHEP_RESET ~(USB_CHEP_TX_STTX | USB_CHEP_RX_STRX | USB_CHEP_DTOG_RX | USB_CHEP_DTOG_TX)
+#define CHEP_Read(reg) *reg & CHEP_RESET
+
 void USB_Device_DRD::SetEndpointTransferType(unsigned int endpoint, USBEndpointTransferType transfer_type)
 {
   endpoint &= 0x0F;
@@ -54,7 +57,7 @@ void USB_Device_DRD::SetEndpointTransferType(unsigned int endpoint, USBEndpointT
     default: epkind = 0; break;
   }
   volatile unsigned long *reg = &USB_DRD_FS->CHEP0R + endpoint;
-  unsigned long value = *reg;
+  unsigned long value = CHEP_Read(reg);
   value |= endpoint | epkind;
   *reg = value;
 }
@@ -66,7 +69,7 @@ void USB_Device_DRD::ConfigureEndpoint(unsigned int endpoint_no, USBEndpointConf
   unsigned long value = *reg;
   unsigned int state = value & (USB_CHEP_RX_STRX | USB_CHEP_TX_STTX);
   state ^= (rx_config << 12) | (tx_config << 4);
-  value &= ~(USB_CHEP_RX_STRX | USB_CHEP_TX_STTX);
+  value &= CHEP_RESET;
   value |= state;
   *reg = value;
 }
@@ -77,7 +80,7 @@ void USB_Device_DRD::ConfigureEndpointRX(unsigned int endpoint_no, USBEndpointCo
   unsigned long value = *reg;
   unsigned int state = value & USB_CHEP_RX_STRX;
   state ^= config << 12;
-  value &= ~USB_CHEP_RX_STRX;
+  value &= CHEP_RESET;
   value |= state;
   *reg = value;
 }
@@ -88,7 +91,7 @@ void USB_Device_DRD::ConfigureEndpointTX(unsigned int endpoint_no, USBEndpointCo
   unsigned long value = *reg;
   unsigned int state = value & USB_CHEP_TX_STTX;
   state ^= config << 4;
-  value &= ~USB_CHEP_TX_STTX;
+  value &= CHEP_RESET;
   value |= state;
   *reg = value;
 }
@@ -105,19 +108,55 @@ void *GetEndpointOutBuffer(unsigned int endpoint)
   return buf + endpoint * 128 + 64;
 }
 
+static void CopyToPMA(unsigned int endpoint_no, const void *data, unsigned int length)
+{
+  unsigned int *buffer = (unsigned int*)GetEndpointOutBuffer(endpoint_no);
+  unsigned char *d = (unsigned char*)data;
+  if (length)
+  {
+    while (1)
+    {
+      unsigned int v = __UNALIGNED_UINT32_READ(d);
+      *buffer++ = v;
+      if (length > 4)
+        length -= 4;
+      else
+        break;
+      d += 4;
+    }
+  }
+}
+
+static void CopyFromPMA(unsigned int endpoint_no, void *data, unsigned int length)
+{
+  unsigned int *buffer = (unsigned int*)GetEndpointInBuffer(endpoint_no);
+  unsigned char *d = (unsigned char*)data;
+  if (length)
+  {
+    while (1)
+    {
+      __UNALIGNED_UINT32_WRITE(d, *buffer++);
+      if (length > 4)
+        length -= 4;
+      else
+        break;
+      d += 4;
+    }
+  }
+}
+
 void USB_Device_DRD::SetEndpointData(unsigned endpoint_no, const void *data, unsigned int length)
 {
-  memcpy(GetEndpointOutBuffer(endpoint_no), data, length);
+  CopyToPMA(endpoint_no, data, length);
   USB_DRD_PMABuffDescTypeDef *buff = USB_DRD_PMA_BUFF + endpoint_no;
-  unsigned int temp = buff->TXBD & 0xFC00FFFF;
-  buff->TXBD = temp | (length << 16);
+  buff->TXBD = (length << 16) | (endpoint_no * 128 + 64);
   ConfigureEndpointTX(endpoint_no, usb_endpoint_configuration_enabled);
 }
 
 void USB_Device_DRD::ZeroTransfer(unsigned int endpoint_no)
 {
   USB_DRD_PMABuffDescTypeDef *buff = USB_DRD_PMA_BUFF + endpoint_no;
-  buff->TXBD &= 0xFC00FFFF;
+  buff->TXBD = 0;
   ConfigureEndpointTX(endpoint_no, usb_endpoint_configuration_enabled);
 }
 
@@ -156,7 +195,7 @@ void USB_Device_DRD::InterruptHandler()
   {
     unsigned int endpoint = USB_DRD_FS->ISTR & 0x0F;
     volatile unsigned long *reg = &USB_DRD_FS->CHEP0R + endpoint;
-    unsigned long value = *reg;
+    unsigned long value = CHEP_Read(reg);
     if (value & 0x8080) //vttx or vtrx
     {
       unsigned int out = value & 0x8000;
@@ -165,9 +204,16 @@ void USB_Device_DRD::InterruptHandler()
       if (out)
       {
         if (value & 0x800) // setup
-          manager->SetupPacketReceived(GetEndpointInBuffer(endpoint));
+        {
+          CopyFromPMA(endpoint, endpoint_buffers[endpoint], 8);
+          manager->SetupPacketReceived(endpoint_buffers[endpoint]);
+        }
         else
-          manager->DataPacketReceived(endpoint, GetEndpointInBuffer(endpoint), GetEndpointRxLength(endpoint));
+        {
+          unsigned int l = GetEndpointRxLength(endpoint);
+          CopyFromPMA(endpoint, endpoint_buffers[endpoint], l);
+          manager->DataPacketReceived(endpoint, endpoint_buffers[endpoint], l);
+        }
       }
       else
         manager->ContinueTransfer(endpoint);

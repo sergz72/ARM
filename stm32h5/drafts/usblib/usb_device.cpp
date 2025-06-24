@@ -19,6 +19,7 @@ USB_DeviceManager::USB_DeviceManager(const USBDeviceConfiguration *conf,
   AddConfigurationDescriptor(configuration_descriptor);
   InitEndpoints();
   memset(interface_handlers, 0, sizeof(interface_handlers));
+  set_address = 0;
 }
 
 unsigned char USB_DeviceManager::BuildString(const char *str)
@@ -77,6 +78,7 @@ void USB_DeviceManager::InitEndpoints()
   memset(endpoints, 0, sizeof(endpoints));
   endpoints[0].max_packet_length = USB_FS_MAX_PACKET_SIZE;
   endpoints[0].transfer_type = usb_endpoint_transfer_type_control;
+  endpoints[0].handler = this;
 }
 
 unsigned int USB_DeviceManager::GetNextEndpoint(unsigned int endpoint_id)
@@ -241,6 +243,11 @@ void USB_DeviceManager::StartTransfer(unsigned int endpoint, const void *buffer,
 int USB_DeviceManager::ContinueTransfer(unsigned int endpoint)
 {
   unsigned int l = endpoints[endpoint].transfer_length;
+  if (set_address && !l)
+  {
+    device->SetAddress(set_address);
+    set_address = 0;
+  }
   if (l > USB_FS_MAX_PACKET_SIZE)
     l = USB_FS_MAX_PACKET_SIZE;
   device->SetEndpointData(endpoint, endpoints[endpoint].transfer_buffer, l);
@@ -260,13 +267,17 @@ void USB_DeviceManager::DeviceRequestHandler(USBDeviceRequest *request)
     {
       void *descriptor = GetDescriptor((USBDescriptorType)(request->value >> 8), request->value & 0xFF, &length);
       if (descriptor)
+      {
         StartTransfer(0, descriptor, request->length > length ? length : request->length);
+        device->ConfigureEndpointRX(0, usb_endpoint_configuration_enabled);
+      }
       else
         device->ConfigureEndpoint(0, usb_endpoint_configuration_stall, usb_endpoint_configuration_stall);
       break;
     }
     case usb_request_type_set_address:
-      device->SetAddress(request->value);
+      //device->SetAddress(request->value);
+      set_address = request->value;
       device->ZeroTransfer(0);
       break;
     case usb_request_type_set_configuration:
@@ -300,14 +311,14 @@ void USB_DeviceManager::SetupPacketReceived(void *data)
 
 void USB_DeviceManager::DataPacketReceived(unsigned int endpoint, void *data, unsigned int length)
 {
-  //todo
 }
 
 void USB_DeviceManager::Reset()
 {
   device->SetEndpointTransferType(0, usb_endpoint_transfer_type_control);
-  device->ConfigureEndpoint(0, usb_endpoint_configuration_stall, usb_endpoint_configuration_stall);
+  device->ConfigureEndpoint(0, usb_endpoint_configuration_enabled, usb_endpoint_configuration_stall);
   device->Reset();
+  set_address = 0;
 }
 
 void USB_DeviceManager::Suspend()

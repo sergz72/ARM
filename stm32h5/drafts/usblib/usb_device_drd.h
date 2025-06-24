@@ -6,6 +6,7 @@
 class USB_Device_DRD: public USB_Device {
   private:
     USB_DeviceManager *manager;
+    unsigned char endpoint_buffers[8][USB_FS_MAX_PACKET_SIZE];
   public:
     USB_Device_DRD();
 

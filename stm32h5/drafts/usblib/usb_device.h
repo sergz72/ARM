@@ -202,7 +202,7 @@ typedef struct
   const char *serial_number;
 } USBDeviceConfiguration;
 
-class USB_DeviceManager
+class USB_DeviceManager: public USB_Class
 {
   private:
     USB_Device *device;
@@ -221,6 +221,7 @@ class USB_DeviceManager
     unsigned int  string_length[USB_DEVICE_STRINGTABLE_SIZE];
     USBEndpoint endpoints[USB_MAX_ENDPOINTS];
     USB_Class *interface_handlers[USB_DEVICE_MAX_INTERFACES];
+    unsigned short set_address;
 
     void InterfaceRequestHandler(USBDeviceRequest *request);
     void DeviceRequestHandler(USBDeviceRequest *request);
