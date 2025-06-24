@@ -20,6 +20,10 @@ USB_DeviceManager::USB_DeviceManager(const USBDeviceConfiguration *conf,
   InitEndpoints();
   memset(interface_handlers, 0, sizeof(interface_handlers));
   set_address = 0;
+  language_id_descriptor[0] = 4;
+  language_id_descriptor[1] = 3;
+  language_id_descriptor[2] = (unsigned char)config->language_id;
+  language_id_descriptor[3] = (unsigned char)(config->language_id >> 8);
 }
 
 unsigned char USB_DeviceManager::BuildString(const char *str)
@@ -217,7 +221,12 @@ void *USB_DeviceManager::GetDescriptor(USBDescriptorType type, unsigned int id, 
       *length = total_length;
       return device_configuration;
     case string_descriptor_type:
-      if (!id || id >= next_string_id)
+      if (!id)
+      {
+        *length = 4;
+        return language_id_descriptor;
+      }
+      if (id >= next_string_id)
         return nullptr;
       l = string_length[id - 1];
       if (!l)
@@ -276,7 +285,6 @@ void USB_DeviceManager::DeviceRequestHandler(USBDeviceRequest *request)
       break;
     }
     case usb_request_type_set_address:
-      //device->SetAddress(request->value);
       set_address = request->value;
       device->ZeroTransfer(0);
       break;

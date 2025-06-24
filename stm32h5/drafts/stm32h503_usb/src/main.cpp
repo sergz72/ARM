@@ -11,7 +11,8 @@ static const USBDeviceConfiguration configuration =
   .product_id =  22336,
   .manufacturer = "STMicroelectronics",
   .product = "STM32 Virtual ComPort",
-  .serial_number = "00000000001A"
+  .serial_number = "00000000001A",
+  .language_id = 1033
 };
 
 static const USBConfigurationDescriptor configuration_descriptor = {

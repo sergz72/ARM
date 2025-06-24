@@ -200,6 +200,7 @@ typedef struct
   const char *manufacturer;
   const char *product;
   const char *serial_number;
+  unsigned short language_id;
 } USBDeviceConfiguration;
 
 class USB_DeviceManager: public USB_Class
@@ -222,6 +223,7 @@ class USB_DeviceManager: public USB_Class
     USBEndpoint endpoints[USB_MAX_ENDPOINTS];
     USB_Class *interface_handlers[USB_DEVICE_MAX_INTERFACES];
     unsigned short set_address;
+    unsigned char language_id_descriptor[4];
 
     void InterfaceRequestHandler(USBDeviceRequest *request);
     void DeviceRequestHandler(USBDeviceRequest *request);

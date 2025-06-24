@@ -2,6 +2,8 @@
 #include <usb_device_drd.h>
 #include <cstring>
 
+#define PMAADDR_OFFSET 0x40
+
 static void AssignEndpointBuffers(int endpoint, unsigned int rxaddress, unsigned int txaddress)
 {
   USB_DRD_PMABuffDescTypeDef *buf = USB_DRD_PMA_BUFF + endpoint;
@@ -11,7 +13,7 @@ static void AssignEndpointBuffers(int endpoint, unsigned int rxaddress, unsigned
 
 static void AssignEndpointsBuffers()
 {
-  unsigned int address = 0;
+  unsigned int address = PMAADDR_OFFSET;
   for (int i = 0; i < 7; i++)
   {
     AssignEndpointBuffers(i, address, address + 64);
@@ -99,13 +101,13 @@ void USB_Device_DRD::ConfigureEndpointTX(unsigned int endpoint_no, USBEndpointCo
 void *GetEndpointInBuffer(unsigned int endpoint)
 {
   unsigned char *buf = (unsigned char*)USB_DRD_PMAADDR;
-  return buf + endpoint * 128;
+  return buf + endpoint * 128 + PMAADDR_OFFSET;
 }
 
 void *GetEndpointOutBuffer(unsigned int endpoint)
 {
   unsigned char *buf = (unsigned char*)USB_DRD_PMAADDR;
-  return buf + endpoint * 128 + 64;
+  return buf + endpoint * 128 + 64 + PMAADDR_OFFSET;
 }
 
 static void CopyToPMA(unsigned int endpoint_no, const void *data, unsigned int length)
@@ -149,14 +151,15 @@ void USB_Device_DRD::SetEndpointData(unsigned endpoint_no, const void *data, uns
 {
   CopyToPMA(endpoint_no, data, length);
   USB_DRD_PMABuffDescTypeDef *buff = USB_DRD_PMA_BUFF + endpoint_no;
-  buff->TXBD = (length << 16) | (endpoint_no * 128 + 64);
+  unsigned int temp = buff->TXBD & 0xFC00FFFF;
+  buff->TXBD = temp | (length << 16);
   ConfigureEndpointTX(endpoint_no, usb_endpoint_configuration_enabled);
 }
 
 void USB_Device_DRD::ZeroTransfer(unsigned int endpoint_no)
 {
   USB_DRD_PMABuffDescTypeDef *buff = USB_DRD_PMA_BUFF + endpoint_no;
-  buff->TXBD = 0;
+  buff->TXBD &= 0xFC00FFFF;
   ConfigureEndpointTX(endpoint_no, usb_endpoint_configuration_enabled);
 }
 
