@@ -6,8 +6,15 @@
 class USB_Device_DRD: public USB_Device {
   private:
     USB_DeviceManager *manager;
-    unsigned char endpoint_buffers[8][USB_FS_MAX_PACKET_SIZE];
-  public:
+    unsigned char *endpoint_buffers_rx[8];
+    unsigned char *endpoint_buffers_tx[8];
+
+    void AssignEndpointsBuffers();
+    void *GetEndpointInBuffer(unsigned int endpoint) const;
+    void *GetEndpointOutBuffer(unsigned int endpoint) const;
+    void CopyToPMA(unsigned int endpoint_no, const void *data, unsigned int length) const;
+    void CopyFromPMA(unsigned int endpoint_no, void *data, unsigned int length) const;
+public:
     USB_Device_DRD();
 
     void Init(USB_DeviceManager *m) override;

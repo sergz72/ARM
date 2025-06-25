@@ -4,20 +4,31 @@
 
 #define PMAADDR_OFFSET 0x40
 
-static void AssignEndpointBuffers(int endpoint, unsigned int rxaddress, unsigned int txaddress)
+static void AssignEndpointBuffers(unsigned int endpoint, unsigned int rxaddress, unsigned int txaddress,
+                                  unsigned int max_transfer_size)
 {
+  unsigned int num_blocks = max_transfer_size <= 64 ? 1 : max_transfer_size / 64 - 1;
   USB_DRD_PMABuffDescTypeDef *buf = USB_DRD_PMA_BUFF + endpoint;
-  buf->RXBD = rxaddress | (1 << 26) | (1 << 31); // 64 byte buffer
+  buf->RXBD = rxaddress | (num_blocks << 26) | (1 << 31); // 32 byte blocks
   buf->TXBD = txaddress;
 }
 
-static void AssignEndpointsBuffers()
+void USB_Device_DRD::AssignEndpointsBuffers()
 {
   unsigned int address = PMAADDR_OFFSET;
-  for (int i = 0; i < 7; i++)
+  unsigned char *buf = (unsigned char*)USB_DRD_PMAADDR;
+  for (unsigned int i = 0; i <= 7; i++)
   {
-    AssignEndpointBuffers(i, address, address + 64);
-    address += 128;
+    unsigned int max_transfer_size = manager->GetEndpointMaxTransferSize(i);
+    if (max_transfer_size)
+    {
+      unsigned int offset_rx = address;
+      unsigned int offset_tx = address + max_transfer_size;
+      AssignEndpointBuffers(i, offset_rx, offset_tx, max_transfer_size);
+      address = offset_tx + max_transfer_size;
+      endpoint_buffers_rx[i] = buf + offset_rx;
+      endpoint_buffers_tx[i] = buf + offset_tx;
+    }
   }
 }
 
@@ -98,19 +109,17 @@ void USB_Device_DRD::ConfigureEndpointTX(unsigned int endpoint_no, USBEndpointCo
   *reg = value;
 }
 
-void *GetEndpointInBuffer(unsigned int endpoint)
+void *USB_Device_DRD::GetEndpointInBuffer(unsigned int endpoint) const
 {
-  unsigned char *buf = (unsigned char*)USB_DRD_PMAADDR;
-  return buf + endpoint * 128 + PMAADDR_OFFSET;
+  return endpoint_buffers_rx[endpoint];
 }
 
-void *GetEndpointOutBuffer(unsigned int endpoint)
+void *USB_Device_DRD::GetEndpointOutBuffer(unsigned int endpoint) const
 {
-  unsigned char *buf = (unsigned char*)USB_DRD_PMAADDR;
-  return buf + endpoint * 128 + 64 + PMAADDR_OFFSET;
+  return endpoint_buffers_tx[endpoint];
 }
 
-static void CopyToPMA(unsigned int endpoint_no, const void *data, unsigned int length)
+void USB_Device_DRD::CopyToPMA(unsigned int endpoint_no, const void *data, unsigned int length) const
 {
   unsigned int *buffer = (unsigned int*)GetEndpointOutBuffer(endpoint_no);
   unsigned char *d = (unsigned char*)data;
@@ -129,7 +138,7 @@ static void CopyToPMA(unsigned int endpoint_no, const void *data, unsigned int l
   }
 }
 
-static void CopyFromPMA(unsigned int endpoint_no, void *data, unsigned int length)
+void USB_Device_DRD::CopyFromPMA(unsigned int endpoint_no, void *data, unsigned int length) const
 {
   unsigned int *buffer = (unsigned int*)GetEndpointInBuffer(endpoint_no);
   unsigned char *d = (unsigned char*)data;
@@ -208,14 +217,14 @@ void USB_Device_DRD::InterruptHandler()
       {
         if (value & 0x800) // setup
         {
-          CopyFromPMA(endpoint, endpoint_buffers[endpoint], 8);
-          manager->SetupPacketReceived(endpoint_buffers[endpoint]);
+          CopyFromPMA(endpoint, endpoint_buffers_rx[endpoint], 8);
+          manager->SetupPacketReceived(endpoint_buffers_rx[endpoint]);
         }
         else
         {
           unsigned int l = GetEndpointRxLength(endpoint);
-          CopyFromPMA(endpoint, endpoint_buffers[endpoint], l);
-          manager->DataPacketReceived(endpoint, endpoint_buffers[endpoint], l);
+          CopyFromPMA(endpoint, endpoint_buffers_rx[endpoint], l);
+          manager->DataPacketReceived(endpoint, endpoint_buffers_rx[endpoint], l);
         }
       }
       else

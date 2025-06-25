@@ -82,6 +82,7 @@ void USB_DeviceManager::InitEndpoints()
   memset(endpoints, 0, sizeof(endpoints));
   endpoints[0].max_packet_length = USB_FS_MAX_PACKET_SIZE;
   endpoints[0].transfer_type = usb_endpoint_transfer_type_control;
+  endpoints[0].endpoint_buffer = (unsigned char*)malloc(USB_FS_MAX_PACKET_SIZE);
   endpoints[0].handler = this;
 }
 
@@ -169,7 +170,7 @@ unsigned int USB_DeviceManager::AddInterfaceDescriptor(USB_Class *handler, const
   *next_descriptor_ptr++ = interface->interface_subclass;
   *next_descriptor_ptr++ = interface->interface_protocol;
   *next_descriptor_ptr++ = BuildString(interface->interface_name);
-  *num_interfaces_ptr = (unsigned char)next_interface_id;
+  *num_interfaces_ptr = (unsigned char)next_interface_id + 1;
   interface_handlers[next_interface_id] = handler;
   return next_interface_id++;
 }
@@ -195,6 +196,7 @@ unsigned int USB_DeviceManager::AddEndpointDescriptor(USB_Class *handler, const 
   endpoints[ep].max_packet_length = endpoint->max_packet_size;
   endpoints[ep].transfer_type = endpoint->transfer_type;
   endpoints[ep].handler = handler;
+  endpoints[ep].endpoint_buffer = (unsigned char *)malloc(endpoint->max_packet_size);
 
   return ep;
 }
@@ -289,6 +291,7 @@ void USB_DeviceManager::DeviceRequestHandler(USBDeviceRequest *request)
       device->ZeroTransfer(0);
       break;
     case usb_request_type_set_configuration:
+      device->ZeroTransfer(0);
       break;
     default:
       device->ConfigureEndpoint(0, usb_endpoint_configuration_stall, usb_endpoint_configuration_stall);
@@ -340,4 +343,9 @@ void USB_DeviceManager::Resume()
 void USB_DeviceManager::Sof()
 {
   //todo
+}
+
+unsigned int USB_DeviceManager::GetEndpointMaxTransferSize(unsigned int endpoint_no) const
+{
+  return endpoints[endpoint_no].max_packet_length;
 }

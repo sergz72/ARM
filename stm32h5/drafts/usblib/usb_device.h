@@ -186,6 +186,7 @@ class USB_Class
 typedef struct
 {
   unsigned char *transfer_buffer;
+  unsigned char *endpoint_buffer;
   unsigned int transfer_length;
   unsigned int max_packet_length;
   USBEndpointTransferType transfer_type;
@@ -251,6 +252,7 @@ public:
     unsigned int AddInterfaceDescriptor(USB_Class *handler, const USBInterfaceDescriptor *interface);
     unsigned int AddEndpointDescriptor(USB_Class *handler, const USBEndpointDescriptor *endpoint);
     int ContinueTransfer(unsigned int endpoint);
+    unsigned int GetEndpointMaxTransferSize(unsigned int endpoint_no) const;
 };
 
 #endif
