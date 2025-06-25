@@ -107,7 +107,7 @@ void USB_DeviceManager::AddConfigurationDescriptor(const USBConfigurationDescrip
   *next_descriptor_ptr++ = 0;
   num_interfaces_ptr = next_descriptor_ptr;
   *next_descriptor_ptr++ = 0; // initial num interfaces
-  *next_descriptor_ptr++ = 0; // configuration id
+  *next_descriptor_ptr++ = 1; // configuration id
   *next_descriptor_ptr++ = BuildString(configuration->configuration_name);
   unsigned char attributes = 0x80;
   if (configuration->self_powered)
