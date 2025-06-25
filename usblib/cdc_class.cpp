@@ -88,7 +88,7 @@ int USB_CDC_Class::InterfaceDescriptorBuilder(unsigned int port_id)
   manager->AddClassInterfaceDescriptor(0, 0x10, 1);
   manager->AddClassInterfaceDescriptor(1, 0, interface_data);
   manager->AddClassInterfaceDescriptor4(2, 2);
-  manager->AddClassInterfaceDescriptor(6, 0, interface_data);
+  manager->AddClassInterfaceDescriptor(6, interface_control, interface_data);
   unsigned int ep = manager->AddEndpointDescriptor(this, &cdc_control_endpoint);
   if (ep == 0)
     return 1;

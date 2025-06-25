@@ -6,7 +6,7 @@
 
 static const USBDeviceConfiguration configuration =
 {
-  .device_class = usb_class_cdc,
+  .device_class = usb_class_misc, // composite device
   .vendor_id = 1155,
   .product_id =  22336,
   .manufacturer = "STMicroelectronics",
@@ -52,7 +52,7 @@ extern "C" {
     led_state = 0;
     int cnt = 0;
 
-    if (cdc_class.DescriptorBuilder(1) || usb_device_manager.Init() || !malloc(1))
+    if (cdc_class.DescriptorBuilder(2) || usb_device_manager.Init() || !malloc(1))
     {
       LED_ON;
       while (1)
@@ -65,6 +65,9 @@ extern "C" {
       unsigned int length = cdc_class.GetPendingData(0, cdc_buffer, sizeof(cdc_buffer));
       if (length)
         cdc_class.Send(0, cdc_buffer, length);
+      length = cdc_class.GetPendingData(1, cdc_buffer, sizeof(cdc_buffer));
+      if (length)
+        cdc_class.Send(1, cdc_buffer, length);
       cnt++;
       if (cnt == 100)
       {
