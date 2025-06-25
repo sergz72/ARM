@@ -1,7 +1,16 @@
-#include "heap.h"
+#include "board.h"
+#include <heap.h>
 #include <stdlib.h>
 
-unsigned int Heap_Init(HeapInfo *hi)
+void HeapInfo_Init(HeapInfo *hi, HeapSpace *spaces, void *start, void *end)
+{
+  spaces->heap_base = start;
+  spaces->heap_size = end - start;
+  hi->heap_spaces = spaces;
+  hi->heap_space_count = 1;
+}
+
+int Heap_Init(HeapInfo *hi)
 {
   unsigned int i;
   HeapSpace *hs;
@@ -88,7 +97,6 @@ void *Heap_Alloc(HeapInfo *hi, unsigned int size)
       h->prev = NULL;
       h->next = hi->used_blocks;
       hi->used_blocks = h;
-      hi->used_blocks->id = id;
 
 #ifdef HEAP_CHECK
       Heap_Check(hi);
