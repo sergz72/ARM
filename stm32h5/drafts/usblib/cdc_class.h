@@ -20,10 +20,14 @@ class USB_CDC_Class: public USB_Class
     cdc_rx_callback_typedef cdc_rx_callback;
     CDCPort cdc_ports[CDC_MAX_PORTS];
     unsigned int port_mapping[USB_MAX_ENDPOINTS];
+    unsigned int num_ports;
 
     int InterfaceDescriptorBuilder(unsigned int port_id);
 public:
     USB_CDC_Class(USB_DeviceManager *_manager, cdc_rx_callback_typedef rx_callback);
-    int DescriptorBuilder(unsigned int num_ports);
+    int DescriptorBuilder(unsigned int _num_ports);
+    void InitEndpoint(unsigned int endpoint) override;
+    void PacketReceived(unsigned int endpoint, void *data, unsigned int length) override;
+    void SetupInterface(USBDeviceRequest *request) override;
 };
 #endif

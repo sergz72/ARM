@@ -1,6 +1,26 @@
 #include <cdc_class.h>
 #include <cstring>
 
+#define CDC_GET_LINE_CODING         0X21                                      /* This request allows the host to find out the currently configured line coding */
+#define CDC_SET_LINE_CODING         0x20                                      /* Configures DTE rate, stop-bits, parity, and number-of-character */
+
+#define DEF_UART_BAUDRATE       115200
+#define DEF_UART_STOPBIT        0
+#define DEF_UART_PARITY         0
+#define DEF_UART_DATABIT        8
+
+#define LINE_CODING_LENGTH 8
+
+const unsigned char Com_Cfg[LINE_CODING_LENGTH] = {
+  (uint8_t)(DEF_UART_BAUDRATE & 0xFF),
+  (uint8_t)((DEF_UART_BAUDRATE >> 8) & 0xFF),
+  (uint8_t)((DEF_UART_BAUDRATE >> 16) & 0xFF),
+  (uint8_t)((DEF_UART_BAUDRATE >> 24) & 0xFF),
+  DEF_UART_STOPBIT,
+  DEF_UART_PARITY,
+  DEF_UART_DATABIT
+};
+
 static const USBInterfaceAssociationDescriptor cdc_iad =
 {
   .interface_count = 2,
@@ -84,8 +104,9 @@ int USB_CDC_Class::InterfaceDescriptorBuilder(unsigned int port_id)
   return 0;
 }
 
-int USB_CDC_Class::DescriptorBuilder(unsigned int num_ports)
+int USB_CDC_Class::DescriptorBuilder(unsigned int _num_ports)
 {
+  num_ports = _num_ports;
   memset(cdc_ports, 0, sizeof(cdc_ports));
   memset(port_mapping, 0, sizeof(port_mapping));
 
@@ -105,3 +126,36 @@ USB_CDC_Class::USB_CDC_Class(USB_DeviceManager *_manager, cdc_rx_callback_typede
   cdc_rx_callback = rx_callback;
 }
 
+void USB_CDC_Class::InitEndpoint(unsigned int endpoint)
+{
+  for (unsigned int i = 0; i < num_ports; i++)
+  {
+    manager->GetDevice()->SetEndpointTransferType(cdc_ports[i].control_endpoint, usb_endpoint_transfer_type_interrupt);
+    manager->GetDevice()->ConfigureEndpoint(cdc_ports[i].control_endpoint, usb_endpoint_configuration_enabled, usb_endpoint_configuration_nak);
+    manager->GetDevice()->SetEndpointTransferType(cdc_ports[i].data_endpoint, usb_endpoint_transfer_type_bulk);
+    manager->GetDevice()->ConfigureEndpoint(cdc_ports[i].data_endpoint, usb_endpoint_configuration_enabled, usb_endpoint_configuration_nak);
+  }
+}
+
+void USB_CDC_Class::PacketReceived(unsigned int endpoint, void *data, unsigned int length)
+{
+  unsigned int port_id = port_mapping[endpoint];
+  cdc_rx_callback(port_id, (unsigned char*)data, length);
+  manager->GetDevice()->ConfigureEndpointRX(endpoint, usb_endpoint_configuration_enabled);
+}
+
+void USB_CDC_Class::SetupInterface(USBDeviceRequest *request)
+{
+  switch (request->request)
+  {
+    case CDC_GET_LINE_CODING:
+      manager->StartTransfer(0, &Com_Cfg, LINE_CODING_LENGTH);
+      break;
+    case CDC_SET_LINE_CODING:
+      manager->GetDevice()->ZeroTransfer(0);
+      break;
+    default:
+      manager->GetDevice()->ConfigureEndpoint(0, usb_endpoint_configuration_stall, usb_endpoint_configuration_stall);
+      break;
+  }
+}

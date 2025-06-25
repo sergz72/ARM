@@ -205,7 +205,7 @@ void USB_Device_DRD::InterruptHandler()
   }
   if (istr & USB_ISTR_CTR)
   {
-    unsigned int endpoint = USB_DRD_FS->ISTR & 0x0F;
+    unsigned int endpoint = istr & 0x0F;
     volatile unsigned long *reg = &USB_DRD_FS->CHEP0R + endpoint;
     unsigned long value = CHEP_Read(reg);
     if (value & 0x8080) //vttx or vtrx

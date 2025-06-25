@@ -180,7 +180,10 @@ class USB_Device
 
 class USB_Class
 {
-
+  public:
+    virtual void SetupInterface(USBDeviceRequest *request) = 0;
+    virtual void InitEndpoint(unsigned int endpoint) = 0;
+    virtual void PacketReceived(unsigned int endpoint, void *data, unsigned int length) = 0;
 };
 
 typedef struct
@@ -225,17 +228,22 @@ class USB_DeviceManager: public USB_Class
     USB_Class *interface_handlers[USB_DEVICE_MAX_INTERFACES];
     unsigned short set_address;
     unsigned char language_id_descriptor[4];
+    unsigned short device_status;
 
     void InterfaceRequestHandler(USBDeviceRequest *request);
+    void ClassInterfaceRequestHandler(USBDeviceRequest *request);
     void DeviceRequestHandler(USBDeviceRequest *request);
     void *GetDescriptor(USBDescriptorType type, unsigned int id, unsigned int *length);
-    void StartTransfer(unsigned int endpoint, const void *buffer, unsigned int length);
     unsigned char BuildString(const char *str);
     void BuildDeviceDescriptor();
     void InitEndpoints();
     unsigned int GetNextEndpoint(unsigned int endpoint_id);
     void AddConfigurationDescriptor(const USBConfigurationDescriptor *configuration);
     void UpdateTotalLength(unsigned short value);
+    void StandardSetupPacketReceived(USBDeviceRequest *request);
+    void ClassSetupPacketReceived(USBDeviceRequest *request);
+    virtual void VendorSetupPacketReceived(USBDeviceRequest *request);
+    void EndpointRequestHandler(USBDeviceRequest *request);
 public:
     USB_DeviceManager(const USBDeviceConfiguration *conf,
       const USBConfigurationDescriptor *configuration_descriptor, USB_Device *dev);
@@ -253,6 +261,11 @@ public:
     unsigned int AddEndpointDescriptor(USB_Class *handler, const USBEndpointDescriptor *endpoint);
     int ContinueTransfer(unsigned int endpoint);
     unsigned int GetEndpointMaxTransferSize(unsigned int endpoint_no) const;
+    void InitEndpoint(unsigned int endpoint) override;
+    USB_Device *GetDevice();
+    void PacketReceived(unsigned int endpoint, void *data, unsigned int length) override;
+    void SetupInterface(USBDeviceRequest *request) override;
+    void StartTransfer(unsigned int endpoint, const void *buffer, unsigned int length);
 };
 
 #endif

@@ -14,10 +14,10 @@ USB_DeviceManager::USB_DeviceManager(const USBDeviceConfiguration *conf,
   next_string_ptr = device_configuration + sizeof(device_configuration);
   next_descriptor_ptr = device_configuration;
   total_length = 0;
+  InitEndpoints();
   memset(string_length, 0, sizeof(string_length));
   BuildDeviceDescriptor();
   AddConfigurationDescriptor(configuration_descriptor);
-  InitEndpoints();
   memset(interface_handlers, 0, sizeof(interface_handlers));
   set_address = 0;
   language_id_descriptor[0] = 4;
@@ -110,10 +110,17 @@ void USB_DeviceManager::AddConfigurationDescriptor(const USBConfigurationDescrip
   *next_descriptor_ptr++ = 1; // configuration id
   *next_descriptor_ptr++ = BuildString(configuration->configuration_name);
   unsigned char attributes = 0x80;
+  device_status = 0;
   if (configuration->self_powered)
+  {
     attributes |= 0x40;
+    device_status |= 0x40;
+  }
   if (configuration->remote_wakeup)
+  {
     attributes |= 0x20;
+    device_status |= 0x20;
+  }
   *next_descriptor_ptr++ = attributes;
   unsigned char max_power = configuration->max_power >= 510 ? 255 : configuration->max_power / 2;
   *next_descriptor_ptr++ = max_power;
@@ -293,20 +300,127 @@ void USB_DeviceManager::DeviceRequestHandler(USBDeviceRequest *request)
     case usb_request_type_set_configuration:
       device->ZeroTransfer(0);
       break;
+    case usb_request_type_get_configuration:
+    {
+      unsigned char configuration_id = 1;
+      StartTransfer(0, &configuration_id, 1);
+      break;
+    }
+    case usb_request_type_clear_feature:
+      device->ZeroTransfer(0);
+      break;
+    case usb_request_type_set_feature:
+      device->ZeroTransfer(0);
+      break;
+    case usb_request_type_get_status:
+      StartTransfer(0, &device_status, 2);
+      break;
     default:
       device->ConfigureEndpoint(0, usb_endpoint_configuration_stall, usb_endpoint_configuration_stall);
       break;
   }
 }
 
+void USB_DeviceManager::ClassInterfaceRequestHandler(USBDeviceRequest *request)
+{
+  unsigned short interface_no = request->index;
+  if (interface_no >= next_interface_id)
+  {
+    device->ConfigureEndpoint(0, usb_endpoint_configuration_stall, usb_endpoint_configuration_stall);
+    return;
+  }
+  USB_Class *handler = interface_handlers[interface_no];
+  if (!handler)
+  {
+    device->ConfigureEndpoint(0, usb_endpoint_configuration_stall, usb_endpoint_configuration_stall);
+    return;
+  }
+  handler->SetupInterface(request);
+  device->ConfigureEndpointRX(0, usb_endpoint_configuration_enabled);
+}
+
 void USB_DeviceManager::InterfaceRequestHandler(USBDeviceRequest *request)
 {
-  device->ConfigureEndpoint(0, usb_endpoint_configuration_stall, usb_endpoint_configuration_stall);
+  unsigned short interface_no = request->index;
+  if (interface_no >= next_interface_id)
+  {
+    device->ConfigureEndpoint(0, usb_endpoint_configuration_stall, usb_endpoint_configuration_stall);
+    return;
+  }
+  switch ((USBRequestType)request->request)
+  {
+    case usb_request_type_clear_feature:
+      device->ZeroTransfer(0);
+      break;
+    case usb_request_type_set_feature:
+      device->ZeroTransfer(0);
+      break;
+    case usb_request_type_set_interface:
+      device->ZeroTransfer(0);
+      break;
+    case usb_request_type_get_interface:
+    {
+      unsigned char interface_id = 0;
+      StartTransfer(0, &interface_id, 1);
+      break;
+    }
+    case usb_request_type_get_status:
+    {
+      //todo
+      unsigned short status = 0;
+      StartTransfer(0, &status, 2);
+      break;
+    }
+    default:
+      device->ConfigureEndpoint(0, usb_endpoint_configuration_stall, usb_endpoint_configuration_stall);
+      break;
+  }
+}
+
+void USB_DeviceManager::EndpointRequestHandler(USBDeviceRequest *request)
+{
+  switch ((USBRequestType)request->request)
+  {
+    case usb_request_type_clear_feature:
+      device->ZeroTransfer(0);
+      break;
+    case usb_request_type_set_feature:
+      device->ZeroTransfer(0);
+      break;
+    case usb_request_type_get_status:
+    {
+      //todo
+      unsigned short status = 0;
+      StartTransfer(0, &status, 2);
+      break;
+    }
+    default:
+      device->ConfigureEndpoint(0, usb_endpoint_configuration_stall, usb_endpoint_configuration_stall);
+      break;
+  }
 }
 
 void USB_DeviceManager::SetupPacketReceived(void *data)
 {
   USBDeviceRequest *request = (USBDeviceRequest *)data;
+  switch (request->request_type & 0x60)
+  {
+    case 0: // standard
+      StandardSetupPacketReceived(request);
+      break;
+    case 0x20: // class
+      ClassSetupPacketReceived(request);
+      break;
+    case 0x40: // vendor
+      VendorSetupPacketReceived(request);
+      break;
+    default:
+      device->ConfigureEndpoint(0, usb_endpoint_configuration_stall, usb_endpoint_configuration_stall);
+  }
+}
+
+void USB_DeviceManager::StandardSetupPacketReceived(USBDeviceRequest *request)
+{
   switch (request->request_type & 0x1F)
   {
     case usb_request_recipient_device:
@@ -315,19 +429,50 @@ void USB_DeviceManager::SetupPacketReceived(void *data)
     case usb_request_recipient_interface:
       InterfaceRequestHandler(request);
       break;
+    case usb_request_recipient_endpoint:
+      EndpointRequestHandler(request);
+      break;
     default:
       device->ConfigureEndpoint(0, usb_endpoint_configuration_stall, usb_endpoint_configuration_stall);
   }
 }
 
+void USB_DeviceManager::ClassSetupPacketReceived(USBDeviceRequest *request)
+{
+  switch (request->request_type & 0x1F)
+  {
+    case usb_request_recipient_interface:
+      ClassInterfaceRequestHandler(request);
+      break;
+    default:
+      device->ConfigureEndpoint(0, usb_endpoint_configuration_stall, usb_endpoint_configuration_stall);
+  }
+}
+
+void USB_DeviceManager::VendorSetupPacketReceived(USBDeviceRequest *request)
+{
+  device->ConfigureEndpoint(0, usb_endpoint_configuration_stall, usb_endpoint_configuration_stall);
+}
+
 void USB_DeviceManager::DataPacketReceived(unsigned int endpoint, void *data, unsigned int length)
 {
+  auto handler = endpoints[endpoint].handler;
+  if (!handler)
+  {
+    device->ConfigureEndpoint(endpoint, usb_endpoint_configuration_stall, usb_endpoint_configuration_stall);
+    return;
+  }
+  handler->PacketReceived(endpoint, data, length);
 }
 
 void USB_DeviceManager::Reset()
 {
-  device->SetEndpointTransferType(0, usb_endpoint_transfer_type_control);
-  device->ConfigureEndpoint(0, usb_endpoint_configuration_enabled, usb_endpoint_configuration_stall);
+  for (unsigned int i = 0; i < USB_MAX_ENDPOINTS; i++)
+  {
+    auto handler = endpoints[i].handler;
+    if (handler)
+      handler->InitEndpoint(i);
+  }
   device->Reset();
   set_address = 0;
 }
@@ -348,4 +493,25 @@ void USB_DeviceManager::Sof()
 unsigned int USB_DeviceManager::GetEndpointMaxTransferSize(unsigned int endpoint_no) const
 {
   return endpoints[endpoint_no].max_packet_length;
+}
+
+void USB_DeviceManager::InitEndpoint(unsigned int endpoint)
+{
+  device->SetEndpointTransferType(endpoint, usb_endpoint_transfer_type_control);
+  device->ConfigureEndpoint(endpoint, usb_endpoint_configuration_enabled, usb_endpoint_configuration_stall);
+}
+
+USB_Device *USB_DeviceManager::GetDevice()
+{
+  return device;
+}
+
+void USB_DeviceManager::PacketReceived(unsigned int endpoint, void *data, unsigned int length)
+{
+  device->ConfigureEndpointRX(endpoint, usb_endpoint_configuration_enabled);
+}
+
+void USB_DeviceManager::SetupInterface(USBDeviceRequest *request)
+{
+  device->ConfigureEndpoint(0, usb_endpoint_configuration_stall, usb_endpoint_configuration_stall);
 }
