@@ -79,7 +79,7 @@ void USB_DeviceManager::BuildDeviceDescriptor()
 
 void USB_DeviceManager::InitEndpoints()
 {
-  memset(endpoints, 0, sizeof(endpoints));
+  memset((void*)endpoints, 0, sizeof(endpoints));
   endpoints[0].max_packet_length = USB_FS_MAX_PACKET_SIZE;
   endpoints[0].transfer_type = usb_endpoint_transfer_type_control;
   endpoints[0].endpoint_buffer = (unsigned char*)malloc(USB_FS_MAX_PACKET_SIZE);
@@ -118,6 +118,7 @@ void USB_DeviceManager::AddConfigurationDescriptor(const USBConfigurationDescrip
   }
   if (configuration->remote_wakeup)
   {
+    attributes |= 0x20;
     attributes |= 0x20;
     device_status |= 0x20;
   }
@@ -246,20 +247,26 @@ void *USB_DeviceManager::GetDescriptor(USBDescriptorType type, unsigned int id, 
   }
 }
 
-void USB_DeviceManager::StartTransfer(unsigned int endpoint, const void *buffer, unsigned int length)
+int USB_DeviceManager::StartTransfer(unsigned int endpoint, const void *buffer, unsigned int length)
 {
+  if (endpoints[endpoint].transfer_type == usb_endpoint_transfer_type_bulk && endpoints[endpoint].pending_transfer)
+    return 1;
   unsigned int l = length > USB_FS_MAX_PACKET_SIZE ? USB_FS_MAX_PACKET_SIZE : length;
   device->SetEndpointData(endpoint, buffer, l);
+  endpoints[endpoint].pending_transfer = 1;
   length -= l;
   if (length)
   {
     endpoints[endpoint].transfer_buffer = (unsigned char*)buffer + l;
     endpoints[endpoint].transfer_length = length;
   }
+  return 0;
 }
 
 int USB_DeviceManager::ContinueTransfer(unsigned int endpoint)
 {
+  if (endpoints[endpoint].transfer_type == usb_endpoint_transfer_type_bulk && !endpoints[endpoint].pending_transfer)
+    return 0;
   unsigned int l = endpoints[endpoint].transfer_length;
   if (set_address && !l)
   {
@@ -270,7 +277,10 @@ int USB_DeviceManager::ContinueTransfer(unsigned int endpoint)
     l = USB_FS_MAX_PACKET_SIZE;
   device->SetEndpointData(endpoint, endpoints[endpoint].transfer_buffer, l);
   if (!l)
+  {
+    endpoints[endpoint].pending_transfer = 0;
     return 0;
+  }
   endpoints[endpoint].transfer_length -= l;
   endpoints[endpoint].transfer_buffer += l;
   return 1;

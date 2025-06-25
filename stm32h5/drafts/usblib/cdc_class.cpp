@@ -116,14 +116,15 @@ int USB_CDC_Class::DescriptorBuilder(unsigned int _num_ports)
       manager->AddInterfaceAssociationDescriptor(&cdc_iad);
     if (InterfaceDescriptorBuilder(i))
       return 1;
+    cdc_ports[i].buffer = cdc_ports[i].buffer_read_p = cdc_ports[i].buffer_write_p = (unsigned char*)malloc(buffer_length);
   }
   return 0;
 }
 
-USB_CDC_Class::USB_CDC_Class(USB_DeviceManager *_manager, cdc_rx_callback_typedef rx_callback)
+USB_CDC_Class::USB_CDC_Class(USB_DeviceManager *_manager, unsigned int _buffer_length)
 {
   manager = _manager;
-  cdc_rx_callback = rx_callback;
+  buffer_length = _buffer_length;
 }
 
 void USB_CDC_Class::InitEndpoint(unsigned int endpoint)
@@ -140,7 +141,16 @@ void USB_CDC_Class::InitEndpoint(unsigned int endpoint)
 void USB_CDC_Class::PacketReceived(unsigned int endpoint, void *data, unsigned int length)
 {
   unsigned int port_id = port_mapping[endpoint];
-  cdc_rx_callback(port_id, (unsigned char*)data, length);
+  auto port = &cdc_ports[port_id];
+  unsigned char *d = (unsigned char*)data;
+  while (length--)
+  {
+    if (port->buffer_write_p == port->buffer_read_p - 1)
+      break;
+    *port->buffer_write_p++ = *d++;
+    if (port->buffer_write_p == port->buffer + buffer_length)
+      port->buffer_write_p = port->buffer;
+  }
   manager->GetDevice()->ConfigureEndpointRX(endpoint, usb_endpoint_configuration_enabled);
 }
 
@@ -158,4 +168,27 @@ void USB_CDC_Class::SetupInterface(USBDeviceRequest *request)
       manager->GetDevice()->ConfigureEndpoint(0, usb_endpoint_configuration_stall, usb_endpoint_configuration_stall);
       break;
   }
+}
+
+void USB_CDC_Class::Send(unsigned int port_id, unsigned char * buffer, unsigned int buffer_length)
+{
+  while (manager->StartTransfer(cdc_ports[port_id].data_endpoint, buffer, buffer_length))
+    ;
+}
+
+unsigned int USB_CDC_Class::GetPendingData(unsigned int port_id, unsigned char *buffer, unsigned int buffer_length)
+{
+  auto port = &cdc_ports[port_id];
+  unsigned int length = 0;
+  while (port->buffer_read_p != port->buffer_write_p)
+  {
+    *buffer++ = *port->buffer_read_p++;
+    if (port->buffer_read_p == port->buffer + buffer_length)
+      port->buffer_read_p = port->buffer;
+    length++;
+    buffer_length--;
+    if (!buffer_length)
+      break;
+  }
+  return length;
 }

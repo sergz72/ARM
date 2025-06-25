@@ -190,6 +190,7 @@ typedef struct
 {
   unsigned char *transfer_buffer;
   unsigned char *endpoint_buffer;
+  unsigned int pending_transfer;
   unsigned int transfer_length;
   unsigned int max_packet_length;
   USBEndpointTransferType transfer_type;
@@ -224,7 +225,7 @@ class USB_DeviceManager: public USB_Class
     unsigned char device_configuration[USB_DEVICE_CONFIGURATION_SIZE];
     unsigned char *string_table[USB_DEVICE_STRINGTABLE_SIZE];
     unsigned int  string_length[USB_DEVICE_STRINGTABLE_SIZE];
-    USBEndpoint endpoints[USB_MAX_ENDPOINTS];
+    volatile USBEndpoint endpoints[USB_MAX_ENDPOINTS];
     USB_Class *interface_handlers[USB_DEVICE_MAX_INTERFACES];
     unsigned short set_address;
     unsigned char language_id_descriptor[4];
@@ -265,7 +266,7 @@ public:
     USB_Device *GetDevice();
     void PacketReceived(unsigned int endpoint, void *data, unsigned int length) override;
     void SetupInterface(USBDeviceRequest *request) override;
-    void StartTransfer(unsigned int endpoint, const void *buffer, unsigned int length);
+    int StartTransfer(unsigned int endpoint, const void *buffer, unsigned int length);
 };
 
 #endif

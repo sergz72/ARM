@@ -29,7 +29,8 @@ static void cdc_rx_callback(unsigned int port_id, unsigned char *buffer, unsigne
 static int led_state;
 static USB_Device_DRD usb_device;
 static USB_DeviceManager usb_device_manager(&configuration, &configuration_descriptor, &usb_device);
-static USB_CDC_Class cdc_class(&usb_device_manager, cdc_rx_callback);
+static USB_CDC_Class cdc_class(&usb_device_manager, 1024);
+static unsigned char cdc_buffer[1024];
 
 extern "C" {
   void USB_DRD_FS_IRQHandler(void)
@@ -46,16 +47,12 @@ extern "C" {
       LED_OFF;
   }
 
-  static void cdc_rx_callback(unsigned int port_id, unsigned char *buffer, unsigned int buffer_length)
-  {
-
-  }
-
   int main(void)
   {
     led_state = 0;
+    int cnt = 0;
 
-    if (cdc_class.DescriptorBuilder(1) || usb_device_manager.Init())
+    if (cdc_class.DescriptorBuilder(1) || usb_device_manager.Init() || !malloc(1))
     {
       LED_ON;
       while (1)
@@ -64,8 +61,16 @@ extern "C" {
 
     while (1)
     {
-      delayms(1000);
-      led_toggle();
+      delayms(10);
+      unsigned int length = cdc_class.GetPendingData(0, cdc_buffer, sizeof(cdc_buffer));
+      if (length)
+        cdc_class.Send(0, cdc_buffer, length);
+      cnt++;
+      if (cnt == 100)
+      {
+        led_toggle();
+        cnt = 0;
+      }
     }
   }
 }
