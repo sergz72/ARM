@@ -1,5 +1,6 @@
 #include <cdc_class.h>
 #include <cstring>
+#include <stdlib.h>
 
 #define CDC_GET_LINE_CODING         0X21                                      /* This request allows the host to find out the currently configured line coding */
 #define CDC_SET_LINE_CODING         0x20                                      /* Configures DTE rate, stop-bits, parity, and number-of-character */
@@ -50,35 +51,22 @@ static const USBInterfaceDescriptor cdc_data_interface =
 
 static const USBEndpointDescriptor cdc_control_endpoint =
 {
-  .endpoint_number_increment = 1,
-  .in_endpoint = 1,
   .transfer_type = usb_endpoint_transfer_type_interrupt,
   .synchronization_type = usb_endpoint_synchronization_type_none,
   .usage_type = usb_endpoint_usage_type_data,
   .max_packet_size = USB_FS_MAX_PACKET_SIZE,
-  .interval = 0x10
+  .interval = 0x10,
+  .direction = usb_endpoint_direction_in
 };
 
-static const USBEndpointDescriptor cdc_data_out_endpoint =
+static const USBEndpointDescriptor cdc_data_endpoint =
 {
-  .endpoint_number_increment = 0,
-  .in_endpoint = 0,
   .transfer_type = usb_endpoint_transfer_type_bulk,
   .synchronization_type = usb_endpoint_synchronization_type_none,
   .usage_type = usb_endpoint_usage_type_data,
   .max_packet_size = USB_FS_MAX_PACKET_SIZE,
-  .interval = 0
-};
-
-static const USBEndpointDescriptor cdc_data_in_endpoint =
-{
-  .endpoint_number_increment = 1,
-  .in_endpoint = 1,
-  .transfer_type = usb_endpoint_transfer_type_bulk,
-  .synchronization_type = usb_endpoint_synchronization_type_none,
-  .usage_type = usb_endpoint_usage_type_data,
-  .max_packet_size = USB_FS_MAX_PACKET_SIZE,
-  .interval = 0
+  .interval = 0,
+  .direction = usb_endpoint_direction_inout
 };
 
 int USB_CDC_Class::InterfaceDescriptorBuilder(unsigned int port_id)
@@ -95,12 +83,11 @@ int USB_CDC_Class::InterfaceDescriptorBuilder(unsigned int port_id)
   cdc_ports[port_id].control_endpoint = ep;
   port_mapping[ep] = port_id;
   manager->AddInterfaceDescriptor(this, &cdc_data_interface);
-  ep = manager->AddEndpointDescriptor(this, &cdc_data_out_endpoint);
+  ep = manager->AddEndpointDescriptor(this, &cdc_data_endpoint);
   if (ep == 0)
     return 1;
   cdc_ports[port_id].data_endpoint = ep;
   port_mapping[ep] = port_id;
-  manager->AddEndpointDescriptor(this, &cdc_data_in_endpoint);
   return 0;
 }
 
@@ -142,16 +129,19 @@ void USB_CDC_Class::PacketReceived(unsigned int endpoint, void *data, unsigned i
 {
   unsigned int port_id = port_mapping[endpoint];
   auto port = &cdc_ports[port_id];
-  unsigned char *d = (unsigned char*)data;
-  while (length--)
+  if (endpoint == port->data_endpoint)
   {
-    if (port->buffer_write_p == port->buffer_read_p - 1)
-      break;
-    *port->buffer_write_p++ = *d++;
-    if (port->buffer_write_p == port->buffer + buffer_length)
-      port->buffer_write_p = port->buffer;
+    unsigned char *d = (unsigned char*)data;
+    while (length--)
+    {
+      if (port->buffer_write_p == port->buffer_read_p - 1)
+        break;
+      *port->buffer_write_p++ = *d++;
+      if (port->buffer_write_p == port->buffer + buffer_length)
+        port->buffer_write_p = port->buffer;
+    }
+    manager->GetDevice()->ConfigureEndpointRX(endpoint, usb_endpoint_configuration_enabled);
   }
-  manager->GetDevice()->ConfigureEndpointRX(endpoint, usb_endpoint_configuration_enabled);
 }
 
 void USB_CDC_Class::SetupInterface(USBDeviceRequest *request)

@@ -121,15 +121,22 @@ typedef struct
   char *function_name;
 } USBInterfaceAssociationDescriptor;
 
+typedef enum
+{
+  usb_endpoint_direction_none = 0,
+  usb_endpoint_direction_in,
+  usb_endpoint_direction_out,
+  usb_endpoint_direction_inout,
+} USBEndpointDirection;
+
 typedef struct
 {
-  int endpoint_number_increment;
-  int in_endpoint;
   USBEndpointTransferType transfer_type;
   USBEndpointSynchronizationType synchronization_type;
   USBEndpointUsageType usage_type;
   unsigned short max_packet_size;
   unsigned char interval;
+  USBEndpointDirection direction;
 } USBEndpointDescriptor;
 
 typedef struct
@@ -194,6 +201,7 @@ typedef struct
   unsigned int transfer_length;
   unsigned int max_packet_length;
   USBEndpointTransferType transfer_type;
+  USBEndpointDirection direction;
   USB_Class *handler;
 } USBEndpoint;
 
@@ -245,6 +253,7 @@ class USB_DeviceManager: public USB_Class
     void ClassSetupPacketReceived(USBDeviceRequest *request);
     virtual void VendorSetupPacketReceived(USBDeviceRequest *request);
     void EndpointRequestHandler(USBDeviceRequest *request);
+    void AddEndpointDescriptor(const USBEndpointDescriptor *endpoint, unsigned char flag);
 public:
     USB_DeviceManager(const USBDeviceConfiguration *conf,
       const USBConfigurationDescriptor *configuration_descriptor, USB_Device *dev);
@@ -262,6 +271,7 @@ public:
     unsigned int AddEndpointDescriptor(USB_Class *handler, const USBEndpointDescriptor *endpoint);
     int ContinueTransfer(unsigned int endpoint);
     unsigned int GetEndpointMaxTransferSize(unsigned int endpoint_no) const;
+    USBEndpointDirection GetEndpointDirection(unsigned int endpoint_no) const;
     void InitEndpoint(unsigned int endpoint) override;
     USB_Device *GetDevice();
     void PacketReceived(unsigned int endpoint, void *data, unsigned int length) override;

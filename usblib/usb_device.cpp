@@ -1,5 +1,6 @@
 #include <cstring>
 #include <usb_device.h>
+#include <stdlib.h>
 
 #define USB_EP_IN 0x80
 
@@ -83,6 +84,7 @@ void USB_DeviceManager::InitEndpoints()
   endpoints[0].max_packet_length = USB_FS_MAX_PACKET_SIZE;
   endpoints[0].transfer_type = usb_endpoint_transfer_type_control;
   endpoints[0].endpoint_buffer = (unsigned char*)malloc(USB_FS_MAX_PACKET_SIZE);
+  endpoints[0].direction = usb_endpoint_direction_inout;
   endpoints[0].handler = this;
 }
 
@@ -183,26 +185,45 @@ unsigned int USB_DeviceManager::AddInterfaceDescriptor(USB_Class *handler, const
   return next_interface_id++;
 }
 
-unsigned int USB_DeviceManager::AddEndpointDescriptor(USB_Class *handler, const USBEndpointDescriptor *endpoint)
+void USB_DeviceManager::AddEndpointDescriptor(const USBEndpointDescriptor *endpoint, unsigned char flag)
 {
-  if (next_endpoint_id == 0)
-    return 0;
   UpdateTotalLength(7);
   *next_descriptor_ptr++ = 7; // length
   *next_descriptor_ptr++ = endpoint_descriptor_type;
-  *next_descriptor_ptr++ = next_endpoint_id | (endpoint->in_endpoint ? USB_EP_IN : 0);
+  *next_descriptor_ptr++ = next_endpoint_id | flag;
   unsigned char attributes = endpoint->transfer_type | (endpoint->synchronization_type << 2) | (endpoint->usage_type << 4);
   *next_descriptor_ptr++ = attributes;
   *next_descriptor_ptr++ = endpoint->max_packet_size & 0xFF;
   *next_descriptor_ptr++ = endpoint->max_packet_size >> 8;
   *next_descriptor_ptr++ = endpoint->interval;
+}
 
+unsigned int USB_DeviceManager::AddEndpointDescriptor(USB_Class *handler, const USBEndpointDescriptor *endpoint)
+{
+  if (next_endpoint_id == 0)
+    return 0;
+
+  switch (endpoint->direction)
+  {
+    case usb_endpoint_direction_in:
+      AddEndpointDescriptor(endpoint, USB_EP_IN);
+      break;
+    case usb_endpoint_direction_out:
+      AddEndpointDescriptor(endpoint, 0);
+      break;
+    case usb_endpoint_direction_inout:
+      AddEndpointDescriptor(endpoint, USB_EP_IN);
+      AddEndpointDescriptor(endpoint, 0);
+      break;
+    default:
+      return 0;
+  }
   unsigned int ep = next_endpoint_id;
-  if (endpoint->endpoint_number_increment)
-    next_endpoint_id = GetNextEndpoint(next_endpoint_id);
+  next_endpoint_id = GetNextEndpoint(next_endpoint_id);
 
   endpoints[ep].max_packet_length = endpoint->max_packet_size;
   endpoints[ep].transfer_type = endpoint->transfer_type;
+  endpoints[ep].direction = endpoint->direction;
   endpoints[ep].handler = handler;
   endpoints[ep].endpoint_buffer = (unsigned char *)malloc(endpoint->max_packet_size);
 
@@ -503,6 +524,11 @@ void USB_DeviceManager::Sof()
 unsigned int USB_DeviceManager::GetEndpointMaxTransferSize(unsigned int endpoint_no) const
 {
   return endpoints[endpoint_no].max_packet_length;
+}
+
+USBEndpointDirection USB_DeviceManager::GetEndpointDirection(unsigned int endpoint_no) const
+{
+  return endpoints[endpoint_no].direction;
 }
 
 void USB_DeviceManager::InitEndpoint(unsigned int endpoint)

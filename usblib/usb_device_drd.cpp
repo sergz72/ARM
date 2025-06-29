@@ -181,28 +181,6 @@ unsigned int GetEndpointRxLength(unsigned int endpoint)
 void USB_Device_DRD::InterruptHandler()
 {
   unsigned int istr = USB_DRD_FS->ISTR;
-  if (istr & USB_ISTR_DCON)
-  {
-    manager->Reset();
-    USB_DRD_FS->ISTR &= ~USB_ISTR_DCON;
-    return;
-  }
-  if (istr & USB_ISTR_SUSP)
-  {
-    USB_DRD_FS->CNTR |= USB_CNTR_SUSPEN;
-    istr &= ~USB_ISTR_SUSP;
-    manager->Suspend();
-  }
-  if (istr & USB_ISTR_WKUP)
-  {
-    manager->Resume();
-    istr &= ~USB_ISTR_WKUP;
-  }
-  if (istr & USB_ISTR_SOF)
-  {
-    manager->Sof();
-    istr &= ~USB_ISTR_SOF;
-  }
   if (istr & USB_ISTR_CTR)
   {
     unsigned int endpoint = istr & 0x0F;
@@ -230,7 +208,28 @@ void USB_Device_DRD::InterruptHandler()
       else
         manager->ContinueTransfer(endpoint);
     }
+    USB_DRD_FS->ISTR &= ~USB_ISTR_CTR;
+    return;
   }
+  if (istr & USB_ISTR_SOF)
+  {
+    manager->Sof();
+    USB_DRD_FS->ISTR &= ~USB_ISTR_SOF;
+    return;
+  }
+  if (istr & USB_ISTR_DCON)
+  {
+    manager->Reset();
+    USB_DRD_FS->ISTR &= ~USB_ISTR_DCON;
+    return;
+  }
+  if (istr & USB_ISTR_SUSP)
+  {
+    USB_DRD_FS->CNTR |= USB_CNTR_SUSPEN;
+    manager->Suspend();
+  }
+  if (istr & USB_ISTR_WKUP)
+    manager->Resume();
   // clear all interrupt requests
   USB_DRD_FS->ISTR = 0;
 }
