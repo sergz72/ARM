@@ -14,5 +14,5 @@
 - [Electronic load](stm32f0/load)
 
 ## Universal USB library
-- [core](usblib)
+- [core](https://github.com/sergz72/usblib)
 - [stm32h503 cdc](stm32h5/stm32h503_usb)
