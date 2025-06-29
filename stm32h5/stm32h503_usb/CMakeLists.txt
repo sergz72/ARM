@@ -38,12 +38,12 @@ file(GLOB SOURCES
         "../stm32h5lib/gpio.c"
         "../stm32h5lib/nvic.c"
         "../../common_lib/delay_systick.c"
-        "../../usblib/usb_device.cpp"
-        "../../usblib/usb_device_drd.cpp"
-        "../../usblib/cdc_class.cpp"
+        "../../../usblib/usb_device.cpp"
+        "../../../usblib/usb_device_drd.cpp"
+        "../../../usblib/cdc_class.cpp"
 )
 
-include_directories(src ../cmsis ../cmsis/device ../stm32h5lib ../../common_lib ../../usblib)
+include_directories(src ../cmsis ../cmsis/device ../stm32h5lib ../../common_lib ../../../usblib)
 
 add_executable(${PROJECT_NAME}.elf ${SOURCES} ${LINKER_SCRIPT})
 
