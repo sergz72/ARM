@@ -53,5 +53,3 @@ int systick_get_countflag(void)
   else
     return 0;	
 }
-
-
