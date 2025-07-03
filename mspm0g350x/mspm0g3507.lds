@@ -33,14 +33,14 @@
 *****************************************************************************/
 /* Generate a link error if heap and stack don't fit into RAM */
 _Min_Heap_Size  = 0;      /* required amount of heap  */
-_Min_Stack_Size = 0x200; /* required amount of stack */
+_Min_Stack_Size = 0x80; /* required amount of stack */
 
 /* Specify the memory areas */
 MEMORY
 {
     FLASH           (RX)  : ORIGIN = 0x00000000, LENGTH = 0x00020000
     SRAM            (RWX) : ORIGIN = 0x20200000, LENGTH = 0x00008000
-    BCR_CONFIG      (R)   : ORIGIN = 0x41C00000, LENGTH = 0x00000080
+    BCR_CONFIG      (R)   : ORIGIN = 0x41C00000, LENGTH = 0x000000FF
     BSL_CONFIG      (R)   : ORIGIN = 0x41C00100, LENGTH = 0x00000080
 
 }
@@ -184,7 +184,6 @@ SECTIONS
     .stack (NOLOAD) : ALIGN(0x8) {
         _stack = .;
         KEEP(*(.stack))
-        . = . + _Min_Stack_Size;
     } > REGION_STACK AT> REGION_STACK
 
     .BCRConfig :

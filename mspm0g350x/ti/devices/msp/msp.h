@@ -74,6 +74,10 @@
 #include <ti/devices/msp/m0p/mspm0g351x.h>
 #elif (DeviceFamily_ID == DeviceFamily_ID_MSPM0L111X)
 #include <ti/devices/msp/m0p/mspm0l111x.h>
+#elif (DeviceFamily_ID == DeviceFamily_ID_MSPM0H321X)
+#include <ti/devices/msp/m0p/mspm0h321x.h>
+#elif (DeviceFamily_ID == DeviceFamily_ID_MSPM0C1105_C1106)
+#include <ti/devices/msp/m0p/mspm0c1105_c1106.h>
 
 /********************************************************************
  *
