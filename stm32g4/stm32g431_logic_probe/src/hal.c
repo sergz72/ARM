@@ -57,43 +57,6 @@ static void GPIOInit(void)
   );
 }
 
-/*
- * PA2=USART2_TX
- * PA3=USART2_RX
- */
-
-static void USART2Init(void)
-{
-  RCC->APB1ENR1 |= RCC_APB1ENR1_USART2EN;
-
-  GPIO_PinAFConfig(GPIOA, GPIO_PinSource2, GPIO_AF_7);
-  GPIO_PinAFConfig(GPIOA, GPIO_PinSource3, GPIO_AF_7);
-  GPIO_Init(GPIOA,
-            GPIO_Pin_2 | GPIO_Pin_3,
-            GPIO_Mode_AF,
-            GPIO_Speed_Low,
-            GPIO_OType_PP,
-            GPIO_PuPd_UP
-  );
-
-  USART2->BRR = BOARD_PCLK1 / USART_BAUD_RATE;
-  //USART2->CR2 = 0;
-  //USART2->CR3 = USART_CR3_DMAT;
-  // Transmitter enable, Receiver enable, FIFO enable, RXFIFO not empty interrupt enable
-  USART2->CR1 = USART_CR1_RE | USART_CR1_TE | USART_CR1_FIFOEN | USART_CR1_RXNEIE;
-  // USART enable in low-power mode, USART enable
-  USART2->CR1 |= USART_CR1_UE | USART_CR1_UESM;
-
-  NVIC_Init(USART2_IRQn, USART_INTERRUPT_PRIORITY, 0, ENABLE);
-}
-
-unsigned int mv_to_12(unsigned int mv)
-{
-  if (mv >= DAC_REFERENCE_VOLTAGE)
-    return 4095;
-  return (mv * 4095) / DAC_REFERENCE_VOLTAGE;
-}
-
 // PA5 = DAC1_OUT2
 static void DACSInit(void)
 {
@@ -375,13 +338,15 @@ static void ClockInit(void)
 
   // 4 wait states
   unsigned int temp = FLASH->ACR & ~FLASH_ACR_LATENCY;
-  FLASH->ACR = temp | 4;
+  FLASH->ACR = temp | 4 | FLASH_ACR_DCEN | FLASH_ACR_ICEN | FLASH_ACR_PRFTEN;
 
   // HSE clock selected as PLL clock entry
   // PLLM = 1
   // PLLN = 36
   // PLLR = 2
-  RCC->PLLCFGR = RCC_PLLCFGR_PLLSRC_HSE | (PLLN << RCC_PLLCFGR_PLLN_Pos) | RCC_PLLCFGR_PLLREN;
+  // PLLQ = 6
+  RCC->PLLCFGR = RCC_PLLCFGR_PLLSRC_HSE | (PLLN << RCC_PLLCFGR_PLLN_Pos) | RCC_PLLCFGR_PLLREN | RCC_PLLCFGR_PLLQEN
+                 | RCC_PLLCFGR_PLLQ_1;
 
   RCC->CR |= RCC_CR_PLLON;
   while (!(RCC->CR & RCC_CR_PLLRDY))
@@ -392,11 +357,21 @@ static void ClockInit(void)
     ;
 }
 
+static void USB_Init(void)
+{
+  RCC->CCIPR |= RCC_CCIPR_CLK48SEL_1; // pll1_q_ck selected as usb kernel clock
+  RCC->APB1ENR1 |= RCC_APB1ENR1_USBEN;
+
+  NVIC_Init(USB_LP_IRQn, USART_INTERRUPT_PRIORITY, 3, ENABLE);
+}
+
 void SystemInit(void)
 {
   ClockInit();
 
   systick_set_clocksource(STK_CTRL_CLKSOURCE_AHB_DIV8);
+
+  RCC->APB2ENR |= RCC_APB2ENR_SYSCFGEN;
 
   //enable the GPIO clock for port GPIOA
   RCC->AHB2ENR |= RCC_AHB2ENR_GPIOAEN;
@@ -413,7 +388,6 @@ void SystemInit(void)
   PWR->CR3 |= PWR_CR3_UCPD_DBDIS;
 
   GPIOInit();
-  USART2Init();
   DACSInit();
   ComparatorsInit();
   TIM1Init();
@@ -425,15 +399,11 @@ void SystemInit(void)
   SPI1Init();
   I2C2Init();
   DMAInit();
+  USB_Init();
 }
 
 void _init(void)
 {
-}
-
-void puts_(const char *s)
-{
-  usart_send(USART2, s, (int)strlen(s));
 }
 
 int __attribute__((section(".RamFunc"))) SSD1306_I2C_Write(int num_bytes, unsigned char control_byte, unsigned char *buffer)
@@ -464,4 +434,24 @@ void __attribute__((section(".RamFunc"))) set_h_voltage(unsigned int value)
 void __attribute__((section(".RamFunc"))) set_l_voltage(unsigned int value)
 {
   DAC1->DHR12R1 = mv_to_12(value);
+}
+
+void set_dac_voltage(unsigned int value)
+{
+  DAC1->DHR12R2 = mv_to_12(value);
+}
+
+unsigned int get_dac_voltage(void)
+{
+  return mv_from_12(DAC1->DHR12R2);
+}
+
+unsigned int get_l_voltage(void)
+{
+  return mv_from_12(DAC1->DHR12R1);
+}
+
+unsigned int get_h_voltage(void)
+{
+  return mv_from_12(DAC3->DHR12R1);
 }

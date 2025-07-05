@@ -62,7 +62,7 @@ void UI_Init(void)
   LcdDrawText(SYMBOL_WIDTH*10, LINE3_Y, "%", &courierNew8ptFontInfo, WHITE_COLOR, BLACK_COLOR, NULL);
 }
 
-static void __attribute__((section(".RamFunc"))) calculate_led_data(void)
+static void RAMFUNC calculate_led_data(void)
 {
   led_data[0].red = counter_low * WS2812_MAX_VALUE / COUNTERS_MAX;
   unsigned int zero_one_sum = counter_low + counter_high;
@@ -78,30 +78,30 @@ static void __attribute__((section(".RamFunc"))) calculate_led_data(void)
   led_data[3].blue = pulse ? WS2812_MAX_VALUE : 0;
 }
 
-void __attribute__((section(".RamFunc"))) ShowFrequency(int x, int y, unsigned int frequency)
+void RAMFUNC ShowFrequency(int x, int y, unsigned int frequency)
 {
   frequency *= 10;
   LcdPrintf("%2d.%03d.%03d", x, y, &courierNew10ptFontInfo, 1,
             frequency / 1000000, (frequency / 1000) % 1000, frequency % 1000);
 }
 
-void __attribute__((section(".RamFunc"))) ShowVoltage(int x, int y, unsigned int voltage)
+void RAMFUNC ShowVoltage(int x, int y, unsigned int voltage)
 {
   LcdPrintf("%d.%d", x, y, &courierNew8ptFontInfo, 1,
             voltage / 1000, (voltage / 100) % 10);
 }
 
-void __attribute__((section(".RamFunc"))) ShowVoltage1(int x, int y, unsigned int voltage)
+void RAMFUNC ShowVoltage1(int x, int y, unsigned int voltage)
 {
   LcdPrintf("%d", x, y, &courierNew8ptFontInfo, 1, voltage / 100);
 }
 
-void __attribute__((section(".RamFunc"))) ShowPercentage(int x, int y, unsigned int percentage)
+void RAMFUNC ShowPercentage(int x, int y, unsigned int percentage)
 {
   LcdPrintf("%3d", x, y, &courierNew8ptFontInfo, 1, percentage);
 }
 
-void __attribute__((section(".RamFunc"))) Process_Timer_Event(void)
+void RAMFUNC Process_Timer_Event(void)
 {
   calculate_led_data();
   ws2812_send(0, (const ws2812_rgb *)&led_data, WS2812_MAX_LEDS);

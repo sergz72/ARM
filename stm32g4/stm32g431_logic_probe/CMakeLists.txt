@@ -2,8 +2,12 @@ SET(CMAKE_SYSTEM_NAME Generic)
 SET(CMAKE_SYSTEM_VERSION 1)
 cmake_minimum_required(VERSION 3.14)
 
+set(CMAKE_C_STANDARD 23)
+set(CMAKE_CXX_STANDARD 23)
+
 # specify the cross compiler
 SET(CMAKE_C_COMPILER_WORKS 1)
+SET(CMAKE_CXX_COMPILER_WORKS 1)
 
 SET(CMAKE_VERBOSE_MAKEFILE ON)
 
@@ -20,20 +24,23 @@ if (CMAKE_BUILD_TYPE MATCHES Debug)
     add_definitions(-DDEBUG)
 endif()
 
-SET(CMAKE_C_FLAGS_INIT "${COMMON_FLAGS} -std=gnu99")
-SET(CMAKE_ASM_FLAGS_INIT "${COMMON_FLAGS} -std=gnu99")
+SET(CMAKE_C_FLAGS_INIT "${COMMON_FLAGS}")
+SET(CMAKE_CXX_FLAGS_INIT "${COMMON_FLAGS}")
+SET(CMAKE_ASM_FLAGS_INIT "${COMMON_FLAGS}")
 SET(CMAKE_EXE_LINKER_FLAGS_INIT "-Wl,-gc-sections,--print-memory-usage -T ${LINKER_SCRIPT}")
 set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -O0")
 
-project(stm32g431_logic_probe C ASM)
+project(stm32g431_logic_probe C CXX ASM)
 
 file(GLOB SOURCES
-        "src/main.c"
+        "../../logic_probe_core/main.c"
         "src/hal.c"
-        "src/ui.c"
-        "src/dac_commands.c"
-        "src/pwm_commands.c"
-        "src/counters_commands.c"
+        "src/main.cpp"
+        "../../logic_probe_core/ui.c"
+        "../../logic_probe_core/dac_commands.c"
+        "../../logic_probe_core/pwm_commands.c"
+        "../../logic_probe_core/counters_commands.c"
+        "../../logic_probe_core/custom_main_init_usb.cpp"
         "../startup_stm32g431xx.s"
         "../stm32g4lib/gpio.c"
         "../stm32g4lib/systick.c"
@@ -54,9 +61,13 @@ file(GLOB SOURCES
         "../../common_lib/display/fonts/font10.c"
         "../../common_lib/display/lcd.c"
         "../../common_lib/ws2812_spi.c"
+        "../../../usblib/usb_device.cpp"
+        "../../../usblib/usb_device_stm32g4.cpp"
+        "../../../usblib/cdc_class.cpp"
 )
 
-include_directories(src .. ../cmsis ../cmsis/device ../stm32g4lib ../../common_lib ../../common_lib/shell ../../common_lib/display)
+include_directories(src .. ../cmsis ../cmsis/device ../stm32g4lib ../../common_lib ../../common_lib/shell
+        ../../common_lib/display ../../logic_probe_core ../../../usblib)
 
 add_executable(${PROJECT_NAME}.elf ${SOURCES} ${LINKER_SCRIPT})
 

@@ -10,53 +10,23 @@
 #include <delay_systick.h>
 
 static int led_state;
-static char usart_buffer[USART_BUFFER_SIZE];
-static char *usart_buffer_write_p, *usart_buffer_read_p;
 static char command_line[200];
-static volatile int timer_event;
-static volatile unsigned int timer1_counter, timer8_counter, timer4_counter, timer3_counter;
+volatile int timer_event;
+volatile unsigned int counter_low_counter, counter_high_counter, freq_low_counter, freq_high_counter;
 unsigned int counter_low, counter_high, counter_freq_low, counter_freq_high;
 
-void __attribute__((section(".RamFunc"))) USART2_IRQHandler(void)
+unsigned int mv_to_12(unsigned int mv)
 {
-  while (USART2->ISR & USART_ISR_RXNE_RXFNE)
-  {
-    *usart_buffer_write_p++ = (char)USART2->RDR;
-    if (usart_buffer_write_p == usart_buffer + USART_BUFFER_SIZE)
-      usart_buffer_write_p = usart_buffer;
-  }
-  USART2->ICR = 0xFFFFFFFF;
+  if (mv >= DAC_REFERENCE_VOLTAGE)
+    return 4095;
+  return (mv * 4095) / DAC_REFERENCE_VOLTAGE;
 }
 
-void __attribute__((section(".RamFunc"))) TIM2_IRQHandler(void)
+unsigned int mv_from_12(unsigned int code)
 {
-  stop_counters();
-  timer_event = 1;
-  TIM2->SR = 0;
-}
-
-void __attribute__((section(".RamFunc"))) TIM4_IRQHandler(void)
-{
-  timer4_counter++;
-  TIM4->SR = 0;
-}
-
-void __attribute__((section(".RamFunc"))) TIM3_IRQHandler(void)
-{
-  timer3_counter++;
-  TIM3->SR = 0;
-}
-
-void __attribute__((section(".RamFunc"))) TIM1_UP_TIM16_IRQHandler(void)
-{
-  timer1_counter++;
-  TIM1->SR = 0;
-}
-
-void __attribute__((section(".RamFunc"))) TIM8_UP_IRQHandler(void)
-{
-  timer8_counter++;
-  TIM8->SR = 0;
+  if (code >= 4095)
+    return DAC_REFERENCE_VOLTAGE;
+  return code * DAC_REFERENCE_VOLTAGE / 4095;
 }
 
 static void led_toggle(void)
@@ -68,28 +38,7 @@ static void led_toggle(void)
     LED_OFF;
 }
 
-static int getch_(void)
-{
-  if (usart_buffer_write_p != usart_buffer_read_p)
-  {
-    char c = *usart_buffer_read_p++;
-    if (usart_buffer_read_p == usart_buffer + USART_BUFFER_SIZE)
-      usart_buffer_read_p = usart_buffer;
-    return c;
-  }
-  return EOF;
-}
-
-static void __attribute__((section(".RamFunc"))) update_counters(void)
-{
-  counter_low = timer1_counter;
-  counter_high = timer8_counter;
-  counter_freq_low = TIM4->CNT | (timer4_counter << 16);
-  counter_freq_high = TIM3->CNT | (timer3_counter << 16);
-  timer1_counter = timer8_counter = timer4_counter = timer3_counter = 0;
-}
-
-static void __attribute__((section(".RamFunc"))) main_loop(void)
+static void RAMFUNC main_loop(void)
 {
   int rc;
   int cnt_led = 0;
@@ -141,7 +90,6 @@ int main(void)
 {
 
   led_state = 0;
-  usart_buffer_write_p = usart_buffer_read_p = usart_buffer;
 
   shell_init(common_printf, NULL);
 
@@ -155,7 +103,10 @@ int main(void)
   UI_Init();
 
   timer_event = 0;
-  TIM2->CR1 = TIM_CR1_CEN;
+
+  CustomMainInit();
+
+  PeriodicTimerStart();
 
   counter_low = counter_high = counter_freq_low = counter_freq_high = 0;
   start_counters();
