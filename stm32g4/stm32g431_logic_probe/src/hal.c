@@ -3,10 +3,10 @@
 #include <gpio.h>
 #include <nvic.h>
 #include <string.h>
-#include <usart.h>
 #include <i2c.h>
 #include <spi.h>
 #include <ws2812_spi.h>
+#include "delay_systick.h"
 
 static const SPI_InitStruct spi1_init = {
   .master = 1,
@@ -55,6 +55,11 @@ static void GPIOInit(void)
             GPIO_OType_PP,
             GPIO_PuPd_NOPULL
   );
+
+  //pullup
+  // set pa2
+  GPIOA->BSRR = 4;
+  connect_pullup();
 }
 
 // PA5 = DAC1_OUT2
@@ -365,6 +370,25 @@ static void USB_Init(void)
   NVIC_Init(USB_LP_IRQn, USART_INTERRUPT_PRIORITY, 3, ENABLE);
 }
 
+static void ADCInit(void)
+{
+  RCC->CCIPR |= RCC_CCIPR_ADC12SEL_1; // system clock as adc12 clock
+  RCC->AHB2ENR |= RCC_AHB2ENR_ADC12EN;
+
+  ADC12_COMMON->CCR = ADC_CCR_CKMODE_1 // adc_hclk /2 is the adc clock
+                      | ADC_CCR_PRESC_2; // divide by 8
+
+  ADC1->CR = 0; //clear deep power down
+  ADC1->CR = ADC_CR_ADVREGEN; // start voltage regulator
+  delay(20);
+  ADC1->CR = ADC_CR_ADCAL | ADC_CR_ADVREGEN; // start calibration
+  while (ADC1->CR & ADC_CR_ADCAL)
+    ;
+  ADC1->CR = ADC_CR_ADVREGEN | ADC_CR_ADEN;
+  ADC1->SMPR1 = ADC_SMPR1_SMP1;
+  ADC1->SQR1 = ADC_SQR1_SQ1_0; // channel 1
+}
+
 void SystemInit(void)
 {
   ClockInit();
@@ -390,6 +414,7 @@ void SystemInit(void)
   GPIOInit();
   DACSInit();
   ComparatorsInit();
+  ADCInit();
   TIM1Init();
   TIM2Init();
   TIM17Init();
@@ -454,4 +479,36 @@ unsigned int get_l_voltage(void)
 unsigned int get_h_voltage(void)
 {
   return mv_from_12(DAC3->DHR12R1);
+}
+
+void adc_start(void)
+{
+  ADC1->CR |= ADC_CR_ADSTART;
+}
+
+unsigned int get_adc_voltage(void)
+{
+  return uv_from_12(ADC1->DR);
+}
+
+void connect_pullup(void)
+{
+  GPIO_Init(GPIOA,
+            GPIO_Pin_2,
+            GPIO_Mode_OUT,
+            GPIO_Speed_Low,
+            GPIO_OType_PP,
+            GPIO_PuPd_NOPULL
+  );
+}
+
+void disconnect_pullup(void)
+{
+  GPIO_Init(GPIOA,
+            GPIO_Pin_2,
+            GPIO_Mode_AN,
+            GPIO_Speed_Low,
+            GPIO_OType_PP,
+            GPIO_PuPd_NOPULL
+  );
 }

@@ -2,6 +2,7 @@
 #include <common_printf.h>
 #include <stdio.h>
 #include <stdarg.h>
+#include <myprintf.h>
 
 int common_printf(const char *format, ...)
 {
@@ -11,7 +12,11 @@ int common_printf(const char *format, ...)
   int rc;
 
   va_start(vArgs, format);
+#ifdef USE_MYVSPRINTF
+  rc = myvsprintf(buffer, format, vArgs);
+#else
   rc = vsnprintf(buffer, sizeof(buffer), format, vArgs);
+#endif
   va_end(vArgs);
   p = buffer;
   p2 = buffer2;

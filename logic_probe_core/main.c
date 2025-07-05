@@ -29,6 +29,13 @@ unsigned int mv_from_12(unsigned int code)
   return code * DAC_REFERENCE_VOLTAGE / 4095;
 }
 
+unsigned int uv_from_12(unsigned int code)
+{
+  if (code >= 4095)
+    return DAC_REFERENCE_VOLTAGE * 1000;
+  return (code * DAC_REFERENCE_VOLTAGE * 100 / 4095) * 10;
+}
+
 static void led_toggle(void)
 {
   led_state = !led_state;

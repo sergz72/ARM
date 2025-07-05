@@ -40,6 +40,8 @@ static int counter;
 static int uh_index, ul_index;
 static unsigned int uh_changed_to, ul_changed_to;
 static int prev_button1_pressed, prev_button2_pressed;
+static int button1_pressed, button2_pressed;
+static int voltmeter_mode;
 
 void UI_Init(void)
 {
@@ -50,6 +52,7 @@ void UI_Init(void)
   uh_changed_to = DEFAULT_DAC3_VOLTAGE;
   ul_changed_to = DEFAULT_DAC1_VOLTAGE;
   prev_button1_pressed = prev_button2_pressed = 0;
+  button1_pressed = button2_pressed = voltmeter_mode = 0;
 
   I2C_Write(I2C2, SSD1306_I2C_ADDRESS, NULL, 0, I2C_TIMEOUT); // workaround
   LcdInit();
@@ -78,27 +81,66 @@ static void RAMFUNC calculate_led_data(void)
   led_data[3].blue = pulse ? WS2812_MAX_VALUE : 0;
 }
 
-void RAMFUNC ShowFrequency(int x, int y, unsigned int frequency)
+static void RAMFUNC ShowFrequency(int x, int y, unsigned int frequency)
 {
   frequency *= 10;
   LcdPrintf("%2d.%03d.%03d", x, y, &courierNew10ptFontInfo, 1,
             frequency / 1000000, (frequency / 1000) % 1000, frequency % 1000);
 }
 
-void RAMFUNC ShowVoltage(int x, int y, unsigned int voltage)
+static void RAMFUNC ShowVoltmeter(int x, int y, unsigned int uv)
+{
+  LcdPrintf("%3d.%06d", x, y, &courierNew10ptFontInfo, 1,
+            uv / 1000000, uv % 1000000);
+}
+
+static void RAMFUNC ShowVoltage(int x, int y, unsigned int voltage)
 {
   LcdPrintf("%d.%d", x, y, &courierNew8ptFontInfo, 1,
             voltage / 1000, (voltage / 100) % 10);
 }
 
-void RAMFUNC ShowVoltage1(int x, int y, unsigned int voltage)
+static void RAMFUNC ShowVoltage1(int x, int y, unsigned int voltage)
 {
   LcdPrintf("%d", x, y, &courierNew8ptFontInfo, 1, voltage / 100);
 }
 
-void RAMFUNC ShowPercentage(int x, int y, unsigned int percentage)
+static void RAMFUNC ShowPercentage(int x, int y, unsigned int percentage)
 {
   LcdPrintf("%3d", x, y, &courierNew8ptFontInfo, 1, percentage);
+}
+
+static void button1_short_press(void)
+{
+  uh_index++;
+  if (uh_index >= MAX_UH_VOLTAGES)
+    uh_index = 0;
+  uh_changed_to = uh_voltages[uh_index];
+  set_h_voltage(uh_changed_to);
+}
+
+static void button1_long_press(void)
+{
+  voltmeter_mode = !voltmeter_mode;
+  if (voltmeter_mode)
+    disconnect_pullup();
+  else
+    connect_pullup();
+  LcdDrawText(0, 0, voltmeter_mode ? "V " : "FH", &courierNew10ptFontInfo, WHITE_COLOR, BLACK_COLOR, NULL);
+}
+
+static void button2_short_press(void)
+{
+  ul_index++;
+  if (ul_index >= MAX_UL_VOLTAGES)
+    ul_index = 0;
+  ul_changed_to = ul_voltages[ul_index];
+  set_l_voltage(ul_changed_to);
+}
+
+static void button2_long_press(void)
+{
+
 }
 
 void RAMFUNC Process_Timer_Event(void)
@@ -107,31 +149,43 @@ void RAMFUNC Process_Timer_Event(void)
   ws2812_send(0, (const ws2812_rgb *)&led_data, WS2812_MAX_LEDS);
 
   int pressed = BUTTON1_PRESSED;
-  if (pressed && !prev_button1_pressed)
+  if (!pressed && prev_button1_pressed)
   {
-    uh_index++;
-    if (uh_index >= MAX_UH_VOLTAGES)
-      uh_index = 0;
-    uh_changed_to = uh_voltages[uh_index];
-    set_h_voltage(uh_changed_to);
+    if (button1_pressed < 10)
+      button1_short_press();
+    else
+      button1_long_press();
   }
+  if (pressed)
+    button1_pressed++;
+  else
+    button1_pressed = 0;
   prev_button1_pressed = pressed;
   pressed = BUTTON2_PRESSED;
-  if (pressed && !prev_button2_pressed)
+  if (!pressed && prev_button2_pressed)
   {
-    ul_index++;
-    if (ul_index >= MAX_UL_VOLTAGES)
-      ul_index = 0;
-    ul_changed_to = ul_voltages[ul_index];
-    set_l_voltage(ul_changed_to);
+    if (button2_pressed < 10)
+      button2_short_press();
+    else
+      button2_long_press();
   }
+  if (pressed)
+    button2_pressed++;
+  else
+    button2_pressed = 0;
   prev_button2_pressed = pressed;
 
   counter++;
   if (counter == 5)
   {
     counter = 0;
-    ShowFrequency(F_X, 0, counter_freq_high);
+    if (voltmeter_mode)
+    {
+      ShowVoltmeter(F_X, 0, get_adc_voltage());
+      adc_start();
+    }
+    else
+      ShowFrequency(F_X, 0, counter_freq_high);
     ShowFrequency(F_X, LINE2_Y, counter_freq_low);
     ShowPercentage(PH_X, LINE3_Y, counter_high * 100 / COUNTERS_MAX);
     ShowPercentage(PL_X, LINE3_Y, counter_low * 100 / COUNTERS_MAX);

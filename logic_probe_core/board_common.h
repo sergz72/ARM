@@ -32,6 +32,7 @@ extern "C" {
 
 unsigned int mv_to_12(unsigned int mv);
 unsigned int mv_from_12(unsigned int code);
+unsigned int uv_from_12(unsigned int code);
 void pwm_set_frequency_and_duty(unsigned int frequency, unsigned int duty);
 void stop_counters(void);
 void start_counters(void);
@@ -41,6 +42,10 @@ void set_dac_voltage(unsigned int value);
 unsigned int get_dac_voltage(void);
 unsigned int get_l_voltage(void);
 unsigned int get_h_voltage(void);
+void adc_start(void);
+unsigned int get_adc_voltage(void);
+void connect_pullup(void);
+void disconnect_pullup(void);
 void CustomMainInit(void);
 void PeriodicTimerStart(void);
 int getch_(void);
