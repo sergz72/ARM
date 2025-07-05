@@ -12,6 +12,7 @@
 
 ## For STM32 CPU:
 - [Electronic load](stm32f0/load)
+- [Advanced logic probe](stm32g4/stm32g431_logic_probe)
 
 ## Universal USB library
 - [core](https://github.com/sergz72/usblib)
