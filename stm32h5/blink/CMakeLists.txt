@@ -31,7 +31,7 @@ SET(CMAKE_ASM_FLAGS_INIT "${COMMON_FLAGS}")
 SET(CMAKE_EXE_LINKER_FLAGS_INIT "-Wl,-gc-sections,--print-memory-usage -T ${LINKER_SCRIPT}")
 
 if (CLANG)
-    SET(CMAKE_EXE_LINKER_FLAGS_INIT "${CMAKE_EXE_LINKER_FLAGS_INIT} -nostdlib -L /opt/arm/arm-none-eabi/lib/thumb/v7e-m+fp/hard -lc_nano -lnosys")
+    SET(CMAKE_EXE_LINKER_FLAGS_INIT "${CMAKE_EXE_LINKER_FLAGS_INIT} -nostdlib -L /opt/arm/arm-none-eabi/lib/thumb/v8-m.main+fp/hard -lc_nano -lnosys")
     add_definitions(-DCLANG)
 endif()
 
