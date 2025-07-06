@@ -52,7 +52,7 @@ extern "C" {
     led_state = 0;
     int cnt = 0;
 
-    if (cdc_class.DescriptorBuilder(2) || usb_device_manager.Init() || !malloc(1))
+    if (cdc_class.DescriptorBuilder(2, true) || usb_device_manager.Init() || !malloc(1))
     {
       LED_ON;
       while (1)

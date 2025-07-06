@@ -11,12 +11,20 @@ SET(CMAKE_CXX_COMPILER_WORKS 1)
 
 SET(CMAKE_VERBOSE_MAKEFILE ON)
 
-SET(LINKER_SCRIPT ../../STM32H503xx_FLASH.ld)
+if (CLANG)
+    SET(LINKER_SCRIPT ../../STM32H503xx_FLASH_clang.ld)
+else()
+    SET(LINKER_SCRIPT ../../STM32H503xx_FLASH.ld)
+endif()
 
 SET(FPU_FLAGS "-mfloat-abi=hard -mfpu=fpv4-sp-d16")
 
 SET(COMMON_FLAGS
         "-mcpu=cortex-m33 ${FPU_FLAGS} -ffunction-sections -fdata-sections -specs=nosys.specs -specs=nano.specs -nostartfiles")
+
+if (CLANG)
+    SET(COMMON_FLAGS "${COMMON_FLAGS} --target=arm-none-eabi")
+endif()
 
 add_definitions(-D__weak=__attribute__\(\(weak\)\) -D__packed=__attribute__\(\(__packed__\)\) -DSTM32H503xx)
 if (CMAKE_BUILD_TYPE MATCHES Debug)
@@ -24,15 +32,21 @@ if (CMAKE_BUILD_TYPE MATCHES Debug)
 endif()
 
 SET(CMAKE_C_FLAGS_INIT "${COMMON_FLAGS}")
+SET(CMAKE_ASM_FLAGS_INIT "${COMMON_FLAGS}")
 SET(CMAKE_CXX_FLAGS_INIT "${COMMON_FLAGS}")
 SET(CMAKE_EXE_LINKER_FLAGS_INIT "-Wl,-gc-sections,--print-memory-usage -T ${LINKER_SCRIPT}")
+
+if (CLANG)
+    SET(CMAKE_EXE_LINKER_FLAGS_INIT "${CMAKE_EXE_LINKER_FLAGS_INIT} -nostdlib -L /opt/arm/arm-none-eabi/lib/thumb/v7e-m+fp/hard -lstdc++_nano -lc_nano -lnosys")
+    add_definitions(-DCLANG)
+endif()
 
 project(stm32h503_usb C CXX ASM)
 
 file(GLOB SOURCES
         "src/main.cpp"
         "src/hal.c"
-        "../startup_stm32h563xx.s"
+        "../startup_stm32h503xx.s"
         "../stm32h5lib/pll.c"
         "../stm32h5lib/systick.c"
         "../stm32h5lib/gpio.c"
@@ -43,7 +57,14 @@ file(GLOB SOURCES
         "../../../usblib/cdc_class.cpp"
 )
 
-include_directories(src ../cmsis ../cmsis/device ../stm32h5lib ../../common_lib ../../../usblib)
+if (CLANG)
+    include_directories(src ../cmsis ../cmsis/device ../stm32h5lib ../../common_lib ../../../usblib
+            /opt/arm/arm-none-eabi/include/c++/14.3.1 /opt/arm/arm-none-eabi/include
+            /opt/arm/arm-none-eabi/include/c++/14.3.1/arm-none-eabi
+    )
+else()
+    include_directories(src ../cmsis ../cmsis/device ../stm32h5lib ../../common_lib ../../../usblib)
+endif()
 
 add_executable(${PROJECT_NAME}.elf ${SOURCES} ${LINKER_SCRIPT})
 
