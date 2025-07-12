@@ -3,7 +3,7 @@
 #include <usb_device.h>
 #include <usb_device_drd.h>
 #include <cdc_class.h>
-#include <lcd_st7789.h>
+#include <lcd.h>
 
 static const USBDeviceConfiguration configuration =
 {

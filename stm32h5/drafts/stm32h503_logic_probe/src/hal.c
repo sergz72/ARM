@@ -82,7 +82,7 @@ static void SPIInit(void)
 {
   GPIO_InitTypeDef init;
 
-  RCC->APB2ENR |= SPI_LCD_ENABLE;
+  SPI_LCD_ENABLE;
 
   init.Pin = SPI_LCD_SCK_PIN;
   init.Mode = GPIO_MODE_AF_PP;
@@ -95,13 +95,21 @@ static void SPIInit(void)
   init.Alternate = SPI_LCD_MOSI_AF;
   GPIO_Init(SPI_LCD_MOSI_PORT, &init);
 
+  ST7789_CS_PIN_SET;
+  ST7789_RST_PIN_SET;
+  init.Pin = GPIO_Pin_0 | GPIO_Pin_1 | GPIO_Pin_2;
+  init.Mode = GPIO_MODE_OUTPUT_PP;
+  init.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+  init.Pull = GPIO_NOPULL;
+  GPIO_Init(GPIOB, &init);
+
   SPI_Init(SPI_LCD, &spi1_init);
   SPI_Enable(SPI_LCD);
 }
 
 void SystemInit(void)
 {
-  RCC->AHB2ENR |= RCC_AHB2ENR_GPIOCEN | RCC_AHB2ENR_GPIOAEN;// | RCC_AHB2ENR_GPIOBEN;
+  RCC->AHB2ENR |= RCC_AHB2ENR_GPIOCEN | RCC_AHB2ENR_GPIOAEN | RCC_AHB2ENR_GPIOBEN;
 
   GPIOInit();
 
@@ -127,4 +135,6 @@ void ST7789_WriteBytes(unsigned char *data, unsigned int size)
 {
   while (size--)
     SPI_Send8(SPI_LCD, *data++, SPI_TIMEOUT);
+  SPI1->CR1 |= SPI_CR1_CSTART;
+  SPI_WaitSend(SPI_LCD, SPI_TIMEOUT);
 }

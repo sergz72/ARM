@@ -1,5 +1,6 @@
 #include "board.h"
 #include <lcd_st7789.h>
+#include <lcd.h>
 
 #define ST7789_NOP       0x00
 #define ST7789_SWRESET   0x01 // software reset
@@ -102,6 +103,9 @@
 
 #define ST7789_COLMOD_16_BPP 0x55  // 01010101 - 65K of RGB interface, 16-bit/pixel
 
+#define ST7789_XOFFSET 40
+#define ST7789_YOFFSET 53
+
 static void ST7789_SendCommand(unsigned char Reg)
 {
   ST7789_DC_PIN_CLR;
@@ -116,15 +120,15 @@ static void ST7789_SendData(unsigned char *data, unsigned int len)
 
 static void ST7789_Reset(void)
 {
-  ST7735_RST_PIN_SET;
+  ST7789_RST_PIN_SET;
   delay(20);
-  ST7735_RST_PIN_CLR;
+  ST7789_RST_PIN_CLR;
   delay(20); // > 10 us
-  ST7735_RST_PIN_SET;
+  ST7789_RST_PIN_SET;
   delayms(120);
 }
 
-static void ST7789_InitReg(void)
+static void ST7789_InitReg(unsigned char madctl)
 {
   unsigned char data[1];
 
@@ -135,15 +139,60 @@ static void ST7789_InitReg(void)
   delayms(5);
   // Set Interface Pixel Format - 16-bit/pixel
   ST7789_CS_PIN_CLR;
+  ST7789_SendCommand(ST7789_INVON);
+
   ST7789_SendCommand(ST7789_COLMOD);
   data[0] = ST7789_COLMOD_16_BPP;
   ST7789_SendData(data, 1);
+
+  ST7789_SendCommand(ST7789_MADCTL);
+  data[0] = madctl;
+  ST7789_SendData(data, 1);
+
   ST7789_SendCommand(ST7789_DISPON);
   ST7789_CS_PIN_SET;
 }
 
-void LcdInit(void)
+unsigned int LcdInit(void)
 {
   ST7789_Reset();
-  ST7789_InitReg();
+  ST7789_InitReg(ST7789_MADCTL_VALUE);
+  LcdScreenFill(BLACK_COLOR);
+  return 1;
+}
+
+static void SetWindow(unsigned int x1, unsigned int y1, unsigned int x2, unsigned int y2)
+{
+  unsigned char data[4];
+
+  x1 += ST7789_XOFFSET;
+  x2 += ST7789_XOFFSET;
+  y1 += ST7789_YOFFSET;
+  y2 += ST7789_YOFFSET;
+
+  data[0] = (unsigned char)(x1 >> 8);
+  data[1] = (unsigned char)x1;
+  data[2] = (unsigned char)(x2 >> 8);
+  data[3] = (unsigned char)x2;
+  ST7789_SendCommand(ST7789_CASET);
+  ST7789_SendData(data, 4);
+
+  data[0] = (unsigned char)(y1 >> 8);
+  data[1] = (unsigned char)y1;
+  data[2] = (unsigned char)(y2 >> 8);
+  data[3] = (unsigned char)y2;
+
+  ST7789_SendCommand(ST7789_RASET);
+  ST7789_SendData(data, 4);
+
+  ST7789_SendCommand(ST7789_RAMWR);
+}
+
+void LcdScreenFill(unsigned int color)
+{
+  ST7789_CS_PIN_CLR;
+  SetWindow(0, 0, LCD_WIDTH - 1, LCD_HEIGHT - 1);
+  for (int i = 0; i < LCD_WIDTH * LCD_HEIGHT; i++)
+    ST7789_SendData((unsigned char*)&color, 2);
+  ST7789_CS_PIN_SET;
 }
