@@ -1,39 +1,7 @@
 #include "board.h"
-#include <delay_systick.h>
-#include <usb_device.h>
-#include <usb_device_drd.h>
-#include <cdc_class.h>
-#include <lcd_st7789.h>
-#include <fonts/font16.h>
-#include <display.h>
+#include "usb_device_class.h"
 
-static const USBDeviceConfiguration configuration =
-{
-  .device_class = usb_class_misc, // composite device
-  .vendor_id = 1155,
-  .product_id =  22336,
-  .manufacturer = "STMicroelectronics",
-  .product = "STM32 Virtual ComPort",
-  .serial_number = "00000000001A",
-  .language_id = 1033
-};
-
-static const USBConfigurationDescriptor configuration_descriptor = {
-  .configuration_name = "CDC Configuration",
-  .self_powered = 1,
-  .remote_wakeup = 0,
-  .max_power = 100
-};
-
-extern "C" {
-static void cdc_rx_callback(unsigned int port_id, unsigned char *buffer, unsigned int buffer_length);
-}
-
-static int led_state;
-static USB_Device_DRD usb_device;
-static USB_DeviceManager usb_device_manager(&configuration, &configuration_descriptor, &usb_device);
-static USB_CDC_Class cdc_class(&usb_device_manager, 1024);
-static unsigned char cdc_buffer[1024];
+extern USB_DEVICE_CLASS usb_device;
 
 extern "C" {
   void USB_DRD_FS_IRQHandler(void)
@@ -41,49 +9,18 @@ extern "C" {
     usb_device.InterruptHandler();
   }
 
-  static void led_toggle(void)
+  void __attribute__((section(".RamFunc"))) update_counters(void)
   {
-    led_state = !led_state;
-    if (led_state)
-      LED_ON;
-    else
-      LED_OFF;
+    //todo
+    counter_low = counter_low_counter;
+    counter_high = counter_high_counter;
+    counter_freq_low = 0 | (freq_low_counter << 16);
+    counter_freq_high = 0 | (freq_high_counter << 16);
+    counter_low_counter = counter_high_counter = freq_low_counter = freq_high_counter = 0;
   }
 
-  int main(void)
+  void PeriodicTimerStart(void)
   {
-    led_state = 0;
-    int cnt = 0;
-
-    if (cdc_class.DescriptorBuilder(1, false) || usb_device_manager.Init() || !malloc(1))
-    {
-      LED_ON;
-      while (1)
-        delayms(1000);
-    }
-
-    LcdInit(ST7789_MADCTL_VALUE);
-    DisplayInit(&courierNew16ptFontInfo);
-    DisplaySetCharColor(0, 0, RED_COLOR, BLACK_COLOR);
-    DisplaySetChar(0, 0, 'F');
-    DisplaySetCharColor(1, 0, RED_COLOR, BLACK_COLOR);
-    DisplaySetChar(1, 0, 'H');
-
-    while (1)
-    {
-      delayms(10);
-      unsigned int length = cdc_class.GetPendingData(0, cdc_buffer, sizeof(cdc_buffer));
-      if (length)
-        cdc_class.Send(0, cdc_buffer, length);
-      length = cdc_class.GetPendingData(1, cdc_buffer, sizeof(cdc_buffer));
-      if (length)
-        cdc_class.Send(1, cdc_buffer, length);
-      cnt++;
-      if (cnt == 100)
-      {
-        led_toggle();
-        cnt = 0;
-      }
-    }
+    //todo
   }
 }

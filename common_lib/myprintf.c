@@ -47,7 +47,7 @@ int print_string(const char *str, int width, char padding, int pad_right, void (
   return rc;
 }
 
-int myvprintf(const char *format, void (*writer)(char, void*), const va_list vArgs, void *data)
+int myvprintf(const char *format, void (*writer)(char, void*), va_list vArgs, void *data)
 {
   int count, v, width, pad_right;
   unsigned int u;
@@ -159,7 +159,7 @@ int mysprintf(char *s, const char *format, ...)
   return rc;
 }
 
-int myvsprintf(char *s, const char *format, const va_list vArgs)
+int myvsprintf(char *s, const char *format, va_list vArgs)
 {
   int rc = myvprintf(format, savechar, vArgs, &s);
 

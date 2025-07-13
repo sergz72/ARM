@@ -138,3 +138,66 @@ void ST7789_WriteBytes(unsigned char *data, unsigned int size)
   SPI1->CR1 |= SPI_CR1_CSTART;
   SPI_WaitSend(SPI_LCD, SPI_TIMEOUT);
 }
+
+void __attribute__((section(".RamFunc"))) set_h_voltage(unsigned int value)
+{
+  DAC1->DHR12R2 = mv_to_12(value);
+}
+
+void __attribute__((section(".RamFunc"))) set_l_voltage(unsigned int value)
+{
+  DAC1->DHR12R1 = mv_to_12(value);
+}
+
+unsigned int get_l_voltage(void)
+{
+  return mv_from_12(DAC1->DHR12R1);
+}
+
+unsigned int get_h_voltage(void)
+{
+  return mv_from_12(DAC1->DHR12R2);
+}
+
+void __attribute__((section(".RamFunc"))) stop_counters(void)
+{
+  //todo
+}
+
+void __attribute__((section(".RamFunc"))) start_counters(void)
+{
+  //todo
+}
+
+void pwm_set_frequency_and_duty(unsigned int frequency, unsigned int duty)
+{
+  //todo
+  /*unsigned int arr = BOARD_PCLK1 / frequency;
+  if (arr < 2)
+    arr = 2;
+  if (arr > 65536)
+    arr = 65536;
+  if (duty == 0)
+    duty = 1;
+  else if (duty > 99)
+    duty = 99;
+  TIM17->ARR = arr - 1;
+  TIM17->CCR1 = arr * duty / 100;*/
+}
+
+void adc_start(void)
+{
+}
+
+unsigned int get_adc_voltage(void)
+{
+  return 0;
+}
+
+void connect_pullup(void)
+{
+}
+
+void disconnect_pullup(void)
+{
+}

@@ -76,14 +76,14 @@ static void DACSInit(void)
             GPIO_PuPd_NOPULL
   );
 
-  DAC1->DHR12R1 = mv_to_12(DEFAULT_DAC1_VOLTAGE);
-  DAC1->DHR12R2 = mv_to_12(DEFAULT_DAC1_VOLTAGE);
+  DAC1->DHR12R1 = mv_to_12(DEFAULT_DACL_VOLTAGE);
+  DAC1->DHR12R2 = mv_to_12(DEFAULT_DACL_VOLTAGE);
   //DAC channel1 is connected to on chip peripherals with Buffer disabled
   //DAC channel2 is connected to external pin with Buffer enabled
   DAC1->MCR = DAC_MCR_MODE1;
   DAC1->CR = DAC_CR_EN1 | DAC_CR_EN2;
 
-  DAC3->DHR12R1 = mv_to_12(DEFAULT_DAC3_VOLTAGE);
+  DAC3->DHR12R1 = mv_to_12(DEFAULT_DACH_VOLTAGE);
   //DAC channel1 is connected to on chip peripherals with Buffer disabled
   DAC3->MCR = DAC_MCR_MODE1;
   DAC3->CR = DAC_CR_EN1;

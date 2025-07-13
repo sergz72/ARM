@@ -5,6 +5,8 @@
 #define NULL 0
 #endif
 
+#include <board_common.h>
+
 #include "stm32h5xx.h"
 
 #define SYSTICK_MULTIPLIER 30
@@ -16,7 +18,9 @@
 #define LED_OFF GPIOC->BSRR = 0x2000
 
 //PA0
-#define BUTTON_PRESSED (GPIOA->IDR & 1)
+#define BUTTON1_PRESSED (GPIOA->IDR & 1)
+//PA1
+#define BUTTON2_PRESSED (GPIOA->IDR & 2)
 
 //PB1
 #define ST7789_DC_PIN_CLR GPIOB->BSRR = 0x20000
@@ -43,8 +47,10 @@
 #define LCD_HEIGHT 135
 #define ST7789_MADCTL_VALUE (ST7789_MADCTL_MX | ST7789_MADCTL_MV)
 
-#define DISPLAY_MAX_COLUMNS 15
-#define DISPLAY_MAX_ROWS    6
+#define DAC_REFERENCE_VOLTAGE 3300
+#define RAMFUNC __attribute__((section(".RamFunc")))
+
+#define COUNTERS_MAX 219
 
 #include <delay_systick.h>
 

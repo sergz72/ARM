@@ -46,13 +46,26 @@ project(stm32h503_logic_probe C CXX ASM)
 file(GLOB SOURCES
         "src/main.cpp"
         "src/hal.c"
-        "src/display.c"
+        "../../logic_probe_core/main.c"
+        "../../logic_probe_core/ui_240x135.c"
+        "../../logic_probe_core/ui_common.c"
+        "../../logic_probe_core/dac_commands.c"
+        "../../logic_probe_core/pwm_commands.c"
+        "../../logic_probe_core/counters_commands.c"
+        "../../logic_probe_core/custom_main_init_usb.cpp"
         "../startup_stm32h503xx.s"
         "../stm32h5lib/pll.c"
         "../stm32h5lib/systick.c"
         "../stm32h5lib/gpio.c"
         "../stm32h5lib/nvic.c"
         "../stm32h5lib/spi.c"
+        "../../common_lib/shell/shell.c"
+        "../../common_lib/getstring.c"
+        "../../common_lib/fixed_queue.c"
+        "../../common_lib/common_printf.c"
+        "../../common_lib/myprintf.c"
+        "../../common_lib/ultoa.c"
+        "../../common_lib/display/display.c"
         "../../common_lib/delay_systick.c"
         "../../common_lib/display/lcd_st7789.c"
         "../../common_lib/display/fonts/font16.c"
@@ -62,12 +75,14 @@ file(GLOB SOURCES
 )
 
 if (CLANG)
-    include_directories(src ../cmsis ../cmsis/device ../stm32h5lib ../../common_lib ../../../usblib ../../common_lib/display
+    include_directories(src ../cmsis ../cmsis/device ../stm32h5lib ../../common_lib ../../../usblib
+            ../../common_lib/display ../../common_lib/shell ../../logic_probe_core
             /opt/arm/arm-none-eabi/include/c++/14.3.1 /opt/arm/arm-none-eabi/include
             /opt/arm/arm-none-eabi/include/c++/14.3.1/arm-none-eabi
     )
 else()
-    include_directories(src ../cmsis ../cmsis/device ../stm32h5lib ../../common_lib ../../../usblib ../../common_lib/display)
+    include_directories(src ../cmsis ../cmsis/device ../stm32h5lib ../../common_lib ../../../usblib
+            ../../common_lib/display ../../common_lib/shell ../../logic_probe_core)
 endif()
 
 add_executable(${PROJECT_NAME}.elf ${SOURCES} ${LINKER_SCRIPT})

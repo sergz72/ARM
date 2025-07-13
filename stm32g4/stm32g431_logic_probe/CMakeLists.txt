@@ -37,6 +37,7 @@ file(GLOB SOURCES
         "src/hal.c"
         "src/main.cpp"
         "../../logic_probe_core/ui_128x32.c"
+        "../../logic_probe_core/ui_common.c"
         "../../logic_probe_core/dac_commands.c"
         "../../logic_probe_core/pwm_commands.c"
         "../../logic_probe_core/counters_commands.c"

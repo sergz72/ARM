@@ -13,8 +13,8 @@
 
 #define PRINTF_BUFFER_LENGTH 200
 
-#define DEFAULT_DAC1_VOLTAGE  400
-#define DEFAULT_DAC3_VOLTAGE  2400
+#define DEFAULT_DACL_VOLTAGE  400
+#define DEFAULT_DACH_VOLTAGE  2400
 
 #define TIMER_EVENT_FREQUENCY 10
 
@@ -22,8 +22,9 @@
 #define COUNTERS_INTERRUPT_PRIORITY 1
 #define TIMER_INTERRUPT_PRIORITY 0
 
-extern unsigned int counter_low, counter_high, counter_freq_low, counter_freq_high;
-extern volatile unsigned int counter_low_counter, counter_high_counter, freq_low_counter, freq_high_counter;
+extern unsigned int counter_low, counter_high, counter_z, counter_freq_low, counter_freq_high, counter_freq_rs;
+extern volatile unsigned int counter_low_counter, counter_high_counter, counter_z_counter, freq_low_counter;
+extern volatile unsigned int freq_high_counter, freq_rs_counter;
 extern volatile int timer_event;
 
 #ifdef __cplusplus
@@ -61,5 +62,9 @@ void update_counters(void);
 
 #define WS2812_MAX_LEDS 4
 #define WS2812_MAX_VALUE 0x40
+
+#define DISPLAY_MAX_COLUMNS    13
+#define DISPLAY_MAX_ROWS       6
+#define DISPLAY_MAX_RECTANGLES 4
 
 #endif
