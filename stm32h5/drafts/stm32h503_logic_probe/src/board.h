@@ -43,6 +43,9 @@
 #define LCD_HEIGHT 135
 #define ST7789_MADCTL_VALUE (ST7789_MADCTL_MX | ST7789_MADCTL_MV)
 
+#define DISPLAY_MAX_COLUMNS 15
+#define DISPLAY_MAX_ROWS    6
+
 #include <delay_systick.h>
 
 #endif

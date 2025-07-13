@@ -1,6 +1,5 @@
 #include "board.h"
 #include <lcd_st7789.h>
-#include <lcd.h>
 
 #define ST7789_NOP       0x00
 #define ST7789_SWRESET   0x01 // software reset
@@ -153,12 +152,11 @@ static void ST7789_InitReg(unsigned char madctl)
   ST7789_CS_PIN_SET;
 }
 
-unsigned int LcdInit(void)
+void LcdInit(unsigned char madctl)
 {
   ST7789_Reset();
-  ST7789_InitReg(ST7789_MADCTL_VALUE);
+  ST7789_InitReg(madctl);
   LcdScreenFill(BLACK_COLOR);
-  return 1;
 }
 
 static void SetWindow(unsigned int x1, unsigned int y1, unsigned int x2, unsigned int y2)
@@ -188,11 +186,41 @@ static void SetWindow(unsigned int x1, unsigned int y1, unsigned int x2, unsigne
   ST7789_SendCommand(ST7789_RAMWR);
 }
 
-void LcdScreenFill(unsigned int color)
+void LcdRectFill(unsigned int column, unsigned int row, unsigned int dx, unsigned int dy, unsigned int color)
 {
   ST7789_CS_PIN_CLR;
-  SetWindow(0, 0, LCD_WIDTH - 1, LCD_HEIGHT - 1);
-  for (int i = 0; i < LCD_WIDTH * LCD_HEIGHT; i++)
+  SetWindow(column, row, dx - 1, dy - 1);
+  for (int i = 0; i < dx * dy; i++)
     ST7789_SendData((unsigned char*)&color, 2);
+  ST7789_CS_PIN_SET;
+}
+
+void LcdScreenFill(unsigned int color)
+{
+  LcdRectFill(0, 0, LCD_WIDTH, LCD_HEIGHT, color);
+}
+
+static void drawCharRow8(unsigned char c, unsigned int textColor, unsigned int bkColor)
+{
+}
+
+void LcdDrawChar(unsigned int x, unsigned int y, char c, const FONT_INFO *f, unsigned int textColor, unsigned int bkColor)
+{
+  if (c < f->start_character || c > f->start_character + f->character_count | x + 16 > LCD_WIDTH || y + f->char_height > LCD_HEIGHT)
+    return;
+  unsigned int char_bytes = f->char_height << 1;
+  const unsigned char *char_pointer = f->char_bitmaps + (c - f->start_character) * char_bytes;
+  ST7789_CS_PIN_CLR;
+  SetWindow(x, y, x + 15, y + f->char_height - 1);
+  while (char_bytes--)
+  {
+    c =*char_pointer++;
+    for (int i = 0; i < 8; i++)
+    {
+      unsigned char *color = c & 0x80 ? (unsigned char*)&textColor : (unsigned char*)&bkColor;
+      ST7789_SendData(color, 2);
+      c <<= 1;
+    }
+  }
   ST7789_CS_PIN_SET;
 }

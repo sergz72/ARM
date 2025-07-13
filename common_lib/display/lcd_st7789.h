@@ -1,9 +1,10 @@
 #ifndef LCD_ST7789_H
 #define LCD_ST7789_H
 
-#define BLUE_COLOR    0x1F00
-#define RED_COLOR     0x00F8
-#define GREEN_COLOR   0xE007
+#define BLACK_COLOR   0
+#define	BLUE_COLOR    0x1F00
+#define	RED_COLOR     0x00F8
+#define	GREEN_COLOR   0xE007
 #define CYAN_COLOR    0xFF7F
 #define MAGENTA_COLOR 0x1FF8
 #define YELLOW_COLOR  0xE0FF
@@ -20,11 +21,18 @@
 #define ST7789_MADCTL_MX  0x40  // Bit 6 - X-Mirror
 #define ST7789_MADCTL_MY  0x80  // Bit 7 - Y-Mirror
 
+#include <font.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-void ST7789_WriteBytes(unsigned char *data, unsigned int size);
+void ST7789_WriteBytes(unsigned char *data, unsigned int size); // should be defined in hal.c
+
+void LcdDrawChar(unsigned int x, unsigned int y, char c, const FONT_INFO *f, unsigned int textColor, unsigned int bkColor);
+void LcdInit(unsigned char madctl);
+void LcdRectFill(unsigned int column, unsigned int row, unsigned int dx, unsigned int dy, unsigned int color);
+void LcdScreenFill(unsigned int color);
 
 #ifdef __cplusplus
 }

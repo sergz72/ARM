@@ -3,7 +3,9 @@
 #include <usb_device.h>
 #include <usb_device_drd.h>
 #include <cdc_class.h>
-#include <lcd.h>
+#include <lcd_st7789.h>
+#include <fonts/font16.h>
+#include <display.h>
 
 static const USBDeviceConfiguration configuration =
 {
@@ -60,7 +62,12 @@ extern "C" {
         delayms(1000);
     }
 
-    LcdInit();
+    LcdInit(ST7789_MADCTL_VALUE);
+    DisplayInit(&courierNew16ptFontInfo);
+    DisplaySetCharColor(0, 0, RED_COLOR, BLACK_COLOR);
+    DisplaySetChar(0, 0, 'F');
+    DisplaySetCharColor(1, 0, RED_COLOR, BLACK_COLOR);
+    DisplaySetChar(1, 0, 'H');
 
     while (1)
     {

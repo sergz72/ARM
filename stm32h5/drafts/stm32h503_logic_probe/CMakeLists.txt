@@ -46,6 +46,7 @@ project(stm32h503_logic_probe C CXX ASM)
 file(GLOB SOURCES
         "src/main.cpp"
         "src/hal.c"
+        "src/display.c"
         "../startup_stm32h503xx.s"
         "../stm32h5lib/pll.c"
         "../stm32h5lib/systick.c"
@@ -54,6 +55,7 @@ file(GLOB SOURCES
         "../stm32h5lib/spi.c"
         "../../common_lib/delay_systick.c"
         "../../common_lib/display/lcd_st7789.c"
+        "../../common_lib/display/fonts/font16.c"
         "../../../usblib/usb_device.cpp"
         "../../../usblib/usb_device_drd.cpp"
         "../../../usblib/cdc_class.cpp"
