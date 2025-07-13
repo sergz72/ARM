@@ -55,11 +55,6 @@ void update_counters(void);
 }
 #endif
 
-#define SSD1306_128_32
-#define LCD_ORIENTATION LCD_ORIENTATION_LANDSCAPE_REVERSED
-
-#include <lcd_ssd1306.h>
-
 #define LCD_PRINTF_BUFFER_LENGTH 30
 #define DRAW_TEXT_MAX 20
 #define USE_MYVSPRINTF

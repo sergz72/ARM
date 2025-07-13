@@ -42,4 +42,9 @@
 
 #define DAC3_PRESENT
 
+#define SSD1306_128_32
+#define LCD_ORIENTATION LCD_ORIENTATION_LANDSCAPE_REVERSED
+
+#include <lcd_ssd1306.h>
+
 #endif

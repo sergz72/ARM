@@ -1,13 +1,13 @@
 #include <board.h>
 #include <lcd.h>
 
-unsigned int LcdDrawTextCenter(unsigned int x, unsigned int y, char* text, const FONT_INFO* f, unsigned int textColor, unsigned int bkColor, unsigned int width)
+unsigned int LcdDrawTextCenter(unsigned int x, unsigned int y, const char* text, const FONT_INFO* f, unsigned int textColor, unsigned int bkColor, unsigned int width)
 {
   x += (width - FontGetWidth(text, f)) / 2;
   return LcdDrawText(x, y, text, f, textColor, bkColor, NULL);
 }
 
-unsigned int LcdDrawTextRight(unsigned int x, unsigned int y, char* text, const FONT_INFO* f, unsigned int textColor, unsigned int bkColor, unsigned int width)
+unsigned int LcdDrawTextRight(unsigned int x, unsigned int y, const char* text, const FONT_INFO* f, unsigned int textColor, unsigned int bkColor, unsigned int width)
 {
   x += width - FontGetWidth(text, f);
   return LcdDrawText(x, y, text, f, textColor, bkColor, NULL);
@@ -64,7 +64,7 @@ void lcdWriteData(unsigned int x, unsigned int y, const unsigned char *bitmap, u
   }
 }
 
-unsigned int LcdDrawText(unsigned int x, unsigned int y, char *text, const FONT_INFO *f, unsigned int textColor, unsigned int bkColor, unsigned int *owidth)
+unsigned int LcdDrawText(unsigned int x, unsigned int y, const char *text, const FONT_INFO *f, unsigned int textColor, unsigned int bkColor, unsigned int *owidth)
 {
   char c;
   unsigned int col, width, max_width, w, h, bit, character_bytes;
