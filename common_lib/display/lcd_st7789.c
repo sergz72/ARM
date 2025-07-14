@@ -189,7 +189,7 @@ static void SetWindow(unsigned int x1, unsigned int y1, unsigned int x2, unsigne
 void LcdRectFill(unsigned int column, unsigned int row, unsigned int dx, unsigned int dy, unsigned int color)
 {
   ST7789_CS_PIN_CLR;
-  SetWindow(column, row, dx - 1, dy - 1);
+  SetWindow(column, row, column + dx - 1, row + dy - 1);
   for (int i = 0; i < dx * dy; i++)
     ST7789_SendData((unsigned char*)&color, 2);
   ST7789_CS_PIN_SET;
@@ -198,10 +198,6 @@ void LcdRectFill(unsigned int column, unsigned int row, unsigned int dx, unsigne
 void LcdScreenFill(unsigned int color)
 {
   LcdRectFill(0, 0, LCD_WIDTH, LCD_HEIGHT, color);
-}
-
-static void drawCharRow8(unsigned char c, unsigned int textColor, unsigned int bkColor)
-{
 }
 
 void LcdDrawChar(unsigned int x, unsigned int y, char c, const FONT_INFO *f, unsigned int textColor, unsigned int bkColor)

@@ -111,6 +111,8 @@ void UI_Init(void)
 
   counter = 0;
 
+  UI_CommonInit();
+
   LcdInit(ST7789_MADCTL_VALUE);
   DisplayInit();
   init_row(0, HIGH_COLOR);
@@ -121,6 +123,18 @@ void UI_Init(void)
   init_row3();
   init_row4();
   init_row5();
+
+  r.x = 16 * 13;
+  r.y = 0;
+  r.width = 32;
+  r.height = 33;
+  DisplayInitRectangle(0, &r);
+  r.y += 33;
+  DisplayInitRectangle(1, &r);
+  r.y += 33;
+  DisplayInitRectangle(2, &r);
+  r.y += 33;
+  DisplayInitRectangle(3, &r);
 }
 
 void RAMFUNC DrawMode(void)
@@ -149,9 +163,13 @@ static void ShowFrequency(unsigned int row, unsigned int frequency)
 
 static void ShowDuty(unsigned int column, unsigned int row, unsigned int duty)
 {
-  char c = (duty / 100) + '0';
-  DisplaySetChar(column, row, c);
-  c = ((duty / 10) % 10) + '0';
+  char c3 = (duty / 100) + '0';
+  if (c3 == '0')
+    c3 = ' ';
+  DisplaySetChar(column, row, c3);
+  char c = ((duty / 10) % 10) + '0';
+  if (c3 == ' ' && c == '0')
+    c = ' ';
   column++;
   DisplaySetChar(column, row, c);
   c = (duty % 10) + '0';
@@ -167,9 +185,22 @@ static void ShowVoltage(unsigned int column, unsigned int value)
   DisplaySetChar(column + 2, 3, c);
 }
 
+static void ShowLedData(void)
+{
+  unsigned int low = counter_low * WS2812_MAX_VALUE / COUNTERS_MAX;
+  unsigned int high = counter_high * WS2812_MAX_VALUE / COUNTERS_MAX;
+  unsigned int z = counter_z * WS2812_MAX_VALUE / COUNTERS_MAX;
+  int pulsed = (counter_freq_rs != 0) || ((counter_freq_high != 0) && (counter_freq_low != 0));
+  unsigned int pulse = pulsed ? WS2812_MAX_VALUE : 0;
+  DisplaySetRectangleColor(0, RGB(low, 0, 0));
+  DisplaySetRectangleColor(1, RGB(z, z, 0));
+  DisplaySetRectangleColor(2, RGB(0, high, 0));
+  DisplaySetRectangleColor(3, RGB(0, 0, pulse));
+}
+
 void Process_Timer_Event(void)
 {
-  calculate_led_data();
+  ShowLedData();
 
   Process_Button_Events();
 

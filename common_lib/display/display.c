@@ -30,9 +30,9 @@ void DisplayInitChar(unsigned int column, unsigned int row, Character *ch)
   c->c = ' ';
 }
 
-void DisplayInitRectangle(unsigned int column, unsigned int row, Rectangle *rc)
+void DisplayInitRectangle(unsigned int idx, Rectangle *rc)
 {
-  Rectangle *r = &display.rectangles[row];
+  Rectangle *r = &display.rectangles[idx];
   r->x = rc->x;
   r->y = rc->y;
   r->width = rc->width;

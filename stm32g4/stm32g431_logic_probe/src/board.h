@@ -45,6 +45,8 @@
 #define SSD1306_128_32
 #define LCD_ORIENTATION LCD_ORIENTATION_LANDSCAPE_REVERSED
 
+#define WS2812_MAX_VALUE 0x40
+
 #include <lcd_ssd1306.h>
 
 #endif

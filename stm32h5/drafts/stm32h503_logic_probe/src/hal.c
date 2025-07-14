@@ -17,7 +17,7 @@ const RCCConfig rcc_config =
   .ppre3 = 1
 };
 
-static const SPI_InitStruct spi1_init = {
+static const SPI_InitStruct spi_init = {
   .fifo_threshold = 8,
   .io_swap = 0,
   .alternate_function_gpio_control = 0,
@@ -78,6 +78,13 @@ static void USB_Init(void)
   NVIC_Init(USB_DRD_FS_IRQn, 1, 3, ENABLE);
 }
 
+/*
+ *PA1=SPI3_SCK
+ *PA3=SPI3_MOSI
+ *PA6=RESET
+ *PA7=DC
+ *PB0=CS
+ */
 static void SPIInit(void)
 {
   GPIO_InitTypeDef init;
@@ -97,14 +104,51 @@ static void SPIInit(void)
 
   ST7789_CS_PIN_SET;
   ST7789_RST_PIN_SET;
-  init.Pin = GPIO_Pin_0 | GPIO_Pin_1 | GPIO_Pin_2;
+  init.Pin = GPIO_Pin_6 | GPIO_Pin_7;
+  init.Mode = GPIO_MODE_OUTPUT_PP;
+  init.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+  init.Pull = GPIO_NOPULL;
+  GPIO_Init(GPIOA, &init);
+  init.Pin = GPIO_Pin_0;
   init.Mode = GPIO_MODE_OUTPUT_PP;
   init.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
   init.Pull = GPIO_NOPULL;
   GPIO_Init(GPIOB, &init);
 
-  SPI_Init(SPI_LCD, &spi1_init);
+  SPI_Init(SPI_LCD, &spi_init);
   SPI_Enable(SPI_LCD);
+}
+
+// PA4=DAC1_OUT1, PA5=DAC1_OUT2
+static void DACInit(void)
+{
+  RCC->AHB2ENR |= RCC_AHB2ENR_DAC1EN;
+
+  GPIO_InitTypeDef init;
+  init.Pin = GPIO_Pin_4 | GPIO_Pin_5;
+  init.Mode = GPIO_MODE_ANALOG;
+  init.Speed = GPIO_SPEED_FREQ_LOW;
+  init.Pull = GPIO_NOPULL;
+  GPIO_Init(GPIOA, &init);
+
+  DAC1->DHR12R1 = mv_to_12(DEFAULT_DACL_VOLTAGE);
+  DAC1->DHR12R2 = mv_to_12(DEFAULT_DACH_VOLTAGE);
+  //DAC channels 1,2 are connected to external pins with Buffer enabled
+  //DAC1->MCR = 0;
+  DAC1->CR = DAC_CR_EN1 | DAC_CR_EN2;
+}
+
+// GATE timer
+static void TIM2Init(void)
+{
+  RCC->APB1LENR |= RCC_APB1LENR_TIM2EN;
+
+  TIM2->ARR = BOARD_PCLK1 / TIMER_EVENT_FREQUENCY - 1;
+  TIM2->DIER = TIM_DIER_UIE;
+
+  TIM2->SR = 0;
+
+  NVIC_Init(TIM2_IRQn, TIMER_INTERRUPT_PRIORITY, 0, ENABLE);
 }
 
 void SystemInit(void)
@@ -124,6 +168,8 @@ void SystemInit(void)
 
   USB_Init();
   SPIInit();
+  DACInit();
+  TIM2Init();
 }
 
 void _init(void)
@@ -135,7 +181,7 @@ void ST7789_WriteBytes(unsigned char *data, unsigned int size)
 {
   while (size--)
     SPI_Send8(SPI_LCD, *data++, SPI_TIMEOUT);
-  SPI1->CR1 |= SPI_CR1_CSTART;
+  SPI_LCD->CR1 |= SPI_CR1_CSTART;
   SPI_WaitSend(SPI_LCD, SPI_TIMEOUT);
 }
 

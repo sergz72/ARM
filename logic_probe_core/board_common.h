@@ -61,7 +61,6 @@ void update_counters(void);
 #define USE_MYVSPRINTF
 
 #define WS2812_MAX_LEDS 4
-#define WS2812_MAX_VALUE 0x40
 
 #define DISPLAY_MAX_COLUMNS    13
 #define DISPLAY_MAX_ROWS       6
