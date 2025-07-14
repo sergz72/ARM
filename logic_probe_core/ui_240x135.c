@@ -10,9 +10,9 @@
 
 #define FONT courierNew16ptFontInfo
 
-#define FREQUENCY_COLUMNS 9
+#define FREQUENCY_COLUMNS 8
 
-const unsigned int frequency_columns[FREQUENCY_COLUMNS] = { 2, 3, 4, 6, 7, 8, 10, 11, 12 };
+const unsigned int frequency_columns[FREQUENCY_COLUMNS] = { 2, 3, 4, 6, 7, 8, 10, 11 };
 
 static int counter;
 
@@ -33,6 +33,7 @@ static void init_row(unsigned int row, unsigned short color)
   DisplaySetChar(0, row, 'F');
   DisplaySetChar(5, row, '.');
   DisplaySetChar(9, row, '.');
+  DisplaySetChar(12, row, '0');
 }
 
 static void initU(unsigned int column, char t, unsigned short color)
@@ -150,7 +151,7 @@ static void ShowFrequency(unsigned int row, unsigned int frequency)
   for (int i = FREQUENCY_COLUMNS - 1; i >= 0; i--)
   {
     char c;
-    if ((i == 1 && frequency < 10000000) || (i == 0 && frequency < 100000000))
+    if (i < 2 && !frequency)
       c = ' ';
     else
     {
@@ -187,19 +188,28 @@ static void ShowVoltage(unsigned int column, unsigned int value)
 
 static void ShowLedData(void)
 {
-  unsigned int low = counter_low * WS2812_MAX_VALUE / COUNTERS_MAX;
-  unsigned int high = counter_high * WS2812_MAX_VALUE / COUNTERS_MAX;
-  unsigned int z = counter_z * WS2812_MAX_VALUE / COUNTERS_MAX;
-  int pulsed = (counter_freq_rs != 0) || ((counter_freq_high != 0) && (counter_freq_low != 0));
-  unsigned int pulse = pulsed ? WS2812_MAX_VALUE : 0;
-  DisplaySetRectangleColor(0, RGB(low, 0, 0));
-  DisplaySetRectangleColor(1, RGB(z, z, 0));
-  DisplaySetRectangleColor(2, RGB(0, high, 0));
-  DisplaySetRectangleColor(3, RGB(0, 0, pulse));
+  DisplaySetRectangleColor(0, RGB(led_data[0].red, 0, 0));
+  DisplaySetRectangleColor(1, RGB(led_data[1].red, led_data[1].green, 0));
+  DisplaySetRectangleColor(2, RGB(0, led_data[2].green, 0));
+  DisplaySetRectangleColor(3, RGB(0, 0, led_data[3].blue));
+}
+
+static unsigned int calculate_duty_z(unsigned int duty_h, unsigned int duty_l)
+{
+  duty_h += duty_l;
+  if (duty_h >= 100)
+    return 0;
+  return 100 - duty_h;
 }
 
 void Process_Timer_Event(void)
 {
+#ifdef WITH_RS
+    calculate_led_data_with_rs();
+#else
+    calculate_led_data_without_rs();
+#endif
+
   ShowLedData();
 
   Process_Button_Events();
@@ -214,11 +224,19 @@ void Process_Timer_Event(void)
       adc_start();
     }
     ShowFrequency(0, counter_freq_high);
-    ShowFrequency(1, counter_freq_rs);
+#ifdef WITH_RS
+      ShowFrequency(1, counter_freq_rs);
+#endif
     ShowFrequency(2, counter_freq_low);
-    ShowDuty(1, 4, counter_high * 100 / COUNTERS_MAX);
+    unsigned int duty_h = counter_high * 100 / COUNTERS_MAX;
+    unsigned int duty_l = counter_low * 100 / COUNTERS_MAX;
+    ShowDuty(1, 4, duty_h);
+#ifdef WITH_RS
     ShowDuty(6, 4, counter_z * 100 / COUNTERS_MAX);
-    ShowDuty(1, 5, counter_low * 100 / COUNTERS_MAX);
+#else
+    ShowDuty(6, 4, calculate_duty_z(duty_h, duty_l));
+#endif
+    ShowDuty(1, 5, duty_l);
     if (uh_changed_to)
     {
       ShowVoltage(3, uh_changed_to);

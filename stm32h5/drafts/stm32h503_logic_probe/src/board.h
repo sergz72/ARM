@@ -18,10 +18,10 @@
 // set PC13
 #define LED_OFF GPIOC->BSRR = 0x2000
 
-//PA0
-#define BUTTON1_PRESSED (GPIOA->IDR & 1)
-//PA1
-#define BUTTON2_PRESSED (GPIOA->IDR & 2)
+//PB1
+#define BUTTON1_PRESSED (GPIOB->IDR & 2)
+//PB2
+#define BUTTON2_PRESSED (GPIOB->IDR & 4)
 
 //PA7
 #define ST7789_DC_PIN_CLR GPIOA->BSRR = 0x800000
@@ -51,10 +51,21 @@
 #define DAC_REFERENCE_VOLTAGE 3300
 #define RAMFUNC __attribute__((section(".RamFunc")))
 
-#define COUNTERS_MAX 219
+#define COUNTERS_MAX 366
 
 #define WS2812_MAX_VALUE 0xFF
 
 #include <delay_systick.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+void GatedModeSet(TIM_TypeDef *tim);
+void ExternalClockModeSet(TIM_TypeDef *tim);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

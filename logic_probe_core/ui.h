@@ -8,7 +8,8 @@ void Process_Timer_Event(void);
 void UI_CommonInit(void);
 void DrawMode(void);
 void Process_Button_Events(void);
-void calculate_led_data(void);
+void calculate_led_data_without_rs(void);
+void calculate_led_data_with_rs(void);
 
 extern int voltmeter_mode;
 extern ws2812_rgb led_data[WS2812_MAX_LEDS];

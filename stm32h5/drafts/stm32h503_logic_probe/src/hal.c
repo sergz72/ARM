@@ -49,16 +49,16 @@ static void GPIOInit(void)
   init.Pin = GPIO_Pin_13;
   init.Mode = GPIO_MODE_OUTPUT_PP;
   init.Speed = GPIO_SPEED_FREQ_LOW;
-  init.Pull = GPIO_NOPULL;
+  init.Pull = GPIO_PULLDOWN;
   // LED
   GPIO_Init(GPIOC, &init);
 
-  init.Pin = GPIO_Pin_0;
+  init.Pin = GPIO_Pin_1 | GPIO_Pin_2;
   init.Mode = GPIO_MODE_INPUT;
   init.Speed = GPIO_SPEED_FREQ_LOW;
-  init.Pull = GPIO_NOPULL;
-  // BUTTON
-  GPIO_Init(GPIOA, &init);
+  init.Pull = GPIO_PULLDOWN;
+  // BUTTONs
+  GPIO_Init(GPIOB, &init);
 }
 
 static void USB_Init(void)
@@ -139,16 +139,95 @@ static void DACInit(void)
 }
 
 // GATE timer
+static void TIM6Init(void)
+{
+  RCC->APB1LENR |= RCC_APB1LENR_TIM6EN;
+
+  TIM6->PSC = BOARD_PCLK1 / 100000 - 1;
+  TIM6->ARR = 100000 / TIMER_EVENT_FREQUENCY - 1;
+  TIM6->DIER = TIM_DIER_UIE;
+
+  TIM6->SR = 0;
+
+  NVIC_Init(TIM6_IRQn, TIMER_INTERRUPT_PRIORITY, 0, ENABLE);
+}
+
+void GatedModeSet(TIM_TypeDef *tim)
+{
+  // Configure in gated mode
+  tim->SMCR = TIM_SMCR_SMS_0 | TIM_SMCR_SMS_2 |                  // Gated mode
+               TIM_SMCR_TS_0 | TIM_SMCR_TS_1 | TIM_SMCR_TS_2;    // tim_etrf as trigger source
+}
+
+void ExternalClockModeSet(TIM_TypeDef *tim)
+{
+  // Configure TIM in external clock mode
+  tim->SMCR = TIM_SMCR_SMS_0 | TIM_SMCR_SMS_1 | TIM_SMCR_SMS_2 |
+                TIM_SMCR_TS_0 | TIM_SMCR_TS_1 | TIM_SMCR_TS_2;    // tim_etrf as trigger source
+}
+
+// low counter, PA0 = TIM2_ETR
 static void TIM2Init(void)
 {
+  GPIO_InitTypeDef init;
+
   RCC->APB1LENR |= RCC_APB1LENR_TIM2EN;
 
-  TIM2->ARR = BOARD_PCLK1 / TIMER_EVENT_FREQUENCY - 1;
-  TIM2->DIER = TIM_DIER_UIE;
+  init.Pin = GPIO_Pin_0;
+  init.Mode = GPIO_MODE_AF_PP;
+  init.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+  init.Pull = GPIO_PULLDOWN;
+  init.Alternate = GPIO_AF14_TIM2;
+  GPIO_Init(GPIOA, &init);
 
-  TIM2->SR = 0;
+  GatedModeSet(TIM2);
+}
 
-  NVIC_Init(TIM2_IRQn, TIMER_INTERRUPT_PRIORITY, 0, ENABLE);
+// high counter, PA2 = TIM3_ETR
+static void TIM3Init(void)
+{
+  GPIO_InitTypeDef init;
+
+  RCC->APB1LENR |= RCC_APB1LENR_TIM3EN;
+
+  init.Pin = GPIO_Pin_2;
+  init.Mode = GPIO_MODE_AF_PP;
+  init.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+  init.Pull = GPIO_PULLDOWN;
+  init.Alternate = GPIO_AF2_TIM3;
+  GPIO_Init(GPIOA, &init);
+
+  GatedModeSet(TIM3);
+
+  TIM3->DIER = TIM_DIER_UIE;
+
+  TIM3->SR = 0;
+  NVIC_Init(TIM3_IRQn, COUNTERS_INTERRUPT_PRIORITY, 0, ENABLE);
+}
+
+// PWM timer, PB5=TIM1_CH3
+static void TIM1Init(void)
+{
+  GPIO_InitTypeDef init;
+
+  RCC->APB2ENR |= RCC_APB2ENR_TIM1EN;
+
+  init.Pin = GPIO_Pin_5;
+  init.Mode = GPIO_MODE_AF_PP;
+  init.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+  init.Pull = GPIO_PULLDOWN;
+  init.Alternate = GPIO_AF1_TIM1;
+  GPIO_Init(GPIOB, &init);
+
+  pwm_set_frequency_and_duty(10000, 50);
+
+  TIM1->CCMR2 = (6 << TIM_CCMR2_OC3M_Pos) | TIM_CCMR2_OC3PE;  // PWM mode 1 (0110)
+
+  TIM1->CCER |= TIM_CCER_CC3E;
+
+  TIM1->BDTR = TIM_BDTR_MOE;
+
+  TIM1->CR1 = TIM_CR1_ARPE | TIM_CR1_CEN;
 }
 
 void SystemInit(void)
@@ -169,7 +248,10 @@ void SystemInit(void)
   USB_Init();
   SPIInit();
   DACInit();
+  TIM6Init();
   TIM2Init();
+  TIM3Init();
+  TIM1Init();
 }
 
 void _init(void)
@@ -207,18 +289,24 @@ unsigned int get_h_voltage(void)
 
 void __attribute__((section(".RamFunc"))) stop_counters(void)
 {
-  //todo
+  TIM6->CR1 &= ~TIM_CR1_CEN;
+  TIM2->CR1 &= ~TIM_CR1_CEN;
+  TIM3->CR1 &= ~TIM_CR1_CEN;
 }
 
 void __attribute__((section(".RamFunc"))) start_counters(void)
 {
-  //todo
+  TIM6->CNT = 0;
+  TIM2->CNT = 0;
+  TIM3->CNT = 0;
+  TIM6->CR1 |= TIM_CR1_CEN;
+  TIM2->CR1 |= TIM_CR1_CEN;
+  TIM3->CR1 |= TIM_CR1_CEN;
 }
 
 void pwm_set_frequency_and_duty(unsigned int frequency, unsigned int duty)
 {
-  //todo
-  /*unsigned int arr = BOARD_PCLK1 / frequency;
+  unsigned int arr = BOARD_PCLK1 / frequency;
   if (arr < 2)
     arr = 2;
   if (arr > 65536)
@@ -227,8 +315,8 @@ void pwm_set_frequency_and_duty(unsigned int frequency, unsigned int duty)
     duty = 1;
   else if (duty > 99)
     duty = 99;
-  TIM17->ARR = arr - 1;
-  TIM17->CCR1 = arr * duty / 100;*/
+  TIM1->ARR = arr - 1;
+  TIM1->CCR3 = arr * duty / 100;
 }
 
 void adc_start(void)

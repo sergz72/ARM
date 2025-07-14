@@ -69,25 +69,9 @@ void RAMFUNC DrawMode(void)
   LcdDrawText(0, 0, voltmeter_mode ? "V " : "FH", &courierNew10ptFontInfo, WHITE_COLOR, BLACK_COLOR, NULL);
 }
 
-static void RAMFUNC calculate_led_data(void)
-{
-  led_data[0].red = counter_low * WS2812_MAX_VALUE / COUNTERS_MAX;
-  unsigned int zero_one_sum = counter_low + counter_high;
-  unsigned char floating_value;
-  if (zero_one_sum >= COUNTERS_MAX)
-    floating_value = 0;
-  else
-    floating_value = (COUNTERS_MAX - zero_one_sum) * WS2812_MAX_VALUE / (COUNTERS_MAX * 2);
-  led_data[1].green = floating_value;
-  led_data[1].red = floating_value;
-  led_data[2].green = counter_high * WS2812_MAX_VALUE / COUNTERS_MAX;
-  int pulse = counter_freq_high && counter_freq_low;
-  led_data[3].blue = pulse ? WS2812_MAX_VALUE : 0;
-}
-
 void RAMFUNC Process_Timer_Event(void)
 {
-  calculate_led_data();
+  calculate_led_data_without_rs();
   ws2812_send(0, (const ws2812_rgb *)&led_data, WS2812_MAX_LEDS);
 
   Process_Button_Events();

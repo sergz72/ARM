@@ -39,6 +39,31 @@ void UI_CommonInit(void)
   button1_pressed = button2_pressed = voltmeter_mode = 0;
 }
 
+void RAMFUNC calculate_led_data_without_rs(void)
+{
+  led_data[0].red = counter_low * WS2812_MAX_VALUE / COUNTERS_MAX;
+  unsigned int zero_one_sum = counter_low + counter_high;
+  unsigned char floating_value;
+  if (zero_one_sum >= COUNTERS_MAX)
+    floating_value = 0;
+  else
+    floating_value = (COUNTERS_MAX - zero_one_sum) * WS2812_MAX_VALUE / (COUNTERS_MAX * 2);
+  led_data[1].green = floating_value;
+  led_data[1].red = floating_value;
+  led_data[2].green = counter_high * WS2812_MAX_VALUE / COUNTERS_MAX;
+  int pulse = counter_freq_high && counter_freq_low;
+  led_data[3].blue = pulse ? WS2812_MAX_VALUE : 0;
+}
+
+void RAMFUNC calculate_led_data_with_rs(void)
+{
+  led_data[0].red = counter_low * WS2812_MAX_VALUE / COUNTERS_MAX;
+  led_data[2].green = counter_high * WS2812_MAX_VALUE / COUNTERS_MAX;
+  led_data[1].green = led_data[1].red = counter_z * WS2812_MAX_VALUE / COUNTERS_MAX;
+  int pulse = (counter_freq_rs != 0) || ((counter_freq_high != 0) && (counter_freq_low != 0));
+  led_data[3].blue = pulse ? WS2812_MAX_VALUE : 0;
+}
+
 static void button1_short_press(void)
 {
   uh_index++;
