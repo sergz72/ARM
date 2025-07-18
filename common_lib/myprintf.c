@@ -51,6 +51,7 @@ int myvprintf(const char *format, void (*writer)(char, void*), va_list vArgs, vo
 {
   int count, v, width, pad_right;
   unsigned int u;
+  unsigned long ul;
   char c, *s, padding, temp[20];
 
   if (format == NULL)
@@ -121,9 +122,30 @@ int myvprintf(const char *format, void (*writer)(char, void*), va_list vArgs, vo
           count += print_string(temp, width, padding, pad_right, writer, data);
           break;
         case 'x':
+        case 'X':
           u = va_arg(vArgs, unsigned int);
           ultoa(u, temp, 16, sizeof(temp));
           count += print_string(temp, width, padding, pad_right, writer, data);
+          break;
+        case 'l':
+          switch (*format)
+          {
+            case 'u':
+              ul = va_arg(vArgs, unsigned long);
+              ultoa(ul, temp, 10, sizeof(temp));
+              count += print_string(temp, width, padding, pad_right, writer, data);
+              format++;
+              break;
+            case 'x':
+            case 'X':
+              ul = va_arg(vArgs, unsigned long);
+              ultoa(ul, temp, 16, sizeof(temp));
+              count += print_string(temp, width, padding, pad_right, writer, data);
+              format++;
+              break;
+            default:
+              break;
+          }
           break;
         default:
           break;

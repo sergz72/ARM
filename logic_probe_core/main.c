@@ -7,33 +7,32 @@
 #include "pwm_commands.h"
 #include "counters_commands.h"
 #include "ui.h"
-#include <delay_systick.h>
 
 static int led_state;
 static char command_line[200];
 volatile int timer_event;
 volatile unsigned int counter_low_counter, counter_high_counter, counter_z_counter, freq_low_counter, freq_high_counter, freq_rs_counter;
-unsigned int counter_low, counter_high, counter_z, counter_freq_low, counter_freq_high, counter_freq_rs;
+unsigned long counter_low, counter_high, counter_z, counter_freq_low, counter_freq_high, counter_freq_rs;
 
 unsigned int mv_to_12(unsigned int mv)
 {
   if (mv >= DAC_REFERENCE_VOLTAGE)
     return 4095;
-  return (mv * 4095) / DAC_REFERENCE_VOLTAGE;
+  return (unsigned int)(((unsigned long)mv * 4095) / DAC_REFERENCE_VOLTAGE);
 }
 
 unsigned int mv_from_12(unsigned int code)
 {
   if (code >= 4095)
     return DAC_REFERENCE_VOLTAGE;
-  return code * DAC_REFERENCE_VOLTAGE / 4095;
+  return (unsigned int)((unsigned long)code * DAC_REFERENCE_VOLTAGE / 4095);
 }
 
-unsigned int uv_from_12(unsigned int code)
+unsigned long uv_from_12(unsigned int code)
 {
   if (code >= 4095)
-    return DAC_REFERENCE_VOLTAGE * 1000;
-  return (code * DAC_REFERENCE_VOLTAGE * 100 / 4095) * 10;
+    return (unsigned long)DAC_REFERENCE_VOLTAGE * 1000;
+  return ((unsigned long)code * DAC_REFERENCE_VOLTAGE * 100 / 4095) * 10;
 }
 
 static void led_toggle(void)
@@ -93,8 +92,15 @@ static void RAMFUNC main_loop(void)
   }
 }
 
+void WEAK register_custom_commands(void)
+{
+}
+
 int main(void)
 {
+#ifdef SYSTEM_INIT
+  SYSTEM_INIT();
+#endif
 
   led_state = 0;
 
@@ -103,10 +109,10 @@ int main(void)
   register_dac_commands();
   register_pwm_commands();
   register_counters_commands();
+  register_custom_commands();
 
   getstring_init(command_line, sizeof(command_line), getch_, puts_);
 
-  delayms(50);
   UI_Init();
 
   timer_event = 0;
@@ -115,7 +121,9 @@ int main(void)
 
   PeriodicTimerStart();
 
-  counter_low = counter_high = counter_freq_low = counter_freq_high = 0;
+  counter_low = counter_high = counter_z = 0;
+  counter_freq_low = counter_freq_high = counter_freq_rs = 0;
+  
   start_counters();
 
   main_loop();

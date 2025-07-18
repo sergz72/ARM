@@ -22,7 +22,7 @@
 #define COUNTERS_INTERRUPT_PRIORITY 1
 #define TIMER_INTERRUPT_PRIORITY 0
 
-extern unsigned int counter_low, counter_high, counter_z, counter_freq_low, counter_freq_high, counter_freq_rs;
+extern unsigned long counter_low, counter_high, counter_z, counter_freq_low, counter_freq_high, counter_freq_rs;
 extern volatile unsigned int counter_low_counter, counter_high_counter, counter_z_counter, freq_low_counter;
 extern volatile unsigned int freq_high_counter, freq_rs_counter;
 extern volatile int timer_event;
@@ -33,7 +33,7 @@ extern "C" {
 
 unsigned int mv_to_12(unsigned int mv);
 unsigned int mv_from_12(unsigned int code);
-unsigned int uv_from_12(unsigned int code);
+unsigned long uv_from_12(unsigned int code);
 void pwm_set_frequency_and_duty(unsigned int frequency, unsigned int duty);
 void stop_counters(void);
 void start_counters(void);
@@ -51,6 +51,7 @@ void CustomMainInit(void);
 void PeriodicTimerStart(void);
 int getch_(void);
 void update_counters(void);
+void register_custom_commands(void);
 
 #ifdef __cplusplus
 }

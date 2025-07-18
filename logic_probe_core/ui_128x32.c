@@ -22,6 +22,8 @@ void UI_Init(void)
 {
   counter = 0;
 
+  delayms(50);
+
   UI_CommonInit();
 
   I2C_Write(I2C2, SSD1306_I2C_ADDRESS, NULL, 0, I2C_TIMEOUT); // workaround

@@ -10,7 +10,7 @@ static void prepare_buffer(unsigned char color)
 {
   union
   {
-    unsigned int i;
+    unsigned long i;
     unsigned char c[4];
   } data;
 

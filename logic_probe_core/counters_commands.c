@@ -15,7 +15,9 @@ static const ShellCommand counters_command = {
 
 static int counters_handler(printf_func pfunc, gets_func gfunc, int argc, char **argv, void *data)
 {
-  pfunc("low %d high %d freq_low %d freq_high %d\n", counter_low, counter_high, counter_freq_low, counter_freq_high);
+  pfunc("low %lu high %lu z %lu freq_low %lu freq_high %lu freq_rs %lu\n",
+        counter_low, counter_high, counter_z,
+        counter_freq_low, counter_freq_high, counter_freq_rs);
   return 0;
 }
 
