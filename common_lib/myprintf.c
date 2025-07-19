@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ultoa.h>
+#include <itoa.h>
 
 void put_string(const char *s, void (* writer)(char, void*), void *data)
 {

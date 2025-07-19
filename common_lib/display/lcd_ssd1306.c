@@ -34,11 +34,6 @@
 #define SSD1306_COLUMNADDR 0x21
 #define SSD1306_PAGEADDR   0x22
 
-#define SSD1306_COMSCANINC 0xC0
-#define SSD1306_COMSCANDEC 0xC8
-
-#define SSD1306_SEGREMAP 0xA0
-
 #define SSD1306_CHARGEPUMP 0x8D
 
 // Scrolling #defines
@@ -49,6 +44,14 @@
 #define SSD1306_LEFT_HORIZONTAL_SCROLL 0x27
 #define SSD1306_VERTICAL_AND_RIGHT_HORIZONTAL_SCROLL 0x29
 #define SSD1306_VERTICAL_AND_LEFT_HORIZONTAL_SCROLL 0x2A
+
+#ifndef SSD1306_SEGREMAP_COMMAND
+#define SSD1306_SEGREMAP_COMMAND (SSD1306_SEGREMAP | 0x1)
+#endif
+
+#ifndef SSD1306_COMSCAN_COMMAND
+#define SSD1306_COMSCAN_COMMAND SSD1306_COMSCANDEC
+#endif
 
 #if LCD_ORIENTATION == LCD_ORIENTATION_PORTRAIT
 #define SSD1306_GET_BUFFER_OFFSET(x, y) ((LCD_HEIGHT * ((LCD_WIDTH >> 3U) - 1)) + y - (x >> 3U) * LCD_HEIGHT)
@@ -103,8 +106,8 @@ unsigned int LcdInit(void)
 #endif
   ssd1306_command(SSD1306_MEMORYMODE);                    // 0x20
   ssd1306_command(0x00);                                  // 0x0 act like ks0108
-  ssd1306_command(SSD1306_SEGREMAP | 0x1);
-  ssd1306_command(SSD1306_COMSCANDEC);
+  ssd1306_command(SSD1306_SEGREMAP_COMMAND);
+  ssd1306_command(SSD1306_COMSCAN_COMMAND);
 
  #if defined SSD1306_128_32
   ssd1306_command(SSD1306_SETCOMPINS);                    // 0xDA

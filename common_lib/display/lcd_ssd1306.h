@@ -39,6 +39,11 @@
 
 #define LCD_MAX_CONTRAST 0x8F
 
+#define SSD1306_COMSCANINC 0xC0
+#define SSD1306_COMSCANDEC 0xC8
+
+#define SSD1306_SEGREMAP 0xA0
+
 int SSD1306_I2C_Write(int num_bytes, unsigned char control_byte, unsigned char *buffer);
 
 void LCD_SetContrast(unsigned char contrast);

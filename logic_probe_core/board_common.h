@@ -22,7 +22,8 @@
 #define COUNTERS_INTERRUPT_PRIORITY 1
 #define TIMER_INTERRUPT_PRIORITY 0
 
-extern unsigned long counter_low, counter_high, counter_z, counter_freq_low, counter_freq_high, counter_freq_rs;
+extern unsigned int counter_low, counter_high, counter_z;
+extern unsigned long counter_freq_low, counter_freq_high, counter_freq_rs;
 extern volatile unsigned int counter_low_counter, counter_high_counter, counter_z_counter, freq_low_counter;
 extern volatile unsigned int freq_high_counter, freq_rs_counter;
 extern volatile int timer_event;

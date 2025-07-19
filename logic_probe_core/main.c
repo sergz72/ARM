@@ -12,7 +12,8 @@ static int led_state;
 static char command_line[200];
 volatile int timer_event;
 volatile unsigned int counter_low_counter, counter_high_counter, counter_z_counter, freq_low_counter, freq_high_counter, freq_rs_counter;
-unsigned long counter_low, counter_high, counter_z, counter_freq_low, counter_freq_high, counter_freq_rs;
+unsigned int counter_low, counter_high, counter_z;
+unsigned long counter_freq_low, counter_freq_high, counter_freq_rs;
 
 unsigned int mv_to_12(unsigned int mv)
 {
