@@ -183,6 +183,21 @@ void RAMFUNC Process_Timer_Event(void)
   ws2812_send(0, (const ws2812_rgb *)&led_data, WS2812_MAX_LEDS);
 
   Process_Button_Events();
+  
+  /*if (DAC1CONL & 0x80)
+    LED_GREEN_ON;
+  else
+    LED_GREEN_OFF;
+
+  if (DAC2CONL & 0x80)
+    LED_RED_ON;
+  else
+    LED_RED_OFF;
+  
+  if (CLC2CONLbits.LCOUT)
+    LED_BLUE_ON;
+  else
+    LED_BLUE_OFF;*/
 
   counter++;
   if (counter == 5)
