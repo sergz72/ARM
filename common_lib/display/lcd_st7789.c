@@ -107,16 +107,21 @@
 
 static void ST7789_SendCommand(unsigned char Reg)
 {
-  ST7789_DC_PIN_CLR;
-  ST7789_WriteBytes(&Reg, 1);
+  ST7789_WriteBytes(0, &Reg, 1);
 }
 
 static void ST7789_SendData(unsigned char *data, unsigned int len)
 {
-  ST7789_DC_PIN_SET;
-  ST7789_WriteBytes(data, len);
+  ST7789_WriteBytes(ST7789_FLAG_DC, data, len);
 }
 
+static void ST7789_CS_High(void)
+{
+  unsigned char data = 0;
+  ST7789_WriteBytes(ST7789_FLAG_CS, &data, 1);
+}
+
+#ifndef NO_ST7789_RESET
 static void ST7789_Reset(void)
 {
   ST7789_RST_PIN_SET;
@@ -126,40 +131,41 @@ static void ST7789_Reset(void)
   ST7789_RST_PIN_SET;
   delayms(120);
 }
+#endif
 
 static void ST7789_InitReg(unsigned char madctl)
 {
-  unsigned char data[1];
+  unsigned char data;
 
   //Sleep exit
-  ST7789_CS_PIN_CLR;
   ST7789_SendCommand(ST7789_SLPOUT);
-  ST7789_CS_PIN_SET;
+  ST7789_CS_High();
   delayms(5);
   // Set Interface Pixel Format - 16-bit/pixel
-  ST7789_CS_PIN_CLR;
   ST7789_SendCommand(ST7789_INVON);
 
   ST7789_SendCommand(ST7789_COLMOD);
-  data[0] = ST7789_COLMOD_16_BPP;
-  ST7789_SendData(data, 1);
+  data = ST7789_COLMOD_16_BPP;
+  ST7789_SendData(&data, 1);
 
   ST7789_SendCommand(ST7789_MADCTL);
-  data[0] = madctl;
-  ST7789_SendData(data, 1);
+  data = madctl;
+  ST7789_SendData(&data, 1);
 
   ST7789_SendCommand(ST7789_DISPON);
-  ST7789_CS_PIN_SET;
+  ST7789_CS_High();
 }
 
 void LcdInit(unsigned char madctl)
 {
+#ifndef NO_ST7789_RESET
   ST7789_Reset();
+#endif
   ST7789_InitReg(madctl);
   LcdScreenFill(BLACK_COLOR);
 }
 
-static void SetWindow(unsigned int x1, unsigned int y1, unsigned int x2, unsigned int y2)
+void SetWindow(unsigned int x1, unsigned int y1, unsigned int x2, unsigned int y2)
 {
   unsigned char data[4];
 
@@ -188,11 +194,9 @@ static void SetWindow(unsigned int x1, unsigned int y1, unsigned int x2, unsigne
 
 void LcdRectFill(unsigned int column, unsigned int row, unsigned int dx, unsigned int dy, unsigned int color)
 {
-  ST7789_CS_PIN_CLR;
   SetWindow(column, row, column + dx - 1, row + dy - 1);
-  for (int i = 0; i < dx * dy; i++)
-    ST7789_SendData((unsigned char*)&color, 2);
-  ST7789_CS_PIN_SET;
+  ST7789_WriteColor(color, dx * dy);
+  ST7789_CS_High();
 }
 
 void LcdScreenFill(unsigned int color)
@@ -206,17 +210,16 @@ void LcdDrawChar(unsigned int x, unsigned int y, char c, const FONT_INFO *f, uns
     return;
   unsigned int char_bytes = f->char_height << 1;
   const unsigned char *char_pointer = f->char_bitmaps + (c - f->start_character) * char_bytes;
-  ST7789_CS_PIN_CLR;
   SetWindow(x, y, x + 15, y + f->char_height - 1);
   while (char_bytes--)
   {
     c =*char_pointer++;
     for (int i = 0; i < 8; i++)
     {
-      unsigned char *color = c & 0x80 ? (unsigned char*)&textColor : (unsigned char*)&bkColor;
-      ST7789_SendData(color, 2);
+      unsigned int color = c & 0x80 ? textColor : bkColor;
+      ST7789_WriteColor(color, 2);
       c <<= 1;
     }
   }
-  ST7789_CS_PIN_SET;
+  ST7789_CS_High();
 }
