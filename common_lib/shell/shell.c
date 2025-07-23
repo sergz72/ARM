@@ -220,7 +220,7 @@ int shell_execute(const char *command)
       }
       if (item->text || !item->final_handler || current_parameter < last_parameter)
       {
-        printf("usage: %s\n", get_help_text(*current_command));
+        pfunc("usage: %s\n", get_help_text(*current_command));
         return 1;
       }
       return item->final_handler(pfunc, gfunc, argc, argv, (*current_command)->data);
