@@ -55,6 +55,8 @@
 
 #define WS2812_MAX_VALUE 0xFF
 
+#define WEAK __attribute__((weak))
+
 #include <delay_systick.h>
 
 #ifdef __cplusplus

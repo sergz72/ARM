@@ -211,15 +211,27 @@ void LcdDrawChar(unsigned int x, unsigned int y, char c, const FONT_INFO *f, uns
   unsigned int char_bytes = f->char_height << 1;
   const unsigned char *char_pointer = f->char_bitmaps + (c - f->start_character) * char_bytes;
   SetWindow(x, y, x + 15, y + f->char_height - 1);
+  c =*char_pointer++;
+  unsigned int prev_color = c & 0x80 ? textColor : bkColor;
+  unsigned int counter = 0;
   while (char_bytes--)
   {
-    c =*char_pointer++;
     for (int i = 0; i < 8; i++)
     {
       unsigned int color = c & 0x80 ? textColor : bkColor;
-      ST7789_WriteColor(color, 2);
+      if (color == prev_color)
+        counter++;
+      else
+      {
+        ST7789_WriteColor(prev_color, counter);
+        prev_color = color;
+        counter = 1;
+      }
       c <<= 1;
     }
+    c =*char_pointer++;
   }
+  if (counter)
+    ST7789_WriteColor(prev_color, counter);
   ST7789_CS_High();
 }

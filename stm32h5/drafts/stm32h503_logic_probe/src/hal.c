@@ -3,6 +3,7 @@
 #include <gpio.h>
 #include <nvic.h>
 #include <spi.h>
+#include <lcd_st7789.h>
 
 const RCCConfig rcc_config =
 {
@@ -40,6 +41,8 @@ static const SPI_InitStruct spi_init = {
   .internal_slave_select = 1,
   .baud_rate = 10000000
 };
+
+static unsigned int prev_flags = ST7789_FLAG_CS;
 
 static void GPIOInit(void)
 {
@@ -259,12 +262,39 @@ void _init(void)
 
 }
 
-void ST7789_WriteBytes(unsigned char *data, unsigned int size)
+void ST7789_WriteBytes(unsigned int flags, unsigned char *data, unsigned int size)
 {
+  if (prev_flags != flags)
+  {
+    prev_flags = flags;
+    if (flags & ST7789_FLAG_DC)
+      ST7789_DC_PIN_SET;
+    else
+      ST7789_DC_PIN_CLR;
+    if (flags & ST7789_FLAG_CS)
+    {
+      ST7789_CS_PIN_SET;
+      return;
+    }
+    ST7789_CS_PIN_CLR;
+  }
   while (size--)
     SPI_Send8(SPI_LCD, *data++, SPI_TIMEOUT);
   SPI_LCD->CR1 |= SPI_CR1_CSTART;
   SPI_WaitSend(SPI_LCD, SPI_TIMEOUT);
+}
+
+void ST7789_WriteColor(unsigned int color, unsigned int count)
+{
+  prev_flags = ST7789_FLAG_DC;
+  ST7789_DC_PIN_SET;
+  while (count--)
+  {
+    SPI_Send8(SPI_LCD, (unsigned char)color, SPI_TIMEOUT);
+    SPI_Send8(SPI_LCD, (unsigned char)(color >> 8), SPI_TIMEOUT);
+    SPI_LCD->CR1 |= SPI_CR1_CSTART;
+    SPI_WaitSend(SPI_LCD, SPI_TIMEOUT);
+  }
 }
 
 void __attribute__((section(".RamFunc"))) set_h_voltage(unsigned int value)
