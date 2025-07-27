@@ -3,7 +3,7 @@
 #include <gpio.h>
 #include <nvic.h>
 #include <spi.h>
-#include <lcd_st7789.h>
+#include <spi_lcd_common.h>
 
 const RCCConfig rcc_config =
 {
@@ -39,10 +39,10 @@ static const SPI_InitStruct spi_init = {
   .rx_dma_enable = 0,
   .software_slave_management = 1,
   .internal_slave_select = 1,
-  .baud_rate = 10000000
+  .baud_rate = 5000000
 };
 
-static unsigned int prev_flags = ST7789_FLAG_CS;
+static unsigned int prev_flags = LCD_FLAG_CS;
 
 static void GPIOInit(void)
 {
@@ -105,8 +105,8 @@ static void SPIInit(void)
   init.Alternate = SPI_LCD_MOSI_AF;
   GPIO_Init(SPI_LCD_MOSI_PORT, &init);
 
-  ST7789_CS_PIN_SET;
-  ST7789_RST_PIN_SET;
+  LCD_CS_PIN_SET;
+  LCD_RST_PIN_SET;
   init.Pin = GPIO_Pin_6 | GPIO_Pin_7;
   init.Mode = GPIO_MODE_OUTPUT_PP;
   init.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
@@ -262,21 +262,21 @@ void _init(void)
 
 }
 
-void ST7789_WriteBytes(unsigned int flags, unsigned char *data, unsigned int size)
+void Lcd_WriteBytes(unsigned int flags, unsigned char *data, unsigned int size)
 {
   if (prev_flags != flags)
   {
     prev_flags = flags;
-    if (flags & ST7789_FLAG_DC)
-      ST7789_DC_PIN_SET;
+    if (flags & LCD_FLAG_DC)
+      LCD_DC_PIN_SET;
     else
-      ST7789_DC_PIN_CLR;
-    if (flags & ST7789_FLAG_CS)
+      LCD_DC_PIN_CLR;
+    if (flags & LCD_FLAG_CS)
     {
-      ST7789_CS_PIN_SET;
+      LCD_CS_PIN_SET;
       return;
     }
-    ST7789_CS_PIN_CLR;
+    LCD_CS_PIN_CLR;
   }
   while (size--)
     SPI_Send8(SPI_LCD, *data++, SPI_TIMEOUT);
@@ -284,10 +284,10 @@ void ST7789_WriteBytes(unsigned int flags, unsigned char *data, unsigned int siz
   SPI_WaitSend(SPI_LCD, SPI_TIMEOUT);
 }
 
-void ST7789_WriteColor(unsigned int color, unsigned int count)
+void Lcd_WriteColor(unsigned int color, unsigned int count)
 {
-  prev_flags = ST7789_FLAG_DC;
-  ST7789_DC_PIN_SET;
+  prev_flags = LCD_FLAG_DC;
+  LCD_DC_PIN_SET;
   while (count--)
   {
     SPI_Send8(SPI_LCD, (unsigned char)color, SPI_TIMEOUT);

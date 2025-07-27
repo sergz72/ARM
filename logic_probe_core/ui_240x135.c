@@ -1,12 +1,9 @@
 #include "board.h"
 #include <ui.h>
 #include <lcd_st7789.h>
+#include <spi_lcd_common.h>
 #include <display.h>
 #include <fonts/font16.h>
-
-#define HIGH_COLOR RGB(128, 255, 128)
-#define Z_COLOR RGB(255, 255, 128)
-#define LOW_COLOR RGB(255, 128, 128)
 
 #define FONT courierNew16ptFontInfo
 

@@ -64,8 +64,10 @@ void register_custom_commands(void);
 
 #define WS2812_MAX_LEDS 4
 
-#define DISPLAY_MAX_COLUMNS    13
-#define DISPLAY_MAX_ROWS       6
 #define DISPLAY_MAX_RECTANGLES 4
+
+#define HIGH_COLOR RGB(128, 255, 128)
+#define Z_COLOR RGB(255, 255, 128)
+#define LOW_COLOR RGB(255, 128, 128)
 
 #endif

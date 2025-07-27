@@ -1,5 +1,6 @@
 #include "board.h"
 #include <lcd_st7789.h>
+#include <spi_lcd_common.h>
 
 #define ST7789_NOP       0x00
 #define ST7789_SWRESET   0x01 // software reset
@@ -105,30 +106,14 @@
 #define ST7789_XOFFSET 40
 #define ST7789_YOFFSET 53
 
-static void ST7789_SendCommand(unsigned char Reg)
-{
-  ST7789_WriteBytes(0, &Reg, 1);
-}
-
-static void ST7789_SendData(unsigned char *data, unsigned int len)
-{
-  ST7789_WriteBytes(ST7789_FLAG_DC, data, len);
-}
-
-static void ST7789_CS_High(void)
-{
-  unsigned char data = 0;
-  ST7789_WriteBytes(ST7789_FLAG_CS, &data, 1);
-}
-
 #ifndef NO_ST7789_RESET
 static void ST7789_Reset(void)
 {
-  ST7789_RST_PIN_SET;
+  LCD_RST_PIN_SET;
   delay(20);
-  ST7789_RST_PIN_CLR;
+  LCD_RST_PIN_CLR;
   delay(20); // > 10 us
-  ST7789_RST_PIN_SET;
+  LCD_RST_PIN_SET;
   delayms(120);
 }
 #endif
@@ -138,22 +123,22 @@ static void ST7789_InitReg(unsigned char madctl)
   unsigned char data;
 
   //Sleep exit
-  ST7789_SendCommand(ST7789_SLPOUT);
-  ST7789_CS_High();
+  Lcd_SendCommand(ST7789_SLPOUT);
+  Lcd_CS_High();
   delayms(5);
   // Set Interface Pixel Format - 16-bit/pixel
-  ST7789_SendCommand(ST7789_INVON);
+  Lcd_SendCommand(ST7789_INVON);
 
-  ST7789_SendCommand(ST7789_COLMOD);
+  Lcd_SendCommand(ST7789_COLMOD);
   data = ST7789_COLMOD_16_BPP;
-  ST7789_SendData(&data, 1);
+  Lcd_SendData(&data, 1);
 
-  ST7789_SendCommand(ST7789_MADCTL);
+  Lcd_SendCommand(ST7789_MADCTL);
   data = madctl;
-  ST7789_SendData(&data, 1);
+  Lcd_SendData(&data, 1);
 
-  ST7789_SendCommand(ST7789_DISPON);
-  ST7789_CS_High();
+  Lcd_SendCommand(ST7789_DISPON);
+  Lcd_CS_High();
 }
 
 void LcdInit(unsigned char madctl)
@@ -165,7 +150,7 @@ void LcdInit(unsigned char madctl)
   LcdScreenFill(BLACK_COLOR);
 }
 
-void SetWindow(unsigned int x1, unsigned int y1, unsigned int x2, unsigned int y2)
+void LcdSetWindow(unsigned int x1, unsigned int y1, unsigned int x2, unsigned int y2)
 {
   unsigned char data[4];
 
@@ -178,60 +163,16 @@ void SetWindow(unsigned int x1, unsigned int y1, unsigned int x2, unsigned int y
   data[1] = (unsigned char)x1;
   data[2] = (unsigned char)(x2 >> 8);
   data[3] = (unsigned char)x2;
-  ST7789_SendCommand(ST7789_CASET);
-  ST7789_SendData(data, 4);
+  Lcd_SendCommand(ST7789_CASET);
+  Lcd_SendData(data, 4);
 
   data[0] = (unsigned char)(y1 >> 8);
   data[1] = (unsigned char)y1;
   data[2] = (unsigned char)(y2 >> 8);
   data[3] = (unsigned char)y2;
 
-  ST7789_SendCommand(ST7789_RASET);
-  ST7789_SendData(data, 4);
+  Lcd_SendCommand(ST7789_RASET);
+  Lcd_SendData(data, 4);
 
-  ST7789_SendCommand(ST7789_RAMWR);
-}
-
-void LcdRectFill(unsigned int column, unsigned int row, unsigned int dx, unsigned int dy, unsigned int color)
-{
-  SetWindow(column, row, column + dx - 1, row + dy - 1);
-  ST7789_WriteColor(color, dx * dy);
-  ST7789_CS_High();
-}
-
-void LcdScreenFill(unsigned int color)
-{
-  LcdRectFill(0, 0, LCD_WIDTH, LCD_HEIGHT, color);
-}
-
-void LcdDrawChar(unsigned int x, unsigned int y, char c, const FONT_INFO *f, unsigned int textColor, unsigned int bkColor)
-{
-  if (c < f->start_character || c > f->start_character + f->character_count | x + 16 > LCD_WIDTH || y + f->char_height > LCD_HEIGHT)
-    return;
-  unsigned int char_bytes = f->char_height << 1;
-  const unsigned char *char_pointer = f->char_bitmaps + (c - f->start_character) * char_bytes;
-  SetWindow(x, y, x + 15, y + f->char_height - 1);
-  c =*char_pointer++;
-  unsigned int prev_color = c & 0x80 ? textColor : bkColor;
-  unsigned int counter = 0;
-  while (char_bytes--)
-  {
-    for (int i = 0; i < 8; i++)
-    {
-      unsigned int color = c & 0x80 ? textColor : bkColor;
-      if (color == prev_color)
-        counter++;
-      else
-      {
-        ST7789_WriteColor(prev_color, counter);
-        prev_color = color;
-        counter = 1;
-      }
-      c <<= 1;
-    }
-    c =*char_pointer++;
-  }
-  if (counter)
-    ST7789_WriteColor(prev_color, counter);
-  ST7789_CS_High();
+  Lcd_SendCommand(ST7789_RAMWR);
 }
