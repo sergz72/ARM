@@ -36,7 +36,7 @@ void LcdScreenFill(unsigned int color)
 
 void LcdDrawChar(unsigned int x, unsigned int y, char c, const FONT_INFO *f, unsigned int textColor, unsigned int bkColor)
 {
-  if (c < f->start_character || c > f->start_character + f->character_count | x + 16 > LCD_WIDTH || y + f->char_height > LCD_HEIGHT)
+  if (c < f->start_character || c > f->start_character + f->character_count || x + 16 > LCD_WIDTH || y + f->char_height > LCD_HEIGHT)
     return;
   unsigned int char_bytes = f->char_height << 1;
   const unsigned char *char_pointer = f->char_bitmaps + (c - f->start_character) * char_bytes;
