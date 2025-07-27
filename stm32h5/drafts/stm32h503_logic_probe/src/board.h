@@ -44,7 +44,7 @@
 #define SPI_LCD_MOSI_PORT GPIOA
 #define SPI_LCD_MOSI_AF   GPIO_AF6_SPI3
 
-#define SSD1357
+#define SSD1331
 
 #ifdef ST7789
 #define LCD_WIDTH  240
@@ -59,6 +59,15 @@
 #define LCD_HEIGHT 64
 #define SSD1357_MADCTL_VALUE (SSD1357_MADCTL_X_MIRROR | SSD1357_MADCTL_Y_MIRROR)
 #define DISPLAY_MAX_COLUMNS    8
+#define DISPLAY_MAX_ROWS       8
+#include <font8.h>
+#endif
+
+#ifdef SSD1331
+#define LCD_WIDTH  96
+#define LCD_HEIGHT 64
+#define SSD1331_MADCTL_VALUE (SSD1331_MADCTL_X_MIRROR | SSD1331_MADCTL_Y_MIRROR)
+#define DISPLAY_MAX_COLUMNS    12
 #define DISPLAY_MAX_ROWS       8
 #include <font8.h>
 #endif

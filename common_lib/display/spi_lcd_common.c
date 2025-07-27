@@ -6,6 +6,11 @@ void Lcd_SendCommand(unsigned char Reg)
   Lcd_WriteBytes(0, &Reg, 1);
 }
 
+void Lcd_SendCommands(unsigned char *data, unsigned int len)
+{
+  Lcd_WriteBytes(0, data, len);
+}
+
 void Lcd_SendData(unsigned char *data, unsigned int len)
 {
   Lcd_WriteBytes(LCD_FLAG_DC, data, len);
@@ -17,7 +22,7 @@ void Lcd_CS_High(void)
   Lcd_WriteBytes(LCD_FLAG_CS, &data, 1);
 }
 
-void LcdRectFill(unsigned int column, unsigned int row, unsigned int dx, unsigned int dy, unsigned int color)
+void WEAK LcdRectFill(unsigned int column, unsigned int row, unsigned int dx, unsigned int dy, unsigned int color)
 {
   LcdSetWindow(column, row, column + dx - 1, row + dy - 1);
   Lcd_WriteColor(color, dx * dy);

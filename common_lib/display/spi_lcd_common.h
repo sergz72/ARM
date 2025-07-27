@@ -16,6 +16,7 @@ void Lcd_WriteBytes(unsigned int flags, unsigned char *data, unsigned int size);
 void Lcd_WriteColor(unsigned int color, unsigned int count); // should be defined in hal.c
 
 void Lcd_SendCommand(unsigned char Reg);
+void Lcd_SendCommands(unsigned char *data, unsigned int len);
 void Lcd_SendData(unsigned char *data, unsigned int len);
 
 void LcdDrawChar(unsigned int x, unsigned int y, char c, const FONT_INFO *f, unsigned int textColor, unsigned int bkColor);
