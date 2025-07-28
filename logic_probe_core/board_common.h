@@ -35,7 +35,7 @@ extern "C" {
 unsigned int mv_to_12(unsigned int mv);
 unsigned int mv_from_12(unsigned int code);
 unsigned long uv_from_12(unsigned int code);
-void pwm_set_frequency_and_duty(unsigned int frequency, unsigned int duty);
+void pwm_set_frequency_and_duty(unsigned long frequency, unsigned int duty);
 void stop_counters(void);
 void start_counters(void);
 void set_l_voltage(unsigned int value);

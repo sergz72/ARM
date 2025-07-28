@@ -17,7 +17,7 @@ static const ShellCommand pwm_command = {
 
 static int pwm_handler(printf_func pfunc, gets_func gfunc, int argc, char **argv, void *data)
 {
-  int frequency = atoi(argv[0]);
+  long frequency = atol(argv[0]);
   int duty = atoi(argv[1]);
   pwm_set_frequency_and_duty(frequency * 1000, duty);
   return 0;

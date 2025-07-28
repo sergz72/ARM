@@ -87,7 +87,7 @@ static void ShowLedData(void)
   DisplaySetRectangleColor(3, RGB(0, 0, led_data[3].blue));
 }
 
-static void ShowFrequency(unsigned int row, unsigned int frequency)
+static void ShowFrequency(unsigned int row, unsigned long frequency)
 {
   for (int i = 7; i >= 0; i--)
   {
