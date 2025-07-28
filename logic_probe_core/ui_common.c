@@ -6,7 +6,7 @@
 #define MAX_UL_VOLTAGES 5
 
 static const unsigned int uh_voltages[MAX_UH_VOLTAGES] = {
-  2500,
+  2400,
   2000,
   1500,
   1000,
@@ -31,7 +31,7 @@ ws2812_rgb led_data[WS2812_MAX_LEDS];
 void UI_CommonInit(void)
 {
   memset(led_data, 0, sizeof(led_data));
-  uh_index = 0;
+  uh_index = 1;
   ul_index = 1;
   uh_changed_to = DEFAULT_DACH_VOLTAGE;
   ul_changed_to = DEFAULT_DACL_VOLTAGE;

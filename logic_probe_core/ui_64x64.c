@@ -77,6 +77,13 @@ void RAMFUNC DrawMode(void)
 
 static void ShowVoltmeter(unsigned int voltage)
 {
+  for (int i = 5; i >= 2; i--)
+  {
+    unsigned int v = voltage % 10;
+    voltage /= 10;
+    DisplaySetChar(i, 7, v);
+  }
+  DisplaySetChar(1, 7, voltage + 10);
 }
 
 static void ShowLedData(void)
