@@ -39,9 +39,10 @@ file(GLOB SOURCES
         "../../common_lib/delay_systick.c"
         "../lib/systick.c"
         "../startup.c"
+        "../system.c"
 )
 
-include_directories(src ../bsp ../cmsis ../cmsis/device ../lib ../../common_lib)
+include_directories(src .. ../bsp ../cmsis ../cmsis/device ../lib ../../common_lib)
 
 add_executable(${PROJECT_NAME}.elf ${SOURCES} ${LINKER_SCRIPT})
 

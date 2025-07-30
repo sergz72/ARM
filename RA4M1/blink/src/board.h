@@ -7,7 +7,7 @@
 
 #include <R7FA4M1AB.h>
 
-#define SYSTICK_MULTIPLIER 8
+#define SYSTICK_MULTIPLIER 48
 
 #define STACK_SIZE 0x400
 #define HEAP_SIZE  0
