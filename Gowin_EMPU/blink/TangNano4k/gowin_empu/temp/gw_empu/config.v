@@ -1,0 +1,3 @@
+`define GOWIN_GPIO_SUPPORT
+`define GPIO_IOBUF_EN
+`define NUM_BRAMS_8

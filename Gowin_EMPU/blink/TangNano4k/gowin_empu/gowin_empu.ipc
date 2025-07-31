@@ -1,0 +1,13 @@
+[General]
+file=gowin_empu
+ipc_version=4
+module=Gowin_EMPU_Top
+target_device=gw1nsr4c-009
+type=gowin_empu_gw1ns4
+version=1.0
+
+[Config]
+ENABLE_GPIO=true
+ENABLE_GPIO_IO=true
+LANG=0
+Synthesis_tool=GowinSynthesis
