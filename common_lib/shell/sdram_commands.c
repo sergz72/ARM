@@ -84,8 +84,8 @@ static int parse_params(char *str_dw, char *str_offset, char *str_size, unsigned
 
 static void chacha_init(void)
 {
-  unsigned int key[8];
-  unsigned int iv[3];
+  uint32_t key[8];
+  uint32_t iv[3];
 
   key[0] = tm;
   key[1] = tm;
@@ -119,7 +119,7 @@ static void sdram_fill(printf_func pfunc, unsigned int dw, unsigned char *p, uns
       chacha_fill_u16(&rng, (unsigned short*)p, size / 2);
       break;
     default:
-      chacha_fill_u32(&rng, (unsigned int*)p, size / 4);
+      chacha_fill_u32(&rng, (uint32_t*)p, size / 4);
       break;
   }
 }

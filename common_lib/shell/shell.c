@@ -228,7 +228,7 @@ int shell_execute(const char *command)
     current_command++;
   }
 
-  puts("unknown command");
+  pfunc("unknown command\n");
 
   return 1;
 }
