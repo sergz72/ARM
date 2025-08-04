@@ -1,93 +1,90 @@
-#include <hardware/spi.h>
-#include <pico/time.h>
 #include "board.h"
+#include <hardware/gpio.h>
+#include <spi_memory.h>
 
-unsigned int spi_clock;
-
-unsigned int spi_get_clock(int channel)
+void SystemInit(void)
 {
-  return spi_clock;
+  gpio_init(QSPI_CS_PIN);
+  gpio_put(QSPI_CS_PIN, 1);
+  gpio_set_dir(QSPI_CS_PIN, GPIO_OUT);
+
+  gpio_init(QSPI_CLK_PIN);
+  gpio_put(QSPI_CLK_PIN, 0);
+  gpio_set_dir(QSPI_CLK_PIN, GPIO_OUT);
+
+  gpio_init(QSPI_SI_SIO0_PIN);
+  gpio_pull_down(QSPI_SI_SIO0_PIN);
+  gpio_put(QSPI_SI_SIO0_PIN, 0);
+  gpio_set_dir(QSPI_SI_SIO0_PIN, GPIO_OUT);
+
+  gpio_init(QSPI_SO_SIO1_PIN);
+  gpio_pull_down(QSPI_SO_SIO1_PIN);
+  gpio_set_dir(QSPI_SO_SIO1_PIN, GPIO_IN);
+
+  gpio_init(QSPI_SIO2_PIN);
+  gpio_pull_down(QSPI_SIO2_PIN);
+  gpio_set_dir(QSPI_SIO2_PIN, GPIO_IN);
+
+  gpio_init(QSPI_SIO3_PIN);
+  gpio_pull_down(QSPI_SIO3_PIN);
+  gpio_set_dir(QSPI_SIO3_PIN, GPIO_IN);
 }
 
-void spi_set_clock(int channel, unsigned int value)
+static void spi_delay(void)
 {
-  spi_clock = spi_init(SPI_INST, value);
+  for (int i = 0; i < 10; i++)
+    asm volatile("nop");
 }
 
-void spi_trfr(int channel, int nwrite, const unsigned char *wdata, int nread, unsigned char *rdata)
+void spi_trfr(int channel, int nwrite, const unsigned char *wdata, int nop_cycles, int nread, unsigned char *rdata, int set_cs)
 {
-  gpio_put(SPI_CS_PIN, 0);
-
-  spi_write_blocking(SPI_INST, wdata, nwrite);
-  spi_read_blocking(SPI_INST, 0, rdata, nread);
-
-  spi_finish(channel);
-}
-
-void spi_write(int channel, const unsigned char *data, int length)
-{
-  spi_write_blocking(SPI_INST, data, length);
-}
-
-void spi_read(int channel, unsigned char *data, int length)
-{
-  spi_read_blocking(SPI_INST, 0, data, length);
-}
-
-void spi_command(int channel, unsigned char cmd, unsigned char *data_in, unsigned char *data_out, int count, int set_cs)
-{
-  gpio_put(SPI_CS_PIN, 0);
-
-  spi_write_blocking(SPI_INST, &cmd, 1);
-  if (!data_in)
-    spi_read_blocking(SPI_INST, 0, data_out, count);
-  else if (!data_out)
-    spi_write_blocking(SPI_INST, data_in, count);
-  else
-    spi_write_read_blocking(SPI_INST, data_in, data_out, count);
-
+  gpio_put(QSPI_CS_PIN, 0);
+  while (nwrite--)
+  {
+    unsigned char data = *wdata++;
+    for (int i = 0; i < 8; i++)
+    {
+      gpio_put(QSPI_SI_SIO0_PIN, data & 0x80 ? true : false);
+      spi_delay();
+      gpio_put(QSPI_CLK_PIN, true);
+      spi_delay();
+      gpio_put(QSPI_CLK_PIN, false);
+      data <<= 1;
+    }
+  }
+  while (nop_cycles--)
+  {
+    spi_delay();
+    gpio_put(QSPI_CLK_PIN, true);
+    spi_delay();
+    gpio_put(QSPI_CLK_PIN, false);
+  }
+  while (nread--)
+  {
+    unsigned char data = 0;
+    for (int i = 0; i < 8; i++)
+    {
+      spi_delay();
+      data <<= 1;
+      if (gpio_get(QSPI_SO_SIO1_PIN))
+        data |= 1;
+      gpio_put(QSPI_CLK_PIN, true);
+      spi_delay();
+      gpio_put(QSPI_CLK_PIN, false);
+    }
+    *rdata++ = data;
+  }
   if (set_cs)
-    spi_finish(channel);
+    gpio_put(QSPI_CS_PIN, 1);
 }
 
 void spi_finish(int channel)
 {
-  gpio_put(SPI_CS_PIN, 1);
+  gpio_put(QSPI_CS_PIN, 1);
 }
 
-void _93CXX_delay(void)
+void qspi_trfr(int nwrite, const unsigned char *wdata, int nop_cycles, int nread, unsigned char *rdata, int set_cs)
 {
-  sleep_us(1);
-}
-
-static void LEDInit(void)
-{
-  gpio_init(PICO_DEFAULT_LED_PIN);
-  gpio_set_dir(PICO_DEFAULT_LED_PIN, GPIO_OUT);
-}
-
-void SystemInit(void)
-{
-  LEDInit();
-
-  spi_clock = spi_init(SPI_INST, 1000000);
-
-  gpio_set_function(SPI_SI_PIN, GPIO_FUNC_SPI);
-  gpio_set_function(SPI_CLK_PIN, GPIO_FUNC_SPI);
-  gpio_set_function(SPI_SO_PIN, GPIO_FUNC_SPI);
-
-  // Chip select is active-low, so we'll initialise it to a driven-high state
-  gpio_init(SPI_CS_PIN);
-  gpio_put(SPI_CS_PIN, 1);
-  gpio_set_dir(SPI_CS_PIN, GPIO_OUT);
-
-  gpio_init(_93CXX_DO_PIN);
-  gpio_set_dir(_93CXX_DO_PIN, GPIO_IN);
-  gpio_pull_up(_93CXX_DO_PIN);
-  gpio_init(_93CXX_DI_PIN);
-  gpio_set_dir(_93CXX_DI_PIN, GPIO_OUT);
-  gpio_init(_93CXX_CS_PIN);
-  gpio_set_dir(_93CXX_CS_PIN, GPIO_OUT);
-  gpio_init(_93CXX_CLK_PIN);
-  gpio_set_dir(_93CXX_CLK_PIN, GPIO_OUT);
+  gpio_put(QSPI_CS_PIN, 0);
+  gpio_put(QSPI_CS_PIN, 1);
 }

@@ -6,6 +6,7 @@
 #include "getstring.h"
 #include "spi_memory_commands.h"
 #include "board.h"
+#include <hardware/gpio.h>
 
 #define MAX_COMMAND_LINE_LENGTH 128
 
@@ -43,13 +44,15 @@ int main(void)
   register_spi_commands();
   register_spi_memory_commands();
 
+  WS2812Init();
+
   getstring_init(command_line, sizeof(command_line), getch_, puts_);
 
   while (1)
   {
     sleep_ms(100);
 
-    gpio_put(PICO_DEFAULT_LED_PIN, led_state);
+    put_pixel(urgb_u32(0, led_state ? 0x10 : 0, 0)); // green
     led_state = !led_state;
 
     if (!getstring_next())

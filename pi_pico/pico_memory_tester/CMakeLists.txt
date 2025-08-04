@@ -29,13 +29,13 @@ add_executable(pico_memory_tester
         src/hal.c
         src/spi_commands.c
         src/spi_memory_commands.c
+        src/ws2812.c
         ../../common_lib/getstring.c
         ../../common_lib/fixed_queue.c
         ../../common_lib/shell/shell.c
         ../../common_lib/read_hex_string.c
         ../../common_lib/crypto/chacha.c
         ../../common_lib/memory/spi_memory.c
-        ../../common_lib/memory/93cXX_16.c
 )
 
 include_directories(
@@ -46,7 +46,9 @@ include_directories(
         ../../common_lib/memory
 )
 
-target_link_libraries(pico_memory_tester pico_stdlib hardware_spi)
+target_link_libraries(pico_memory_tester pico_stdlib hardware_pio)
+
+pico_generate_pio_header(pico_memory_tester ${CMAKE_CURRENT_LIST_DIR}/src/ws2812.pio OUTPUT_DIR ${CMAKE_CURRENT_LIST_DIR}/src/generated)
 
 # enable usb output, disable uart output
 pico_enable_stdio_usb(pico_memory_tester 1)

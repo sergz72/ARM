@@ -2,31 +2,28 @@
 #include <read_hex_string.h>
 #include <shell.h>
 #include <stdlib.h>
-#include <spi_memory.h>
 #include <string.h>
-#include <93cXX_16.h>
 #include <chacha.h>
+#include <spi_memory.h>
 #include <limits.h>
-
-int _93cxx16_read(int channel, unsigned int address, unsigned char *buffer, int count);
-int _93cxx16_write(int channel, unsigned int address, unsigned char *buffer, int count);
-int _93cxx16_write_enable(int channel);
 
 typedef struct
 {
   int address_length;
   int max_data_length;
+  void (*reset)(int channel);
   unsigned int (*read_id)(int channel);
-  int (*wren)(int channel);
-  int (*read)(int channel, unsigned int address, unsigned char *buffer, int count);
-  int (*write)(int channel, unsigned int address, unsigned char *buffer, int count);
+  void (*wren)(int channel);
+  void (*read)(int channel, unsigned int address, unsigned char *buffer, int count);
+  void (*write)(int channel, unsigned int address, unsigned char *buffer, int count);
   int (*read_callback)(int channel, unsigned int address, int (*set_byte)(unsigned char c), int count);
-  int (*write_callback)(int channel, unsigned int address, unsigned char (*next_byte)(void), int count);
+  void (*write_callback)(int channel, unsigned int address, unsigned char (*next_byte)(void), int count);
 } spi_memory;
 
 static const spi_memory psram = {
   .address_length = 3,
   .max_data_length = INT_MAX,
+  .reset = psram_reset,
   .read_id = psram_read_id,
   .wren = NULL,
   .read = psram_fast_read,
@@ -35,29 +32,7 @@ static const spi_memory psram = {
   .write_callback = psram_write_cb,
 };
 
-static const spi_memory _93cxx16 = {
-  .address_length = 1,
-  .max_data_length = 2,
-  .read_id = NULL,
-  .wren = _93cxx16_write_enable,
-  .read = _93cxx16_read,
-  .write = _93cxx16_write,
-  .read_callback = NULL,
-  .write_callback = NULL,
-};
-
 static const spi_memory *device = &psram;
-
-static int type_handler(printf_func pfunc, gets_func gfunc, int argc, char **argv, void *data);
-static const ShellCommandItem type_command_items[] = {
-  {NULL, param_handler, NULL},
-  {NULL, NULL, type_handler}
-};
-static const ShellCommand type_command = {
-  type_command_items,
-  "spi_mem_type",
-  "spi_mem_type memory_type"
-};
 
 static int read_id_handler(printf_func pfunc, gets_func gfunc, int argc, char **argv, void *data);
 static const ShellCommandItem read_id_command_items[] = {
@@ -67,6 +42,16 @@ static const ShellCommand read_id_command = {
   read_id_command_items,
   "spi_mem_read_id",
   "spi_mem_read_id"
+};
+
+static int reset_handler(printf_func pfunc, gets_func gfunc, int argc, char **argv, void *data);
+static const ShellCommandItem reset_command_items[] = {
+  {NULL, NULL, reset_handler}
+};
+static const ShellCommand reset_command = {
+  reset_command_items,
+  "spi_mem_reset",
+  "spi_mem_reset"
 };
 
 static int wren_handler(printf_func pfunc, gets_func gfunc, int argc, char **argv, void *data);
@@ -129,42 +114,6 @@ static const ShellCommand check_command = {
 
 static ChaCha rng;
 
-int _93cxx16_read(int channel, unsigned int address, unsigned char *buffer, int count)
-{
-  unsigned short data;
-  int rc = _93CXX_16_read(channel, address, &data, 0xFFFFFF);
-  buffer[0] = (unsigned char)data;
-  buffer[1] = (unsigned char)(data >> 8);
-  return rc;
-}
-
-int _93cxx16_write(int channel, unsigned int address, unsigned char *buffer, int count)
-{
-  unsigned int data = buffer[0] | (buffer[1] << 8);
-  return _93CXX_16_write(channel, address, data, 0xFFFFFF);
-}
-
-int _93cxx16_write_enable(int channel)
-{
-  return _93CXX_16_write_enable(channel, 0xFFFFFF);
-}
-
-static int type_handler(printf_func pfunc, gets_func gfunc, int argc, char **argv, void *data)
-{
-  if (!strcmp(argv[0], "psram"))
-    device = &psram;
-  else if (!strcmp(argv[0], "93cxx16"))
-    device = &_93cxx16;
-  else if (!strcmp(argv[0], "help"))
-    pfunc("psram|93cxx16\r\n");
-  else
-  {
-    pfunc("unknown device type.\r\n");
-    return 1;
-  }
-  return 0;
-}
-
 static int check_supported(printf_func pfunc, void *ptr)
 {
   if (ptr == NULL)
@@ -188,7 +137,16 @@ static int wren_handler(printf_func pfunc, gets_func gfunc, int argc, char **arg
 {
   if (!check_supported(pfunc, device->wren))
     return 1;
-  return device->wren(0);
+  device->wren(0);
+  return 0;
+}
+
+static int reset_handler(printf_func pfunc, gets_func gfunc, int argc, char **argv, void *data)
+{
+  if (!check_supported(pfunc, device->reset))
+    return 1;
+  device->reset(0);
+  return 0;
 }
 
 static int parse_address(printf_func pfunc, char *arg, unsigned int *address)
@@ -229,9 +187,7 @@ static int read_handler(printf_func pfunc, gets_func gfunc, int argc, char **arg
     return 2;
   }
 
-  i = device->read(0, address, data, nbytes);
-  if (i)
-    return i;
+  device->read(0, address, data, nbytes);
   pfunc("data: ");
   for (i = 0; i < nbytes; i++)
     pfunc("%02X", data[i]);
@@ -263,7 +219,8 @@ static int write_handler(printf_func pfunc, gets_func gfunc, int argc, char **ar
   }
 
   pfunc("num_bytes %d\n", rc);
-  return device->write(0, address, data, rc);
+  device->write(0, address, data, rc);
+  return 0;
 }
 
 static unsigned char next_byte(void)
@@ -292,7 +249,8 @@ static int write_random_handler(printf_func pfunc, gets_func gfunc, int argc, ch
   chacha20_zero(&rng, 0);
 
   pfunc("num_bytes %d\n", nbytes);
-  return device->write_callback(0, address, next_byte, nbytes);
+  device->write_callback(0, address, next_byte, nbytes);
+  return 0;
 }
 
 static int set_byte(unsigned char byte)
@@ -326,7 +284,7 @@ static int check_handler(printf_func pfunc, gets_func gfunc, int argc, char **ar
 
 void register_spi_memory_commands(void)
 {
-  shell_register_command(&type_command);
+  shell_register_command(&reset_command);
   shell_register_command(&read_id_command);
   shell_register_command(&wren_command);
   shell_register_command(&read_command);

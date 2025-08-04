@@ -2,29 +2,7 @@
 #include <read_hex_string.h>
 #include <shell.h>
 #include <stdlib.h>
-
-#include "board.h"
-
-static int clock_get_handler(printf_func pfunc, gets_func gfunc, int argc, char **argv, void *data);
-static const ShellCommandItem clock_get_command_items[] = {
-    {NULL, NULL, clock_get_handler}
-};
-static const ShellCommand clock_get_command = {
-    clock_get_command_items,
-    "spi_clock_get",
-    NULL
-};
-
-static int clock_set_handler(printf_func pfunc, gets_func gfunc, int argc, char **argv, void *data);
-static const ShellCommandItem clock_set_command_items[] = {
-    {NULL, param_handler, NULL},
-    {NULL, NULL, clock_set_handler}
-};
-static const ShellCommand clock_set_command = {
-    clock_set_command_items,
-    "spi_clock_set",
-    "spi_clock_set value"
-};
+#include <spi_memory.h>
 
 static int trfr_handler(printf_func pfunc, gets_func gfunc, int argc, char **argv, void *data);
 static const ShellCommandItem trfr_command_items[] = {
@@ -37,25 +15,6 @@ static const ShellCommand trfr_command = {
     "spi_trfr",
     "spi_trfr write_data read_count"
 };
-
-static int clock_get_handler(printf_func pfunc, gets_func gfunc, int argc, char **argv, void *data)
-{
-  pfunc("spi clock = %u\n", spi_get_clock(0));
-  return 0;
-}
-
-static int clock_set_handler(printf_func pfunc, gets_func gfunc, int argc, char **argv, void *data)
-{
-  int clock = atoi(argv[0]);
-  if (clock <= 0)
-  {
-    pfunc("Invalid clock value\n");
-    return 1;
-  }
-  spi_set_clock(0, clock);
-  pfunc("SPI clock set to %u", spi_get_clock(0));
-  return 0;
-}
 
 static int trfr_handler(printf_func pfunc, gets_func gfunc, int argc, char **argv, void *_data)
 {
@@ -77,7 +36,7 @@ static int trfr_handler(printf_func pfunc, gets_func gfunc, int argc, char **arg
   }
 
   pfunc("num_bytes %d\n", rc);
-  spi_trfr(0, rc, data, nbytes, data);
+  spi_trfr(0, rc, data, 0, nbytes, data, 1);
   pfunc("data: ");
   for (rc = 0; rc < nbytes; rc++)
     pfunc("%02X", data[rc]);
@@ -88,7 +47,5 @@ static int trfr_handler(printf_func pfunc, gets_func gfunc, int argc, char **arg
 
 void register_spi_commands(void)
 {
-  shell_register_command(&clock_get_command);
-  shell_register_command(&clock_set_command);
   shell_register_command(&trfr_command);
 }
