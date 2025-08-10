@@ -58,3 +58,15 @@ void DisplaySetChar(unsigned int column, unsigned int row, char ch)
     LcdDrawChar(c->x, c->y, ch, c->font, c->textColor, c->bkColor);
   }
 }
+
+void DisplaySetCharWithColor(unsigned int column, unsigned int row, char ch, unsigned short textColor, unsigned short bkColor)
+{
+  Character *c = &display.chars[row][column];
+  if (c->c != ch || c->textColor != textColor || c->bkColor != bkColor)
+  {
+    c->textColor = textColor;
+    c->bkColor = bkColor;
+    c->c = ch;
+    LcdDrawChar(c->x, c->y, ch, c->font, c->textColor, c->bkColor);
+  }
+}

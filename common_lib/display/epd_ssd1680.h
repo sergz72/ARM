@@ -1,7 +1,10 @@
 #ifndef _EPD_SSD1680_H
 #define _EPD_SSD1680_H
 
-#define DATA_ENTRY_INCRY_INCRX 0b11
+#define DATA_ENTRY_INCRY_INCRX_XUPDATE 0b011
+#define DATA_ENTRY_DECRY_INCRX_YUPDATE 0b101
+
+#include <font.h>
 
 enum SSD1680_Color {
   ColorBlack = 0,
@@ -29,9 +32,10 @@ void ssd1680_ram_fill(enum SSD1680_Pattern kx, enum SSD1680_Pattern ky, enum SSD
 void ssd1680_fill_screen(enum SSD1680_Color color);
 void ssd1680_fill_rect(unsigned short x1, unsigned short dx, unsigned short y1, unsigned short dy, enum SSD1680_Color color);
 void ssd1680_set_window(unsigned short x1, unsigned short x2, unsigned short y1, unsigned short y2);
-void ssd1680_set_ram_y_counter(unsigned short counter);
-void ssd1680_set_ram_x_counter(unsigned char counter);
-
-void ssd1680_init(unsigned char data_entry_mode);
+void ssd1680_set_ram_y_counter(unsigned short x, unsigned short y);
+void ssd1680_set_ram_x_counter(unsigned short x, unsigned short y);
+void ssd1680_init(void);
+void ssd1680_draw_char(unsigned short x, unsigned short y, char c, const FONT_INFO *f, enum SSD1680_Color textColor,
+                        enum SSD1680_Color bkColor);
 
 #endif

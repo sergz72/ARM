@@ -28,6 +28,7 @@ void DisplayInitChar(unsigned int column, unsigned int row, Character *ch);
 void DisplaySetChar(unsigned int column, unsigned int row, char ch);
 void DisplaySetRectangleColor(unsigned int idx, unsigned short color);
 void DisplayInitRectangle(unsigned int idx, Rectangle *rc);
+void DisplaySetCharWithColor(unsigned int column, unsigned int row, char ch, unsigned short textColor, unsigned short bkColor);
 
 #ifdef __cplusplus
 }

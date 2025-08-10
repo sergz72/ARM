@@ -19,7 +19,9 @@ void Lcd_SendCommand(unsigned char Reg);
 void Lcd_SendCommands(unsigned char *data, unsigned int len);
 void Lcd_SendData(unsigned char *data, unsigned int len);
 
-void LcdDrawChar(unsigned int x, unsigned int y, char c, const FONT_INFO *f, unsigned int textColor, unsigned int bkColor);
+void LcdDrawChar(unsigned short x, unsigned short y, char c, const FONT_INFO *f, unsigned short textColor,
+                 unsigned short bkColor); // should be defined in hal.c
+
 void LcdInit(unsigned char madctl);
 void LcdRectFill(unsigned int column, unsigned int row, unsigned int dx, unsigned int dy, unsigned int color);
 void LcdScreenFill(unsigned int color);

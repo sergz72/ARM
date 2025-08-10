@@ -1,5 +1,6 @@
 #include "board.h"
 #include <epd_ssd1680.h>
+#include <string.h>
 
 #define INTERNAL_TEMP_SENSOR       0x80
 #define BORDER_WAVEFORM_FOLLOW_LUT 0b0100
@@ -26,6 +27,14 @@
 #define COMMAND_WRITE_BW_RAM_PATTERN    0x47
 #define COMMAND_SET_RAM_X_COUNTER       0x4E
 #define COMMAND_SET_RAM_Y_COUNTER       0x4F
+
+#ifndef SSD1680_RAM_SIZE
+#define SSD1680_RAM_SIZE 400
+#endif
+static unsigned char bw_ram[SSD1680_RAM_SIZE];
+static unsigned char red_ram[SSD1680_RAM_SIZE];
+static unsigned char *bw_buffer_pointer;
+static unsigned char *red_buffer_pointer;
 
 static void ssd1680_soft_reset(void)
 {
@@ -58,14 +67,50 @@ static void ssd1680_set_source_voltage(unsigned char voltage_a, unsigned char vo
   ssd1680_command(COMMAND_SOURCE_VOLTAGE_CONTROL, data, 3);
 }
 
-void ssd1680_set_ram_x_counter(unsigned char counter)
+static unsigned char calculate_x(unsigned short x, unsigned short y)
 {
-  ssd1680_command(COMMAND_SET_RAM_X_COUNTER, &counter, 1);
+#if (SSD1680_DATA_ENTRY_MODE & 1) == 0 // X decrement
+#ifdef LCD_SWAPXY
+  return (LCD_HEIGHT - y - 1) >> 3;
+#else
+  return (LCD_WIDTH - x - 1) >> 3;
+#endif
+#else
+#ifdef LCD_SWAPXY
+  return y >> 3;
+#else
+  return x >> 3;
+#endif
+#endif
 }
 
-void ssd1680_set_ram_y_counter(unsigned short counter)
+static unsigned short calculate_y(unsigned short x, unsigned short y)
 {
-  ssd1680_command(COMMAND_SET_RAM_Y_COUNTER, (unsigned char*)&counter, 2);
+#if (SSD1680_DATA_ENTRY_MODE & 2) == 0 // Y decrement
+#ifdef LCD_SWAPXY
+  return LCD_WIDTH - x - 1;
+#else
+  return LCD_HEIGHT - y - 1;
+#endif
+#else
+#ifdef LCD_SWAPXY
+  return x;
+#else
+  return y;
+#endif
+#endif
+}
+
+void ssd1680_set_ram_x_counter(unsigned short x, unsigned short y)
+{
+  x = calculate_x(x, y);
+  ssd1680_command(COMMAND_SET_RAM_X_COUNTER, (unsigned char*)&x, 1);
+}
+
+void ssd1680_set_ram_y_counter(unsigned short x, unsigned short y)
+{
+  y = calculate_y(x, y);
+  ssd1680_command(COMMAND_SET_RAM_Y_COUNTER, (unsigned char*)&y, 2);
 }
 
 static void ssd1680_set_driver_control(unsigned char scanning_sequence)
@@ -106,26 +151,18 @@ static void ssd1680_wait(void)
 
 void ssd1680_set_window(unsigned short x1, unsigned short x2, unsigned short y1, unsigned short y2)
 {
+  unsigned char xx1 = calculate_x(x1, y1);
+  unsigned char xx2 = calculate_x(x2, y2);
+  unsigned short yy1 = calculate_y(x1, y1);
+  unsigned short yy2 = calculate_y(x2, y2);
   unsigned char data[4];
-#ifdef LCD_SWAPXY
-  data[0] = (unsigned char)(y1 >>= 3);
-  data[1] = (unsigned char)(y2 >>= 3);
-#else
-  data[0] = (unsigned char)(x1 >>= 3);
-  data[1] = (unsigned char)(x2 >>= 3);
-#endif
+  data[0] = xx1;
+  data[1] = xx2;
   ssd1680_command(COMMAND_SET_RAMXPOS, data, 2); // set x range
-#ifdef LCD_SWAPXY
-  data[0] = (unsigned char)x1;
-  data[1] = (unsigned char)(x1 >> 8);
-  data[2] = (unsigned char)x2;
-  data[3] = (unsigned char)(x2 >> 8);
-#else
-  data[0] = (unsigned char)y1;
-  data[1] = (unsigned char)(y1 >> 8);
-  data[2] = (unsigned char)y2;
-  data[3] = (unsigned char)(y2 >> 8);
-#endif
+  data[0] = (unsigned char)yy1;
+  data[1] = (unsigned char)(yy1 >> 8);
+  data[2] = (unsigned char)yy2;
+  data[3] = (unsigned char)(yy2 >> 8);
   ssd1680_command(COMMAND_SET_RAMYPOS, data, 4); // set y range
 }
 
@@ -191,13 +228,19 @@ void ssd1680_refresh(void)
   ssd1680_wait();
 }
 
-void ssd1680_init(unsigned char data_entry_mode)
+void ssd1680_clear_screen_buffers(void)
+{
+  memset(bw_ram, 0xFF, sizeof(bw_ram));
+  memset(red_ram, 0, sizeof(red_ram));
+}
+
+void ssd1680_init(void)
 {
   ssd1680_hard_reset();
   ssd1680_soft_reset();
   ssd1680_wait();
   ssd1680_set_driver_control(0);
-  ssd1680_set_data_entry_mode(data_entry_mode);
+  ssd1680_set_data_entry_mode(SSD1680_DATA_ENTRY_MODE);
   ssd1680_set_border_waveform(BORDER_WAVEFORM_FOLLOW_LUT|BORDER_WAVEFORM_LUT1);
   ssd1680_select_temp_sensor(INTERNAL_TEMP_SENSOR);
   ssd1680_display_update_control(0x00, 0x80);
@@ -206,7 +249,78 @@ void ssd1680_init(unsigned char data_entry_mode)
   //ssd1680_set_vcom_voltage(0x36);
   //ssd1680_set_gate_voltage(0x17);
   //ssd1680_set_source_voltage(0x41, 0, 0x32); // vsh2 = 0
-  //ssd1680_set_ram_x_counter(1);
-  //ssd1680_set_ram_y_counter(0);
   //ssd1680_booster_soft_start(0x80, 0x90, 0x90, 0x00);
+
+  ssd1680_clear_screen_buffers();
+}
+
+static void process_transformed_byte(unsigned char data, enum SSD1680_Color textColor, enum SSD1680_Color bkColor)
+{
+  unsigned char red_data = 0;
+  switch (textColor)
+  {
+    case ColorBlack:
+      data ^= 0xFF;
+      if (bkColor == ColorRed)
+        red_data = data;
+      break;
+    case ColorRed:
+      red_data = data;
+      data = bkColor == ColorBlack ? 0 : 0xFF;
+      break;
+    default: // white
+      break;
+  }
+  *red_buffer_pointer++ = red_data;
+  *bw_buffer_pointer++ = data;
+}
+
+void ssd1680_draw_char(unsigned short x, unsigned short y, char c, const FONT_INFO *f, enum SSD1680_Color textColor,
+                        enum SSD1680_Color bkColor)
+{
+  unsigned int font_width = (f->character_max_width + f->character_spacing) & ~0x7;
+  unsigned int font_width_bytes = font_width >> 3;
+  unsigned int character_bytes = font_width_bytes * f->char_height;
+  const unsigned char *character_pointer = f->char_bitmaps + (c - f->start_character) * character_bytes;
+  bw_buffer_pointer = bw_ram;
+  red_buffer_pointer = red_ram;
+  const unsigned char *p = character_pointer;
+  unsigned int h = f->char_height & ~0x7;
+  for (unsigned int i = 0; i < h; i += 8)
+  {
+    const unsigned char *ppp = p;
+    for (unsigned int b = 0; b < font_width_bytes; b++)
+    {
+      unsigned char mask = 0x80;
+      for (int xx = 0; xx < 8; xx++)
+      {
+        const unsigned char *pp = ppp;
+        unsigned char transformed = 0;
+        for (int yy = 0; yy < 8; yy++)
+        {
+          transformed <<= 1;
+          unsigned char data = *pp;
+          if (data & mask)
+            transformed |= 1;
+          pp += font_width_bytes;
+        }
+        process_transformed_byte(transformed, textColor, bkColor);
+        mask >>= 1;
+      }
+      ppp++;
+    }
+    p += font_width_bytes * 8;
+  }
+  unsigned short x2 = x + font_width - 1;
+  unsigned short y2 = y + h - 1;
+  ssd1680_set_window(x, x2, y, y2);
+//  Log("x", x);
+//  Log("y", y);
+  ssd1680_set_ram_x_counter(x, y);
+  ssd1680_set_ram_y_counter(x, y);
+  character_bytes = font_width_bytes * h;
+  ssd1680_write_red_ram(red_ram, character_bytes);
+  ssd1680_set_ram_x_counter(x, y);
+  ssd1680_set_ram_y_counter(x, y);
+  ssd1680_write_bw_ram(bw_ram, character_bytes);
 }
