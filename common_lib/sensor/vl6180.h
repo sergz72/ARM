@@ -1,7 +1,8 @@
 #ifndef _VL6180_H
 #define _VL6180_H
 
-#define VL6180_ADDRESS 0x52
+#define VL6180_ADDRESS8 0x52
+#define VL6180_ADDRESS7 0x29
 
 #define VL6180_REG_IDENTIFICATION_MODEL_ID 0
 #define VL6180_REG_IDENTIFICATION_MODEL_REV_MAJOR 0x0100
@@ -74,13 +75,25 @@ typedef struct
   unsigned char sysrangeThresholdHigh;
   unsigned char sysrangeThresholdLow;
   unsigned char sysrangeIntermeasurementPeriod;
+  unsigned short sysalsThresholdHigh;
+  unsigned short sysalsThresholdLow;
+  unsigned char sysalsIntermeasurementPeriod;
+  unsigned char sysalsIntegrationPeriod;
+  unsigned char sysalsGain;
 } vl6180_cfg;
-unsigned int vl6180ReadRegister(unsigned short registerId, unsigned char *pData, unsigned int size);
-unsigned int vl6180WriteRegister(unsigned short registerId, unsigned char *pData, unsigned int size);
-unsigned int vl6180_check(void);
-unsigned int vl6180_init(vl6180_cfg *cfg);
-unsigned int vl6180_interruptClear(unsigned char v);
-unsigned int vl6180_sysRangeStart(unsigned char v);
-unsigned int vl6180_reset(void);
+
+int vl6180ReadRegister(unsigned short registerId, unsigned char *pData, unsigned int size);
+int vl6180WriteRegister(unsigned short registerId, unsigned char *pData, unsigned int size);
+int vl6180_check(void);
+int vl6180_init(vl6180_cfg *cfg);
+int vl6180_interruptClear(unsigned char v);
+int vl6180_sysRangeStart(unsigned char v);
+int vl6180_sysAlsStart(unsigned char v);
+int vl6180_reset(void);
+int vl6180_getRangeStatus(unsigned char *status);
+int vl6180_getAlsStatus(unsigned char *status);
+int vl6180_getAlsValue(unsigned short *value);
+int vl6180_sysAlsSetAnalogGain(unsigned char gain);
+int vl6180_sysAlsSetIntegrationPeriod(unsigned char period);
 
 #endif
