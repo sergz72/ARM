@@ -138,11 +138,12 @@ BaudRateAndModeParameters baudRateAndModeParameters[] = {
   }
 };
 
-unsigned int cc1101_Init(unsigned int device_num, const cc1101_cfg *cfg)
+int cc1101_Init(unsigned int device_num, const cc1101_cfg *cfg)
 {
   unsigned char txdata[21];
   unsigned char rxdata[21];
-  unsigned int freq, rc;
+  unsigned int freq;
+  int rc;
   BaudRateAndModeParameters p;
 
   p = baudRateAndModeParameters[cfg->mode];
@@ -154,8 +155,8 @@ unsigned int cc1101_Init(unsigned int device_num, const cc1101_cfg *cfg)
   txdata[3] = p.sYNCH;
   txdata[4] = p.sYNCL;
   rc = cc1101_RW(device_num, txdata, rxdata, 5);
-  if (!rc)
-    return 0;
+  if (rc)
+    return rc;
 
   freq = (unsigned int)((unsigned long long int)cfg->freq * 65536 / FOSC);
 
@@ -182,21 +183,21 @@ unsigned int cc1101_Init(unsigned int device_num, const cc1101_cfg *cfg)
   txdata[19] = (cfg->enablePinControl ? CC1101_PINCTRL_EN : 0) | (cfg->forceXOSCOn ? CC1101_XOSC_FORCE_ON : 0) | cfg->autocal | cfg->poTimeout;
   txdata[20] = p.FOCCFG;
   rc = cc1101_RW(device_num, txdata, rxdata, 21);
-  if (!rc)
-    return 0;
+  if (rc)
+    return rc;
 
   txdata[0] = CC1101_AGCCTRL2;
   txdata[1] = p.aGCCTRL2;
   txdata[2] = p.aGCCTRL1;
   rc = cc1101_RW(device_num, txdata, rxdata, 3);
-  if (!rc)
-    return 0;
+  if (rc)
+    return rc;
 
   txdata[0] = CC1101_WORCTRL;
   txdata[1] = p.WORCTRL;
   rc = cc1101_RW(device_num, txdata, rxdata, 2);
-  if (!rc)
-    return 0;
+  if (rc)
+    return rc;
 
   txdata[0] = CC1101_FSCAL3;
   txdata[1] = p.FSCAL3;
@@ -218,7 +219,7 @@ unsigned int cc1101_Init(unsigned int device_num, const cc1101_cfg *cfg)
   return cc1101_setTxPower(device_num, cfg->txPower);
 }
 
-unsigned int cc1101_setTxPower(unsigned int device_num, unsigned char power)
+int cc1101_setTxPower(unsigned int device_num, unsigned char power)
 {
   unsigned char txdata[2];
   unsigned char rxdata[2];
@@ -228,22 +229,26 @@ unsigned int cc1101_setTxPower(unsigned int device_num, unsigned char power)
   return cc1101_RW(device_num, txdata, rxdata, 2);
 }
 
-unsigned int cc1101_Check(unsigned int device_num)
+int cc1101_Check(unsigned int device_num)
 {
   unsigned char txdata[2];
   unsigned char rxdata[2];
 
   txdata[0] = CC1101_PARTNUM;
-  unsigned int rc = cc1101_RW(device_num, txdata, rxdata, 2);
-  if (!rc || rxdata[1])
-    return 0;
+  int rc = cc1101_RW(device_num, txdata, rxdata, 2);
+  if (rc)
+    return rc;
+  if (rxdata[1])
+    return 100;
 
   txdata[0] = CC1101_VERSION;
   rc = cc1101_RW(device_num, txdata, rxdata, 2);
-  return rc && rxdata[1] == 0x14;
+  if (rc)
+    return rc;
+  return rxdata[1] == 0x14 ? 0 : 101;
 }
 
-unsigned int cc1101_powerOn(unsigned int device_num)
+void cc1101_powerOn(unsigned int device_num)
 {
   cc1101_CSN_CLR(device_num);
   cc1101_CSN_SET(device_num);
@@ -251,7 +256,6 @@ unsigned int cc1101_powerOn(unsigned int device_num)
   delay(50);
   cc1101_CSN_SET(device_num);
   delay(50);
-  return 1;
 }
 
 short cc1101_calculateRSSI(unsigned char rssiIn)

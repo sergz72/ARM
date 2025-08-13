@@ -207,12 +207,13 @@ typedef struct
 #define CC1101_RXBYTES 0xFBU
 #define CC1101_MARCSTATE 0xF5U
 
-unsigned int cc1101_Init(unsigned int device_num, const cc1101_cfg *cfg);
-unsigned int cc1101_Check(unsigned int device_num);
-unsigned int cc1101_RW(unsigned int device_num, unsigned char *txdata, unsigned char *rxdata, unsigned int size);
-unsigned int cc1101_setTxPower(unsigned int device_num, unsigned char power);
-unsigned int cc1101_strobe(unsigned int device_num, unsigned char data, unsigned char *status);
-unsigned int cc1101_powerOn(unsigned int device_num);
+int cc1101_RW(unsigned int device_num, unsigned char *txdata, unsigned char *rxdata, unsigned int size); // should be defined in hal.c
+
+int cc1101_Init(unsigned int device_num, const cc1101_cfg *cfg);
+int cc1101_Check(unsigned int device_num);
+int cc1101_setTxPower(unsigned int device_num, unsigned char power);
+int cc1101_strobe(unsigned int device_num, unsigned char data, unsigned char *status);
+void cc1101_powerOn(unsigned int device_num);
 short cc1101_calculateRSSI(unsigned char rssiIn);
 
 #endif
