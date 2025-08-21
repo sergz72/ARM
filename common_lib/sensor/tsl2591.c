@@ -32,6 +32,44 @@ static int tsl2591_set_gain(unsigned char gain)
   return tsl2591_write(REG_CONFIG, (gain << 4) | itime);
 }
 
+int tsl2591_set_als_thresholds(const tsl2591_thresholds *thresholds)
+{
+  int rc = tsl2591_write(REG_AILTL, (unsigned char)thresholds->low);
+  if (rc)
+    return rc;
+  rc = tsl2591_write(REG_AILTH, (unsigned char)(thresholds->low >> 8));
+  if (rc)
+    return rc;
+  rc = tsl2591_write(REG_AIHTL, (unsigned char)thresholds->high);
+  if (rc)
+    return rc;
+  return tsl2591_write(REG_AIHTH, (unsigned char)(thresholds->high >> 8));
+}
+
+int tsl2591_set_no_persist_als_thresholds(const tsl2591_thresholds *thresholds)
+{
+  int rc = tsl2591_write(REG_NPAILTL, (unsigned char)thresholds->low);
+  if (rc)
+    return rc;
+  rc = tsl2591_write(REG_NPAILTH, (unsigned char)(thresholds->low >> 8));
+  if (rc)
+    return rc;
+  rc = tsl2591_write(REG_NPAIHTL, (unsigned char)thresholds->high);
+  if (rc)
+    return rc;
+  return tsl2591_write(REG_NPAIHTH, (unsigned char)(thresholds->high >> 8));
+}
+
+int tsl2591_set_persistence_filter(unsigned char filter)
+{
+  return tsl2591_write(REG_PERSIST, filter);
+}
+
+int tsl2591_enable(unsigned char enable)
+{
+  return tsl2591_write(REG_ENABLE, enable);
+}
+
 int tsl2591_init(const tsl2591_config *conf)
 {
   unsigned char value;
@@ -62,7 +100,7 @@ int tsl2591_init(const tsl2591_config *conf)
     value |= 0x40;
   if (config->no_persist_interrupt_enable)
     value |= 0x80;
-  rc = tsl2591_write(REG_ENABLE, value);
+  rc = tsl2591_enable(value);
   if (rc)
     return rc;
 
@@ -70,42 +108,20 @@ int tsl2591_init(const tsl2591_config *conf)
   if (rc)
     return rc;
 
-  rc = tsl2591_write(REG_AILTL, (unsigned char)config->als_low_threshold);
-  if (rc)
-    return rc;
-  rc = tsl2591_write(REG_AILTH, (unsigned char)(config->als_low_threshold >> 8));
-  if (rc)
-    return rc;
-  rc = tsl2591_write(REG_AIHTL, (unsigned char)config->als_high_threshold);
-  if (rc)
-    return rc;
-  rc = tsl2591_write(REG_AIHTH, (unsigned char)(config->als_high_threshold >> 8));
+  rc = tsl2591_set_als_thresholds(&config->als_thresholds);
   if (rc)
     return rc;
 
-  rc = tsl2591_write(REG_NPAILTL, (unsigned char)config->no_persist_als_low_threshold);
-  if (rc)
-    return rc;
-  rc = tsl2591_write(REG_NPAILTH, (unsigned char)(config->no_persist_als_low_threshold >> 8));
-  if (rc)
-    return rc;
-  rc = tsl2591_write(REG_NPAIHTL, (unsigned char)config->no_persist_als_high_threshold);
-  if (rc)
-    return rc;
-  rc = tsl2591_write(REG_NPAIHTH, (unsigned char)(config->no_persist_als_high_threshold >> 8));
+  rc = tsl2591_set_no_persist_als_thresholds(&config->no_persist_als_thresholds);
   if (rc)
     return rc;
 
-  rc = tsl2591_write(REG_PERSIST, config->persistence_filter);
-  if (rc)
-    return rc;
-
-  return 0;
+  return tsl2591_set_persistence_filter(config->persistence_filter);
 }
 
 int tsl2591_clear_interrupts(void)
 {
-  return tsl2591_command(0x67);
+  return tsl2591_command(0xE7);
 }
 
 int tsl2591_get_status(unsigned char *status)
