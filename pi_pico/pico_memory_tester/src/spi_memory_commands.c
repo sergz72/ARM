@@ -12,9 +12,11 @@ typedef struct
   int address_length;
   int max_data_length;
   void (*reset)(int channel);
-  unsigned int (*read_id)(int channel);
-  void (*wren)(int channel);
-  void (*read)(int channel, unsigned int address, unsigned char *buffer, int count);
+  int (*enter_qspi_mode)(int channel);
+  int (*exit_qspi_mode)(int channel);
+  int (*read_id)(int channel, unsigned int *id);
+  int (*wren)(int channel);
+  int (*read)(int channel, unsigned int address, unsigned char *buffer, int count);
   void (*write)(int channel, unsigned int address, unsigned char *buffer, int count);
   int (*read_callback)(int channel, unsigned int address, int (*set_byte)(unsigned char c), int count);
   void (*write_callback)(int channel, unsigned int address, unsigned char (*next_byte)(void), int count);
@@ -24,6 +26,8 @@ static const spi_memory psram = {
   .address_length = 3,
   .max_data_length = INT_MAX,
   .reset = psram_reset,
+  .enter_qspi_mode = psram_enter_qspi_mode,
+  .exit_qspi_mode = psram_exit_qspi_mode,
   .read_id = psram_read_id,
   .wren = NULL,
   .read = psram_fast_read,
@@ -52,6 +56,26 @@ static const ShellCommand reset_command = {
   reset_command_items,
   "spi_mem_reset",
   "spi_mem_reset"
+};
+
+static int enter_qspi_mode_handler(printf_func pfunc, gets_func gfunc, int argc, char **argv, void *data);
+static const ShellCommandItem enter_qspi_mode_command_items[] = {
+  {NULL, NULL, enter_qspi_mode_handler}
+};
+static const ShellCommand enter_qspi_mode_command = {
+  enter_qspi_mode_command_items,
+  "spi_mem_enter_qspi_mode",
+  "spi_mem_enter_qspi_mode"
+};
+
+static int exit_qspi_mode_handler(printf_func pfunc, gets_func gfunc, int argc, char **argv, void *data);
+static const ShellCommandItem exit_qspi_mode_command_items[] = {
+  {NULL, NULL, exit_qspi_mode_handler}
+};
+static const ShellCommand exit_qspi_mode_command = {
+  exit_qspi_mode_command_items,
+  "spi_mem_exit_qspi_mode",
+  "spi_mem_exit_qspi_mode"
 };
 
 static int wren_handler(printf_func pfunc, gets_func gfunc, int argc, char **argv, void *data);
@@ -128,7 +152,10 @@ static int read_id_handler(printf_func pfunc, gets_func gfunc, int argc, char **
 {
   if (!check_supported(pfunc, device->read_id))
     return 1;
-  unsigned int id = device->read_id(0);
+  unsigned int id;
+  int rc = device->read_id(0, &id);
+  if (rc)
+    return rc;
   pfunc("Device id: %x\r\n", id);
   return 0;
 }
@@ -137,8 +164,7 @@ static int wren_handler(printf_func pfunc, gets_func gfunc, int argc, char **arg
 {
   if (!check_supported(pfunc, device->wren))
     return 1;
-  device->wren(0);
-  return 0;
+  return device->wren(0);
 }
 
 static int reset_handler(printf_func pfunc, gets_func gfunc, int argc, char **argv, void *data)
@@ -147,6 +173,20 @@ static int reset_handler(printf_func pfunc, gets_func gfunc, int argc, char **ar
     return 1;
   device->reset(0);
   return 0;
+}
+
+static int enter_qspi_mode_handler(printf_func pfunc, gets_func gfunc, int argc, char **argv, void *data)
+{
+  if (!check_supported(pfunc, device->enter_qspi_mode))
+    return 1;
+  return device->enter_qspi_mode(0);
+}
+
+static int exit_qspi_mode_handler(printf_func pfunc, gets_func gfunc, int argc, char **argv, void *data)
+{
+  if (!check_supported(pfunc, device->exit_qspi_mode))
+    return 1;
+  return device->exit_qspi_mode(0);
 }
 
 static int parse_address(printf_func pfunc, char *arg, unsigned int *address)
@@ -291,4 +331,6 @@ void register_spi_memory_commands(void)
   shell_register_command(&write_command);
   shell_register_command(&write_random_command);
   shell_register_command(&check_command);
+  shell_register_command(&enter_qspi_mode_command);
+  shell_register_command(&exit_qspi_mode_command);
 }

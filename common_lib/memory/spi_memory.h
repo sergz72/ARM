@@ -7,12 +7,20 @@
 #define SPI_MEMORY_DEFAULT_READ_ID_COMMAND 0x9F
 #define SPI_MEMORY_DEFAULT_RESET_ENABLE_COMMAND 0x66
 #define SPI_MEMORY_DEFAULT_RESET_COMMAND 0x99
+#define SPI_MEMORY_DEFAULT_ENTER_QSPI_MODE_COMMAND 0x35
+#define SPI_MEMORY_DEFAULT_EXIT_QSPI_MODE_COMMAND 0xF5
+
+#define QSPI_MEMORY_DEFAULT_FAST_READ_COMMAND 0xEB
+#define QSPI_MEMORY_DEFAULT_WRITE_COMMAND 0x38
 
 void spi_trfr(int channel, int nwrite, const unsigned char *wdata, int nop_cycles, int nread, unsigned char *rdata, int set_cs); // should be defined in hal.c
+void qspi_trfr(int channel, int nwrite, const unsigned char *wdata, int nop_cycles, int nread, unsigned char *rdata, int set_cs); // should be defined in hal.c
 void spi_finish(int channel); // should be defined in hal.c
+void qspi_set_sio_direction(int out0, int out1, int out2, int out3); // should be defined in hal.c
 
-unsigned int spi_memory_read_id(int channel, int address_length, unsigned char command);
-void spi_memory_wren(int channel, unsigned char command);
+void spi_memory_init(void);
+int spi_memory_read_id(int channel, int address_length, unsigned char command, unsigned int *id);
+int spi_memory_wren(int channel, unsigned char command);
 void spi_memory_write(int channel, unsigned char command, unsigned int address, int address_length,
                         const unsigned char *buffer, int size);
 void spi_memory_read(int channel, unsigned char command, unsigned int address, int address_length,
@@ -24,12 +32,14 @@ int spi_memory_read_cb(int channel, unsigned char command, unsigned int address,
                     int (*set_byte)(unsigned char), int size, int nop_cycles);
 
 void psram_reset(int channel);
-unsigned int psram_read_id(int channel);
-void psram_read(int channel, unsigned int address, unsigned char *buffer, int count);
-void psram_fast_read(int channel, unsigned int address, unsigned char *buffer, int count);
+int psram_read_id(int channel, unsigned int *id);
+int psram_read(int channel, unsigned int address, unsigned char *buffer, int count);
+int psram_fast_read(int channel, unsigned int address, unsigned char *buffer, int count);
 void psram_write(int channel, unsigned int address, unsigned char *buffer, int count);
 int psram_read_cb(int channel, unsigned int address, int (*set_byte)(unsigned char c), int count);
 int psram_fast_read_cb(int channel, unsigned int address, int (*set_byte)(unsigned char c), int count);
 void psram_write_cb(int channel, unsigned int address, unsigned char (*next_byte)(void), int count);
+int psram_enter_qspi_mode(int channel);
+int psram_exit_qspi_mode(int channel);
 
 #endif

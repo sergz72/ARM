@@ -23,7 +23,7 @@
 
 #define WS2812_PIN 16
 
-void qspi_trfr(int nwrite, const unsigned char *wdata, int nop_cycles, int nread, unsigned char *rdata, int set_cs);
+#define SPI_MEMORY_MAX_CHANNELS 1
 
 void SystemInit(void);
 void WS2812Init(void);
