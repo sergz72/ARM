@@ -113,7 +113,7 @@ static int buildCommandParameters(const char *command, ShellCommandParameter *co
           command_parameters++;
           parameter_count++;
           command++;
-          offset += length;
+          offset += length + 1;
           length = mode = 0;
           break;
         }

@@ -28,9 +28,9 @@ int spi_memory_read_id(int channel, int address_length, unsigned char command, u
   for (int i = 1; i < address_length; i++)
     data[i] = 0;
 
-  spi_trfr(channel, address_length, data, 0, 2, data, 1);
+  spi_trfr(channel, address_length, data, 0, 3, data, 1);
 
-  *id = data[0] | (data[1] << 8);
+  *id = data[0] | (data[1] << 8) | (data[2] << 16);
 
   return 0;
 }
@@ -265,4 +265,198 @@ void psram_write_cb(int channel, unsigned int address, unsigned char (*next_byte
     channel,
     mode == SPI_MEMORY_MODE_SPI ? SPI_MEMORY_DEFAULT_WRITE_COMMAND : QSPI_MEMORY_DEFAULT_WRITE_COMMAND,
     address, 3, next_byte, count);
+}
+
+int flash_read_id(int channel, unsigned int *id)
+{
+  unsigned char data[4];
+
+  if (spi_memory_mode[channel] == SPI_MEMORY_MODE_QSPI)
+    return 1; // not supported in QSPI mode
+
+  data[0] = SPI_MEMORY_DEFAULT_READ_ID_COMMAND;
+  spi_trfr(channel, 1, data, 0, 3, data, 1);
+
+  *id = data[0] | (data[1] << 8) | (data[2] << 16);
+
+  return 0;
+}
+
+int flash_read(int channel, unsigned int address, unsigned char *buffer, int count)
+{
+  if (spi_memory_mode[channel] == SPI_MEMORY_MODE_QSPI)
+    return 1;
+  spi_memory_read(channel, SPI_MEMORY_DEFAULT_READ_COMMAND, address, 3, buffer, count, 0);
+  return 0;
+}
+
+int flash_fast_read(int channel, unsigned int address, unsigned char *buffer, int count)
+{
+  int mode = spi_memory_mode[channel];
+  spi_memory_read(
+    channel,
+    SPI_MEMORY_DEFAULT_FAST_READ_COMMAND,
+    address, 3, buffer, count,
+    mode == SPI_MEMORY_MODE_SPI ? 8 : 2);
+  return 0;
+}
+
+void flash_write_page(int channel, unsigned int address, unsigned char *buffer, int count)
+{
+  flash_wren(channel);
+  spi_memory_write(
+    channel,
+    SPI_MEMORY_DEFAULT_WRITE_COMMAND,
+    address, 3, buffer, count);
+}
+
+int flash_read_cb(int channel, unsigned int address, int (*set_byte)(unsigned char c), int count)
+{
+  if (spi_memory_mode[channel] == SPI_MEMORY_MODE_QSPI)
+    return 1;
+  return spi_memory_read_cb(channel, SPI_MEMORY_DEFAULT_READ_COMMAND, address, 3, set_byte, count, 0);
+}
+
+int flash_fast_read_cb(int channel, unsigned int address, int (*set_byte)(unsigned char c), int count)
+{
+  int mode = spi_memory_mode[channel];
+  return spi_memory_read_cb(
+    channel,
+    SPI_MEMORY_DEFAULT_FAST_READ_COMMAND,
+    address, 3, set_byte, count, mode == SPI_MEMORY_MODE_SPI ? 8 : 2);
+}
+
+void flash_write_page_cb(int channel, unsigned int address, unsigned char (*next_byte)(void), int count)
+{
+  flash_wren(channel);
+  spi_memory_write_cb(
+    channel,
+    SPI_MEMORY_DEFAULT_WRITE_COMMAND,
+    address, 3, next_byte, count);
+}
+
+int flash_wren(int channel)
+{
+  spi_memory_wren(channel, SPI_MEMORY_DEFAULT_WREN_COMMAND);
+  return 0;
+}
+
+static void flash_wait(int channel)
+{
+  for (;;)
+  {
+    delayms(1);
+    unsigned char sr1 = flash_read_sr1(channel);
+    if (sr1 & 1)
+      delayms(1);
+    else
+      break;
+  }
+}
+
+void flash_erase(int channel, enum spi_memory_erase_command command, unsigned int address)
+{
+  cuint addr;
+  unsigned char data[4];
+
+  flash_wait(channel);
+  flash_wren(channel);
+
+  addr.value = address;
+  address_swap(addr.chars, 3);
+  int length = 4;
+  switch (command)
+  {
+    case CHIP:
+      data[0] = SPI_MEMORY_DEFAULT_CHIP_ERASE_COMMAND;
+      length = 1;
+      break;
+    case SECTOR:
+      data[0] = SPI_MEMORY_DEFAULT_SECTOR_ERASE_COMMAND;
+      break;
+    case BLOCK32:
+      data[0] = SPI_MEMORY_DEFAULT_BLOCK32_ERASE_COMMAND;
+      break;
+    case BLOCK64:
+      data[0] = SPI_MEMORY_DEFAULT_BLOCK64_ERASE_COMMAND;
+      break;
+  }
+  if (spi_memory_mode[channel] == SPI_MEMORY_MODE_SPI)
+    spi_trfr(channel, length, data, 0, 0, NULL, 1);
+  else
+    qspi_trfr(channel, length, data, 0, 0, NULL, 1);
+}
+
+int flash_enter_qspi_mode(int channel)
+{
+  if (spi_memory_mode[channel] == SPI_MEMORY_MODE_QSPI)
+    return 1;
+  if (!(flash_read_sr2(channel) & 2))
+    return 2; // QSPI mode is not supported
+  unsigned char command = 0x38;
+  spi_trfr(channel, 1, &command, 0, 0, NULL, 1);
+  spi_memory_mode[channel] = SPI_MEMORY_MODE_QSPI;
+  qspi_set_sio_direction(0, 0, 0, 0);
+  return 0;
+}
+
+int flash_exit_qspi_mode(int channel)
+{
+  if (spi_memory_mode[channel] == SPI_MEMORY_MODE_SPI)
+    return 1;
+  unsigned char command = 0xFF;
+  qspi_trfr(channel, 1, &command, 0, 0, NULL, 1);
+  spi_memory_mode[channel] = SPI_MEMORY_MODE_SPI;
+  qspi_set_sio_direction(1, 0, 0, 0);
+  return 0;
+}
+
+void flash_reset(int channel)
+{
+  psram_reset(channel);
+}
+
+unsigned char flash_read_sr1(int channel)
+{
+  unsigned char data = 0x05;
+  if (spi_memory_mode[channel] == SPI_MEMORY_MODE_SPI)
+    spi_trfr(channel, 1, &data, 0, 1, &data, 1);
+  else
+    qspi_trfr(channel, 1, &data, 0, 1, &data, 1);
+  return data;
+}
+
+unsigned char flash_read_sr2(int channel)
+{
+  unsigned char data = 0x35;
+  if (spi_memory_mode[channel] == SPI_MEMORY_MODE_SPI)
+    spi_trfr(channel, 1, &data, 0, 1, &data, 1);
+  else
+    qspi_trfr(channel, 1, &data, 0, 1, &data, 1);
+  return data;
+}
+
+void flash_write_cb(int channel, int page_size, unsigned int address, unsigned char (*next_byte)(void), int count)
+{
+  while (count)
+  {
+    flash_wait(channel);
+    int l = count > page_size ? page_size : count;
+    flash_write_page_cb(channel, address, next_byte, l);
+    count -= l;
+    address += l;
+  }
+}
+
+void flash_write(int channel, int page_size, unsigned int address, unsigned char *buffer, int count)
+{
+  while (count)
+  {
+    flash_wait(channel);
+    int l = count > page_size ? page_size : count;
+    flash_write_page(channel, address, buffer, l);
+    count -= l;
+    buffer += l;
+    address += l;
+  }
 }
