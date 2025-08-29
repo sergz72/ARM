@@ -57,33 +57,29 @@ static unsigned short send(int channel, unsigned int data, int i)
   return result;
 }
 
-int _93CXX_16_write_enable(int channel, int timeout)
+void _93CXX_16_write_enable(int channel)
 {
-  int rc = wait_not_busy(channel, timeout);
-  if (rc)
-    return rc;
   send(channel, 0xFF, 9);
-  return 0;
+}
+
+int _93CXX_16_erase(int channel, unsigned int address, int timeout)
+{
+  address &= 0xFF;
+  send(channel, 0x300 | address, 9);
+  return wait_not_busy(channel, timeout);
 }
 
 int _93CXX_16_write(int channel, unsigned int address, unsigned int data, int timeout)
 {
-  int rc = wait_not_busy(channel, timeout);
-  if (rc)
-    return rc;
   address &= 0xFF;
   data &= 0xFFFF;
   send(channel, (1 << 24) | (address << 16) | data, 25);
-  return 0;
+  return wait_not_busy(channel, timeout);
 }
 
-int _93CXX_16_read(int channel, unsigned int address, unsigned short *data, int timeout)
+void _93CXX_16_read(int channel, unsigned int address, unsigned short *data)
 {
-  int rc = wait_not_busy(channel, timeout);
-  if (rc)
-    return rc;
   address &= 0xFF;
   *data = send(channel, (2 << 24) | (address << 16), 25);
-  return 0;
 }
 
