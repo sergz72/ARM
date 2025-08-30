@@ -59,7 +59,7 @@ void flash_write_page(int channel, unsigned int address, unsigned char *buffer, 
 int flash_fast_read(int channel, unsigned int address, unsigned char *buffer, int count);
 int flash_read(int channel, unsigned int address, unsigned char *buffer, int count);
 void flash_erase(int channel, enum spi_memory_erase_command command, unsigned int address);
-int flash_enter_qspi_mode(int channel);
+int flash_enter_qspi_mode(int channel, int check_sr2);
 int flash_exit_qspi_mode(int channel);
 void flash_reset(int channel);
 void flash_write_cb(int channel, int page_size, unsigned int address, unsigned char (*next_byte)(void), int count);

@@ -37,9 +37,12 @@ int spi_memory_read_id(int channel, int address_length, unsigned char command, u
 
 int spi_memory_wren(int channel, unsigned char command)
 {
-  if (spi_memory_mode[channel] == SPI_MEMORY_MODE_QSPI)
-    return 1; // not supported in QSPI mode
-  spi_trfr(channel, 1, &command, 0, 0, NULL, 1); // WREN
+  //if (spi_memory_mode[channel] == SPI_MEMORY_MODE_QSPI)
+  //  return 1; // not supported in QSPI mode
+  if (spi_memory_mode[channel] == SPI_MEMORY_MODE_SPI)
+    spi_trfr(channel, 1, &command, 0, 0, NULL, 1); // WREN
+  else
+    qspi_trfr(channel, 1, &command, 0, 0, NULL, 1); // WREN
   return 0;
 }
 
@@ -162,10 +165,11 @@ int spi_memory_read_cb(int channel, unsigned char command, unsigned int address,
     rc = set_byte(c);
     if (rc)
       break;
+    address++;
   }
   spi_finish(channel); // set CS
 
-  return rc;
+  return rc ? (int)address + 1 : 0;
 }
 
 void psram_reset(int channel)
@@ -387,16 +391,16 @@ void flash_erase(int channel, enum spi_memory_erase_command command, unsigned in
     qspi_trfr(channel, length, data, 0, 0, NULL, 1);
 }
 
-int flash_enter_qspi_mode(int channel)
+int flash_enter_qspi_mode(int channel, int check_sr2)
 {
   if (spi_memory_mode[channel] == SPI_MEMORY_MODE_QSPI)
     return 1;
-  if (!(flash_read_sr2(channel) & 2))
+  if (check_sr2 && !(flash_read_sr2(channel) & 2))
     return 2; // QSPI mode is not supported
   unsigned char command = 0x38;
   spi_trfr(channel, 1, &command, 0, 0, NULL, 1);
   spi_memory_mode[channel] = SPI_MEMORY_MODE_QSPI;
-  qspi_set_sio_direction(0, 0, 0, 0);
+  qspi_set_sio_direction(1, 1, 1, 1);
   return 0;
 }
 
