@@ -2,6 +2,18 @@
 #include <hardware/spi.h>
 #include <pico/time.h>
 #include <string.h>
+#include <ads1259.h>
+#include <ad7124.h>
+
+void set_cpha1(void)
+{
+  spi_set_format(spi1, 8, SPI_CPOL_0, SPI_CPHA_1, SPI_MSB_FIRST);
+}
+
+void set_cpol1cpha1(void)
+{
+  spi_set_format(spi1, 8, SPI_CPOL_1, SPI_CPHA_1, SPI_MSB_FIRST);
+}
 
 void SystemInit(void)
 {
@@ -16,7 +28,6 @@ void SystemInit(void)
   gpio_pull_down(ADS1259_DRDY_PIN);
 
   spi_init(spi1, 1000);
-  spi_set_format(spi1, 8, SPI_CPOL_0, SPI_CPHA_1, SPI_MSB_FIRST);
   gpio_set_function(SPI1_SCK_PIN, GPIO_FUNC_SPI);
   gpio_set_function(SPI1_TX_PIN, GPIO_FUNC_SPI);
   gpio_set_function(SPI1_RX_PIN, GPIO_FUNC_SPI);
@@ -40,4 +51,10 @@ void ads1259_spi_transfer(int channel, const unsigned char *wdata, unsigned int 
   spi_write_read_blocking(spi1, wbuffer, rbuffer, length);
   if (rlength > 0)
     memcpy(rdata, rbuffer + wlength, rlength);
+}
+
+void ad7124_spi_transfer(int channel, const unsigned char *wdata, unsigned int wlength, unsigned char *rdata,
+                          unsigned int rlength)
+{
+  ads1259_spi_transfer(channel, wdata, wlength, rdata, rlength);
 }

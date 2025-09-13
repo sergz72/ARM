@@ -39,10 +39,18 @@
 #define ADS1259_INPUT_COEFFICIENT 0.180327869
 #define ADS1259_VREF 2.5
 
+#define AD7124_MAX_CHANNELS 1
+#define AD7124_TIMEOUT 1000
+#define AD7124_INPUT_COEFFICIENT 1.0
+#define AD7124_VREF 2.5
+#define AD7124_RDY_GET(channel) gpio_get(SPI1_RX_PIN)
+
 void SystemInit(void);
 void WS2812Init(void);
 void put_pixel(unsigned int pixel_grb);
 unsigned int urgb_u32(unsigned int r, unsigned int g, unsigned int b);
 void delayms(unsigned int ms);
+void set_cpha1(void);
+void set_cpol1cpha1(void);
 
 #endif

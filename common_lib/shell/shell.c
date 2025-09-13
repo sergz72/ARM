@@ -13,6 +13,7 @@ static printf_func pfunc;
 static gets_func gfunc;
 #ifdef SHELL_HISTORY_SIZE
 static char history[SHELL_HISTORY_ITEM_LENGTH*SHELL_HISTORY_SIZE];
+static char history_temp[SHELL_HISTORY_ITEM_LENGTH];
 static Queue history_q;
 static int history_offset;
 #endif
@@ -167,8 +168,14 @@ int shell_execute(const char *command)
   }*/
 
 #ifdef SHELL_HISTORY_SIZE
-  queue_push(&history_q, (void*)command);
+  int idx = queue_get_index(&history_q, (void*)command, (int (*)(void*, void*))strcmp);
+  if (idx < 0)
+    queue_push(&history_q, (void*)command);
+  else
+    queue_move_to_top(&history_q, idx, history_temp);
   history_offset = 0;
+
+
 #endif
 
   current_command = commands;

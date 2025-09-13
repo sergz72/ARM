@@ -13,5 +13,7 @@ void queue_push(Queue* q, void *data);
 void queue_reset(Queue* q);
 int queue_size(Queue* q);
 void *queue_peekn(Queue* q, int offset);
+int queue_get_index(Queue* q, void *data, int (*cmp)(void*, void*));
+void queue_move_to_top(Queue* q, int offset, void *buffer);
 
 #endif //MAIN_FIXED_QUEUE_H

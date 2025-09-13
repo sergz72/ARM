@@ -4,6 +4,18 @@
 #include <shell.h>
 #include <stdlib.h>
 
+static int init_handler(printf_func pfunc, gets_func gfunc, int argc, char **argv, void *data);
+static const ShellCommandItem init_command_items[] = {
+  {NULL, NULL, init_handler}
+};
+static const ShellCommand init_command = {
+  init_command_items,
+  "ads1259_init",
+  "ads1259_init",
+  NULL,
+  NULL
+};
+
 static int read_handler(printf_func pfunc, gets_func gfunc, int argc, char **argv, void *data);
 static const ShellCommandItem read_command_items[] = {
   {NULL, NULL, read_handler}
@@ -65,6 +77,27 @@ static const ShellCommand set_fsc_command = {
   NULL,
   NULL
 };
+
+const ads1259_configuration ads1259_config =
+{
+  .conversion_delay = ADS1259_CONVERSION_DELAY_0,
+  .data_rate = ADS1259_DATA_RATE_10,
+  .digital_filter_sinc2 = 0,
+  .external_reference_enable = 0,
+  .internal_reference_bias_enable = 1,
+  .out_of_range_flag_enable = 0,
+  .pulse_mode = 1,
+  .spi_timeout_enable = 0,
+  .syncout_enable = 0,
+  .checksum_enable = 0
+};
+
+static int init_handler(printf_func pfunc, gets_func gfunc, int argc, char **argv, void *data)
+{
+  set_cpha1();
+  ads1259_init(0, &ads1259_config);
+  return 0;
+}
 
 static int read_handler(printf_func pfunc, gets_func gfunc, int argc, char **argv, void *data)
 {
@@ -141,6 +174,7 @@ static int set_fsc_handler(printf_func pfunc, gets_func gfunc, int argc, char **
 
 void register_ads1259_commands(void)
 {
+  shell_register_command(&init_command);
   shell_register_command(&read_command);
   shell_register_command(&calibrate_offset_command);
   shell_register_command(&calibrate_offset2_command);
