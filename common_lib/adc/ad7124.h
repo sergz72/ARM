@@ -79,6 +79,37 @@
 #define AD7124_IOUT_1000uA 6
 #define AD7124_IOUT_0p1uA  7
 
+#define AD7124_AIN0 0
+#define AD7124_AIN1 1
+#define AD7124_AIN2 2
+#define AD7124_AIN3 3
+#define AD7124_AIN4 4
+#define AD7124_AIN5 5
+#define AD7124_AIN6 6
+#define AD7124_AIN7 7
+#define AD7124_AIN8 8
+#define AD7124_AIN9 9
+#define AD7124_AIN10 10
+#define AD7124_AIN11 11
+#define AD7124_AIN12 12
+#define AD7124_AIN13 13
+#define AD7124_AIN14 14
+#define AD7124_AIN15 15
+#define AD7124_TEMP_SENSOR 16
+#define AD7124_AVSS 17
+#define AD7124_INTERNAL_REFERENCE 18
+#define AD7124_DGND 19
+#define AD7124_AVDDAVSS6P 20
+#define AD7124_AVDDAVSS6M 21
+#define AD7124_IOVDDDGND6P 22
+#define AD7124_IOVDDDGND6M 23
+#define AD7124_ALDOAVSS6P 24
+#define AD7124_ALDOAVSS6M 25
+#define AD7124_DLDODGND6P 26
+#define AD7124_DLDODGND6M 27
+#define AD7124_20mVP 28
+#define AD7124_20mVM 29
+
 typedef struct
 {
   int enable;
@@ -168,6 +199,13 @@ typedef struct
   unsigned char ldo_cap_chk;
 } ad7124_error_control;
 
+typedef struct
+{
+  int channel;
+  int value;
+  double voltage;
+} ad7124_data;
+
 void ad7124_spi_transfer(int channel, const unsigned char *wdata, unsigned int wlength, unsigned char *rdata,
                           unsigned int rlength); // should be defined in hal.c
 
@@ -179,16 +217,17 @@ void ad7124_setup_configuration(int channel, unsigned char config_no, const ad71
 void ad7124_setup_adc_control(int channel, const ad7124_adc_control *config);
 void ad7124_setup_io_control(int channel, const ad7124_io_control *config);
 void ad7124_setup_error_control(int channel, const ad7124_error_control *config);
-int ad7124_read(int channel, int *pvalue, int timeout);
-int ad7124_read_voltage(int channel, double input_divider_coefficient, double vref, double *result, int timeout);
+int ad7124_read(int channel, ad7124_data *result, unsigned int channels, int timeout);
+int ad7124_read_voltage(int channel, unsigned int bipolar_channels, double input_divider_coefficient, double vref,
+                        ad7124_data *result, unsigned int channels, int timeout);
 int ad7124_calibrate_offset(int channel, unsigned char channel_no, unsigned char config_no, int num_loops, int timeout);
 int ad7124_calibrate_gain(ad7124_gain_calibration *calibration, int timeout);
 void ad7124_set_mode(int channel, unsigned char mode);
 int ad7124_wait(int channel, int timeout);
-int ad7124_calibrate_offset_internal(int channel, int timeout);
-int ad7124_calibrate_gain_internal(int channel, int timeout);
-int ad7124_calibrate_offset_system(int channel, int timeout);
-int ad7124_calibrate_gain_system(int channel, int timeout);
+int ad7124_calibrate_offset_internal(int channel, unsigned char channel_no, int timeout);
+int ad7124_calibrate_gain_internal(int channel, unsigned char channel_no, int timeout);
+int ad7124_calibrate_offset_system(int channel, unsigned char channel_no, int timeout);
+int ad7124_calibrate_gain_system(int channel, unsigned char channel_no, int timeout);
 int ad7124_get_offset(int channel, unsigned char channel_no);
 void ad7124_set_offset(int channel, unsigned char channel_no, int value);
 int ad7124_get_gain(int channel, unsigned char channel_no);
