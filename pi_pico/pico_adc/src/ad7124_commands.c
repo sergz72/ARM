@@ -5,6 +5,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+#define CHANNELS 7
+#define BIPOLAR_CANNELS 7
+
 static int init_handler(printf_func pfunc, gets_func gfunc, int argc, char **argv, void *data);
 static const ShellCommandItem init_command_items[] = {
   {NULL, NULL, init_handler}
@@ -32,12 +35,13 @@ static const ShellCommand read_command = {
 static int calibrate_offset_handler(printf_func pfunc, gets_func gfunc, int argc, char **argv, void *data);
 static const ShellCommandItem calibrate_offset_command_items[] = {
   {NULL, param_handler, NULL},
+  {NULL, param_handler, NULL},
   {NULL, NULL, calibrate_offset_handler}
 };
 static const ShellCommand calibrate_offset_command = {
   calibrate_offset_command_items,
   "ad7124_cal_offset",
-  "ad7124_cal_offset internal|system",
+  "ad7124_cal_offset channel internal|system",
   NULL,
   NULL
 };
@@ -45,12 +49,13 @@ static const ShellCommand calibrate_offset_command = {
 static int calibrate_gain_handler(printf_func pfunc, gets_func gfunc, int argc, char **argv, void *data);
 static const ShellCommandItem calibrate_gain_command_items[] = {
   {NULL, param_handler, NULL},
+  {NULL, param_handler, NULL},
   {NULL, NULL, calibrate_gain_handler}
 };
 static const ShellCommand calibrate_gain_command = {
   calibrate_gain_command_items,
   "ad7124_cal_gain",
-  "ad7124_cal_gain internal|system|value",
+  "ad7124_cal_gain channel internal|system|value",
   NULL,
   NULL
 };
@@ -112,22 +117,55 @@ static const ShellCommand read_register_command = {
   NULL
 };
 
-const ad7124_channel_configuration ad7124_channel_config =
+const ad7124_channel_configuration ad7124_channel_config0 =
 {
-  .enable = 1,
+  .enable = 0,
   .setup_no = 0,
-  .ainm = 1,
-  .ainp = 0
+  .ainm = AD7124_AIN0,
+  .ainp = AD7124_AIN1
 };
 
-const ad7124_configuration ad7124_config =
+const ad7124_channel_configuration ad7124_channel_config1 =
+{
+  .enable = 0,
+  .setup_no = 0,
+  .ainm = AD7124_AIN1,
+  .ainp = AD7124_AIN2
+};
+
+const ad7124_channel_configuration ad7124_channel_config2 =
+{
+  .enable = 0,
+  .setup_no = 1,
+  .ainm = AD7124_AIN4,
+  .ainp = AD7124_AIN5
+};
+
+const ad7124_configuration ad7124_config0 =
 {
   .bipolar = 1,
   .burnout = AD7124_BURNOUT_OFF,
-  .ref_bufp = 1,
-  .ref_bufm = 1,
+  .ref_bufp = 0,
+  .ref_bufm = 0,
   .ain_bufp = 1,
   .ain_bufm = 1,
+  .refsel = AD7124_REFSEL_INTERNAL,
+  .pga = AD7124_PGA_GAIN_1,
+  .filter_type = AD7124_FILTER_SINC4,
+  .filter_rej60 = 1,
+  .post_filter = AD7124_POST_FILTER_92DB,
+  .filter_fs = 4,
+  .filter_single_cycle = 0
+};
+
+const ad7124_configuration ad7124_config1 =
+{
+  .bipolar = 1,
+  .burnout = AD7124_BURNOUT_OFF,
+  .ref_bufp = 0,
+  .ref_bufm = 0,
+  .ain_bufp = 1,
+  .ain_bufm = 0,
   .refsel = AD7124_REFSEL_INTERNAL,
   .pga = AD7124_PGA_GAIN_1,
   .filter_type = AD7124_FILTER_SINC4,
@@ -143,7 +181,7 @@ const ad7124_adc_control ad7124_adc_config =
   .cont_read = 0,
   .cs_en = 0,
   .data_status = 0,
-  .ref_en = 0,
+  .ref_en = 1,
   .power_mode = AD7124_FULL_POWER,
   .mode = AD7124_MODE_IDLE,
   .clk_sel = AD7124_CLOCK_INTERNAL_NO_CLK
@@ -153,11 +191,11 @@ const ad7124_io_control ad7124_io_config =
 {
   .gpio_ctrl = 0,
   .gpio_dat = 0,
-  .iout0 = AD7124_IOUT_OFF,
+  .iout0 = AD7124_IOUT_1000uA,
   .iout1 = AD7124_IOUT_OFF,
-  .iout0_ch = 0,
+  .iout0_ch = AD7124_AIN5,
   .iout1_ch = 0,
-  .vbias = 2, // bias is on ain1
+  .vbias = 0x11, // bias is on ain1 and ain4
   .pdsw = 0
 };
 
@@ -166,32 +204,36 @@ static int init_handler(printf_func pfunc, gets_func gfunc, int argc, char **arg
   set_cpol1cpha1();
   ad7124_setup_adc_control(0, &ad7124_adc_config);
   ad7124_setup_io_control(0, &ad7124_io_config);
-  ad7124_setup_configuration(0, 0, &ad7124_config);
-  ad7124_setup_channel(0, 0, &ad7124_channel_config);
+  ad7124_setup_configuration(0, 0, &ad7124_config0);
+  ad7124_setup_configuration(0, 1, &ad7124_config1);
+  ad7124_setup_channel(0, 0, &ad7124_channel_config0);
+  ad7124_setup_channel(0, 1, &ad7124_channel_config1);
+  ad7124_setup_channel(0, 2, &ad7124_channel_config2);
   return 0;
 }
 
 static int read_handler(printf_func pfunc, gets_func gfunc, int argc, char **argv, void *data)
 {
-  int ivalue;
-  int rc = ad7124_read(0, &ivalue, AD7124_TIMEOUT);
+  ad7124_data adata[3];
+  int rc = ad7124_read_voltage(0, BIPOLAR_CANNELS, AD7124_INPUT_COEFFICIENT,
+                            AD7124_VREF, adata, CHANNELS, AD7124_TIMEOUT);
   if (rc)
     return rc;
-  double value;
-  rc = ad7124_read_voltage(0, AD7124_INPUT_COEFFICIENT, AD7124_VREF, &value, AD7124_TIMEOUT);
-  if (rc)
-    return rc;
-  pfunc("code = %08X, result = %f\r\n", ivalue, value);
+  for (int i = 0; i < 3; i++)
+    pfunc("channel = %d, code = %08X, result = %f\r\n", adata[i].channel, adata[i].value, adata[i].voltage);
   return 0;
 }
 
 static int calibrate_offset_handler(printf_func pfunc, gets_func gfunc, int argc, char **argv, void *data)
 {
+  int channel = atoi(argv[0]);
+  if (channel < 0 || channel > 7)
+    return 1;
   int rc;
-  if (!strcmp(argv[0], "internal"))
-    rc = ad7124_calibrate_offset_internal(0, AD7124_TIMEOUT);
-  else if (!strcmp(argv[0], "system"))
-    rc = ad7124_calibrate_offset_system(0, AD7124_TIMEOUT);
+  if (!strcmp(argv[1], "internal"))
+    rc = ad7124_calibrate_offset_internal(0, channel, AD7124_TIMEOUT);
+  else if (!strcmp(argv[1], "system"))
+    rc = ad7124_calibrate_offset_system(0, channel, AD7124_TIMEOUT);
   else
     return 1;
   if (rc)
@@ -199,24 +241,28 @@ static int calibrate_offset_handler(printf_func pfunc, gets_func gfunc, int argc
     pfunc("calibrate offset returned error %d\r\n", rc);
     return rc;
   }
-  int value;
-  rc = ad7124_read(0, &value, AD7124_TIMEOUT);
+  ad7124_data adata[3];
+  rc = ad7124_read(0, adata, CHANNELS, AD7124_TIMEOUT);
   if (rc)
   {
     pfunc("read returned error %d\r\n", rc);
     return rc;
   }
-  pfunc("result = %d\r\n", value);
+  for (int i = 0; i < 3; i++)
+    pfunc("channel = %d, result = %d\r\n", adata[i].channel, adata[i].value);
   return 0;
 }
 
 static int calibrate_gain_handler(printf_func pfunc, gets_func gfunc, int argc, char **argv, void *data)
 {
+  int channel = atoi(argv[0]);
+  if (channel < 0 || channel > 7)
+    return 1;
   int rc;
-  if (!strcmp(argv[0], "internal"))
-    rc = ad7124_calibrate_gain_internal(0, AD7124_TIMEOUT);
-  else if (!strcmp(argv[0], "system"))
-    rc = ad7124_calibrate_gain_system(0, AD7124_TIMEOUT);
+  if (!strcmp(argv[1], "internal"))
+    rc = ad7124_calibrate_gain_internal(0, channel, AD7124_TIMEOUT);
+  else if (!strcmp(argv[1], "system"))
+    rc = ad7124_calibrate_gain_system(0, channel, AD7124_TIMEOUT);
   else
     return 1;
   if (rc)
@@ -224,11 +270,13 @@ static int calibrate_gain_handler(printf_func pfunc, gets_func gfunc, int argc, 
     pfunc("calibrate gain returned error %d\r\n", rc);
     return rc;
   }
-  double value;
-  rc = ad7124_read_voltage(0, AD7124_INPUT_COEFFICIENT, AD7124_VREF, &value, AD7124_TIMEOUT);
+  ad7124_data adata[3];
+  rc = ad7124_read_voltage(0, BIPOLAR_CANNELS, AD7124_INPUT_COEFFICIENT,
+                        AD7124_VREF, adata, CHANNELS, AD7124_TIMEOUT);
   if (rc)
     return rc;
-  pfunc("voltage = %f\r\n", value);
+  for (int i = 0; i < 3; i++)
+    pfunc("channel = %d, voltage = %f\r\n", adata[i].channel, adata[i].voltage);
   return 0;
 }
 
