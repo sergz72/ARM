@@ -137,20 +137,6 @@ typedef struct
 
 typedef struct
 {
-  int channel;
-  int expected_value;
-  int num_loops;
-  int gain;
-  int result;
-  double expected_voltage;
-  double input_divider_coefficient;
-  double vref;
-  unsigned char channel_no;
-  unsigned char config_no;
-} ad7124_gain_calibration;
-
-typedef struct
-{
   int dout_rdy_del;
   int cont_read;
   int data_status;
@@ -220,17 +206,17 @@ void ad7124_setup_error_control(int channel, const ad7124_error_control *config)
 int ad7124_read(int channel, ad7124_data *result, unsigned int channels, int timeout);
 int ad7124_read_voltage(int channel, unsigned int bipolar_channels, double input_divider_coefficient, double vref,
                         ad7124_data *result, unsigned int channels, int timeout);
-int ad7124_calibrate_offset(int channel, unsigned char channel_no, unsigned char config_no, int num_loops, int timeout);
-int ad7124_calibrate_gain(ad7124_gain_calibration *calibration, int timeout);
 void ad7124_set_mode(int channel, unsigned char mode);
 int ad7124_wait(int channel, int timeout);
 int ad7124_calibrate_offset_internal(int channel, unsigned char channel_no, int timeout);
 int ad7124_calibrate_gain_internal(int channel, unsigned char channel_no, int timeout);
 int ad7124_calibrate_offset_system(int channel, unsigned char channel_no, int timeout);
 int ad7124_calibrate_gain_system(int channel, unsigned char channel_no, int timeout);
-int ad7124_get_offset(int channel, unsigned char channel_no);
-void ad7124_set_offset(int channel, unsigned char channel_no, int value);
-int ad7124_get_gain(int channel, unsigned char channel_no);
-void ad7124_set_gain(int channel, unsigned char channel_no, int value);
+int ad7124_get_offset(int channel, unsigned char config_no);
+void ad7124_set_offset(int channel, unsigned char config_no, int value);
+int ad7124_get_gain(int channel, unsigned char config_no);
+void ad7124_set_gain(int channel, unsigned char config_no, int value);
+int ad7124_get_pga(int channel, unsigned char config_no);
+void ad7124_set_pga(int channel, unsigned char config_no, int value);
 
 #endif

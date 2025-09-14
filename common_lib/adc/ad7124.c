@@ -3,7 +3,8 @@
 #include <string.h>
 
 static unsigned short adc_control[AD7124_MAX_CHANNELS];
-static unsigned short channel_config[AD7124_MAX_CHANNELS][8];
+static unsigned short channel_config[AD7124_MAX_CHANNELS][16];
+static unsigned short adc_config[AD7124_MAX_CHANNELS][8];
 
 void ad7124_init(void)
 {
@@ -53,6 +54,7 @@ void ad7124_setup_configuration(int channel, unsigned char config_no, const ad71
     data[1] |= 0x20;
   data[1] |= (config->refsel << 3) | config->pga;
   ad7124_write_register(channel, AD7124_REGISTER_CONFIG0 + config_no, data, 2);
+  adc_config[channel][config_no] = (data[0] << 8) | data[1];
   data[0] = config->filter_type << 5;
   if (config->filter_rej60)
     data[0] |= 0x10;
@@ -183,18 +185,6 @@ int ad7124_calibrate_gain_system(int channel, unsigned char channel_no, int time
   return rc;
 }
 
-int ad7124_calibrate_gain(ad7124_gain_calibration *calibration, int timeout)
-{
-  //todo
-  return 1;
-}
-
-int ad7124_calibrate_offset(int channel, unsigned char channel_no, unsigned char config_no, int num_loops, int timeout)
-{
-  //todo
-  return 1;
-}
-
 void ad7124_setup_adc_control(int channel, const ad7124_adc_control *config)
 {
   unsigned char data[2];
@@ -306,4 +296,18 @@ void ad7124_set_gain(int channel, unsigned char channel_no, int value)
   data[1] = (unsigned char)(value >> 8);
   data[2] = (unsigned char)value;
   ad7124_write_register(channel, AD7124_REGISTER_GAIN0 + channel_no, data, 3);
+}
+
+int ad7124_get_pga(int channel, unsigned char config_no)
+{
+  return adc_config[channel][config_no] & 7;
+}
+
+void ad7124_set_pga(int channel, unsigned char config_no, int value)
+{
+  unsigned char data[2];
+  data[0] = (unsigned char)(adc_config[channel][config_no] >> 8);
+  data[1] = (unsigned char)((adc_config[channel][config_no] & 0xF8) | (value & 7));
+  ad7124_write_register(channel, AD7124_REGISTER_CONFIG0 + config_no, data, 2);
+  adc_config[channel][config_no] = (data[0] << 8) | data[1];
 }

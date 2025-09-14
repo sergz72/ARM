@@ -69,7 +69,7 @@ static const ShellCommandItem gain_command_items[] = {
 static const ShellCommand gain_command = {
   gain_command_items,
   "ad7124_gain",
-  "ad7124_gain channel [value]",
+  "ad7124_gain config_no [value]",
   NULL,
   NULL
 };
@@ -83,7 +83,21 @@ static const ShellCommandItem offset_command_items[] = {
 static const ShellCommand offset_command = {
   offset_command_items,
   "ad7124_offset",
-  "ad7124_offset channel [value]",
+  "ad7124_offset config_no [value]",
+  NULL,
+  NULL
+};
+
+static int pga_handler(printf_func pfunc, gets_func gfunc, int argc, char **argv, void *data);
+static const ShellCommandItem pga_command_items[] = {
+  {NULL, param_handler, NULL},
+  {NULL, param_handler, pga_handler},
+  {NULL, NULL, pga_handler}
+};
+static const ShellCommand pga_command = {
+  pga_command_items,
+  "ad7124_pga",
+  "ad7124_pga config_no [value]",
   NULL,
   NULL
 };
@@ -137,8 +151,8 @@ const ad7124_channel_configuration ad7124_channel_config2 =
 {
   .enable = 0,
   .setup_no = 1,
-  .ainm = AD7124_AIN4,
-  .ainp = AD7124_AIN5
+  .ainm = AD7124_AVSS,
+  .ainp = AD7124_AIN4
 };
 
 const ad7124_configuration ad7124_config0 =
@@ -193,9 +207,9 @@ const ad7124_io_control ad7124_io_config =
   .gpio_dat = 0,
   .iout0 = AD7124_IOUT_1000uA,
   .iout1 = AD7124_IOUT_OFF,
-  .iout0_ch = AD7124_AIN5,
+  .iout0_ch = AD7124_AIN4,
   .iout1_ch = 0,
-  .vbias = 0x11, // bias is on ain1 and ain4
+  .vbias = 1, // bias is on ain0
   .pdsw = 0
 };
 
@@ -316,6 +330,26 @@ static int offset_handler(printf_func pfunc, gets_func gfunc, int argc, char **a
   return 0;
 }
 
+static int pga_handler(printf_func pfunc, gets_func gfunc, int argc, char **argv, void *data)
+{
+  int channel = atoi(argv[0]);
+  if (channel < 0 || channel > 7)
+    return 1;
+  if (argc == 1)
+  {
+    int pga = ad7124_get_pga(0, channel);
+    pfunc("pga = %d\r\n", pga);
+  }
+  else
+  {
+    int pga = atoi(argv[1]);
+    if (pga < 0 || pga > 7)
+      return 2;
+    ad7124_set_pga(0, channel, pga);
+  }
+  return 0;
+}
+
 static int channel_handler(printf_func pfunc, gets_func gfunc, int argc, char **argv, void *data)
 {
   int channel = atoi(argv[0]);
@@ -362,4 +396,5 @@ void register_ad7124_commands(void)
   shell_register_command(&gain_command);
   shell_register_command(&channel_command);
   shell_register_command(&read_register_command);
+  shell_register_command(&pga_command);
 }
