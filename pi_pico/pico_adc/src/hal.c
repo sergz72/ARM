@@ -4,6 +4,7 @@
 #include <string.h>
 #include <ads1259.h>
 #include <ad7124.h>
+#include <ad7705.h>
 
 void set_cpha1(void)
 {
@@ -54,6 +55,12 @@ void ads1259_spi_transfer(int channel, const unsigned char *wdata, unsigned int 
 }
 
 void ad7124_spi_transfer(int channel, const unsigned char *wdata, unsigned int wlength, unsigned char *rdata,
+                          unsigned int rlength)
+{
+  ads1259_spi_transfer(channel, wdata, wlength, rdata, rlength);
+}
+
+void ad7705_spi_transfer(int channel, const unsigned char *wdata, unsigned int wlength, unsigned char *rdata,
                           unsigned int rlength)
 {
   ads1259_spi_transfer(channel, wdata, wlength, rdata, rlength);

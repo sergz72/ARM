@@ -6,8 +6,11 @@
 #include "board.h"
 #include "ads1259_commands.h"
 #include "ad7124_commands.h"
+#include "ad7705_commands.h"
 #include <ads1259.h>
 #include <ad7124.h>
+
+#include "ad7705.h"
 
 #define MAX_COMMAND_LINE_LENGTH 128
 
@@ -45,6 +48,7 @@ int main(void)
   shell_init(printf, gets_);
   register_ads1259_commands();
   register_ad7124_commands();
+  register_ad7705_commands();
 
   WS2812Init();
 
@@ -52,6 +56,7 @@ int main(void)
 
   ads1259_reset();
   ad7124_init();
+  ad7705_init();
 
   while (1)
   {

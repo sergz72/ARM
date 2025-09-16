@@ -30,11 +30,13 @@ add_executable(pico_adc
         src/hal.c
         src/ads1259_commands.c
         src/ad7124_commands.c
+        src/ad7705_commands.c
         ../../common_lib/getstring.c
         ../../common_lib/fixed_queue.c
         ../../common_lib/shell/shell.c
         ../../common_lib/adc/ads1259.c
         ../../common_lib/adc/ad7124.c
+        ../../common_lib/adc/ad7705.c
 )
 
 include_directories(

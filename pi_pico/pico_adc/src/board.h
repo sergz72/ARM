@@ -45,6 +45,12 @@
 #define AD7124_VREF 2.5
 #define AD7124_RDY_GET(channel) gpio_get(SPI1_RX_PIN)
 
+#define AD7705_MAX_CHANNELS 1
+#define AD7705_TIMEOUT 1000
+#define AD7705_INPUT_COEFFICIENT 0.5
+#define AD7705_VREF 2.5
+#define AD7705_DRDY_GET(channel) gpio_get(ADS1259_DRDY_PIN)
+
 void SystemInit(void);
 void WS2812Init(void);
 void put_pixel(unsigned int pixel_grb);
