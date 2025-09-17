@@ -51,6 +51,21 @@
 #define AD7705_VREF 2.5
 #define AD7705_DRDY_GET(channel) gpio_get(ADS1259_DRDY_PIN)
 
+#define ADS1232_GAIN0_PIN 10
+#define ADS1232_GAIN1_PIN 11
+#define ADS1232_A0_PIN    8
+#define ADS1232_TEMP_PIN  7
+#define ADS1232_GAIN0_SET(channel) gpio_put(ADS1232_GAIN0_PIN, 1)
+#define ADS1232_GAIN0_CLR(channel) gpio_put(ADS1232_GAIN0_PIN, 0)
+#define ADS1232_GAIN1_SET(channel) gpio_put(ADS1232_GAIN1_PIN, 1)
+#define ADS1232_GAIN1_CLR(channel) gpio_put(ADS1232_GAIN1_PIN, 0)
+#define ADS1232_A0_SET(channel) gpio_put(ADS1232_A0_PIN, 1)
+#define ADS1232_A0_CLR(channel) gpio_put(ADS1232_A0_PIN, 0)
+#define ADS1232_TEMP_SET(channel) gpio_put(ADS1232_TEMP_PIN, 1)
+#define ADS1232_TEMP_CLR(channel) gpio_put(ADS1232_TEMP_PIN, 0)
+#define ADS1232_DRDY_GET(channel) gpio_get(SPI1_RX_PIN)
+#define ADS1232_TIMEOUT 1000
+
 void SystemInit(void);
 void WS2812Init(void);
 void put_pixel(unsigned int pixel_grb);

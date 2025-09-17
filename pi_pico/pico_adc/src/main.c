@@ -5,6 +5,7 @@
 #include "getstring.h"
 #include "board.h"
 #include "ads1259_commands.h"
+#include "ads1232_commands.h"
 #include "ad7124_commands.h"
 #include "ad7705_commands.h"
 #include <ads1259.h>
@@ -46,9 +47,10 @@ int main(void)
   stdio_init_all();
 
   shell_init(printf, gets_);
-  register_ads1259_commands();
-  register_ad7124_commands();
-  register_ad7705_commands();
+  //register_ads1259_commands();
+  register_ads1232_commands();
+  //register_ad7124_commands();
+  //register_ad7705_commands();
 
   WS2812Init();
 

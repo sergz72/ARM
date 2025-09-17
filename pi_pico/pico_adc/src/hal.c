@@ -28,6 +28,15 @@ void SystemInit(void)
   gpio_set_dir(ADS1259_DRDY_PIN, false);
   gpio_pull_down(ADS1259_DRDY_PIN);
 
+  gpio_init(ADS1232_GAIN0_PIN);
+  gpio_init(ADS1232_GAIN1_PIN);
+  gpio_init(ADS1232_A0_PIN);
+  gpio_init(ADS1232_TEMP_PIN);
+  gpio_set_dir(ADS1232_GAIN0_PIN, true);
+  gpio_set_dir(ADS1232_GAIN1_PIN, true);
+  gpio_set_dir(ADS1232_A0_PIN, true);
+  gpio_set_dir(ADS1232_TEMP_PIN, true);
+
   spi_init(spi1, 1000);
   gpio_set_function(SPI1_SCK_PIN, GPIO_FUNC_SPI);
   gpio_set_function(SPI1_TX_PIN, GPIO_FUNC_SPI);
@@ -64,4 +73,9 @@ void ad7705_spi_transfer(int channel, const unsigned char *wdata, unsigned int w
                           unsigned int rlength)
 {
   ads1259_spi_transfer(channel, wdata, wlength, rdata, rlength);
+}
+
+void ads1232_spi_transfer(int channel, unsigned char *rdata)
+{
+  spi_read_blocking(spi1, 0, rdata, 3);
 }
