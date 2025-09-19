@@ -26,6 +26,8 @@ file(GLOB SOURCES
         "src/ui.c"
         "src/dac_commands.c"
         "src/adc_commands.c"
+        "src/multimeter_commands.c"
+        "src/multimeter.c"
         "../startup_mspm0g350x_gcc.c"
         "../systick.c"
         "../ti/driverlib/dl_gpio.c"
@@ -36,6 +38,7 @@ file(GLOB SOURCES
         "../ti/driverlib/dl_dac12.c"
         "../ti/driverlib/dl_opa.c"
         "../ti/driverlib/dl_i2c.c"
+        "../ti/driverlib/dl_flashctl.c"
         "../ti/driverlib/m0p/sysctl/dl_sysctl_mspm0g1x0x_g3x0x.c"
         "../../common_lib/shell/shell.c"
         "../../common_lib/getstring.c"
@@ -46,7 +49,8 @@ file(GLOB SOURCES
         "../../common_lib/adc/mcp3421.c"
 )
 
-include_directories(src .. ../cmsis/core ../ti/driverlib ../../common_lib ../../common_lib/shell ../../common_lib/adc)
+include_directories(src .. ../cmsis/core ../ti/driverlib ../../common_lib ../../common_lib/shell ../../common_lib/adc
+        ../ti/eeprom/emulation_type_a)
 
 add_executable(${PROJECT_NAME}.elf ${SOURCES} ${LINKER_SCRIPT})
 

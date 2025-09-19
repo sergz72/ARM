@@ -29,8 +29,6 @@
 #define UART_FBRD_32_MHZ_115200_BAUD                                   23
 #define UART_BUFFER_SIZE                                             1024
 
-#define DAC_REFERENCE_VOLTAGE                                        1400
-
 #define POWER_STARTUP_DELAY                                            16
 
 #define I2C_BUS_SPEED_HZ                                                  400000
@@ -57,7 +55,19 @@
 
 #define MCP3421_DEVICE_ID 0xD0
 
+#define DAC_REFERENCE_VOLTAGE 1400    // mV
+#define ADC_REFERENCE_VOLTAGE 2048000 // uV
+#define ADC_MAX_VALUE         0x1FFFF
+#define ADC_MIN_VALUE         0xFFFE0000
+#define ADC_MAX_GAIN 3
+
+#define EEPROM_START 0x7C00
+
 void SystemInit(void);
 unsigned int mv_to_12(unsigned int mv);
+int adc_read(int gain, int *value_uv);
+unsigned int dac_get(void);
+void dac_set(unsigned int value);
+int eeprom_write(void *data, unsigned int size);
 
 #endif

@@ -6,7 +6,10 @@
 #include <dl_dac12.h>
 #include <dl_opa.h>
 #include <dl_i2c.h>
+#include <limits.h>
 #include <mcp3421.h>
+#include <systick.h>
+#include <dl_flashctl.h>
 
 static const DL_UART_Main_ClockConfig gUART_0ClockConfig = {
   .clockSel    = DL_UART_MAIN_CLOCK_BUSCLK,
@@ -295,6 +298,93 @@ int mcp3421Write(int channel, unsigned char address, unsigned char data)
     DL_I2C_enableStopCondition(I2C1);
     return 4;
   }
+
+  return 0;
+}
+
+int adc_read(int gain, int *value_uv)
+{
+  if (gain < 0 || gain > ADC_MAX_GAIN)
+    return 1;
+
+  MCP3421Config dcfg = {
+    .start_conversion = 1,
+    .continuous_conversion = 0,
+    .sample_rate = MCP3421_RATE_4,
+    .gain = gain
+  };
+  int rc = mcp3421SetConfig(0, MCP3421_DEVICE_ID>>1, &dcfg);
+  if (rc)
+    return rc;
+
+  delayms(300);
+
+  int value;
+  rc = mcp3421Get18BitVoltage(0, MCP3421_DEVICE_ID>>1, &value);
+  if (rc)
+    return rc;
+
+  if (value == ADC_MAX_VALUE)
+    *value_uv = INT_MAX;
+  else if (value == ADC_MIN_VALUE)
+    *value_uv = INT_MIN;
+  else
+    *value_uv = (int)((long long int)value * ADC_REFERENCE_VOLTAGE / ADC_MAX_VALUE);
+
+  return 0;
+}
+
+static unsigned int mv_from_12(unsigned int code)
+{
+  if (code >= 255)
+    return DAC_REFERENCE_VOLTAGE;
+  return code * DAC_REFERENCE_VOLTAGE / 4096;
+}
+
+
+unsigned int dac_get(void)
+{
+  mv_from_12(DAC0->DATA0);
+}
+
+void dac_set(unsigned int value)
+{
+  DL_DAC12_output12(DAC0, mv_to_12(value));
+}
+
+int eeprom_write(void *data, unsigned int size)
+{
+  DL_FLASHCTL_COMMAND_STATUS FlashAPIState;
+
+  /* Set the new record's header to Recording */
+  DL_FlashCTL_executeClearStatus(FLASHCTL);
+
+  unsigned int sz = size;
+  unsigned int address = EEPROM_START;
+  while (sz)
+  {
+    DL_FlashCTL_unprotectSector(
+        FLASHCTL, address, DL_FLASHCTL_REGION_SELECT_MAIN);
+    FlashAPIState = DL_FlashCTL_eraseMemoryFromRAM(
+          FLASHCTL, address, DL_FLASHCTL_COMMAND_SIZE_SECTOR);
+    if (FlashAPIState == DL_FLASHCTL_COMMAND_STATUS_FAILED)
+      return 1;
+    if (sz >= DL_FLASHCTL_COMMAND_SIZE_SECTOR)
+      sz -= DL_FLASHCTL_COMMAND_SIZE_SECTOR;
+    else
+      sz = 0;
+    address += DL_FLASHCTL_COMMAND_SIZE_SECTOR;
+  }
+
+#ifdef __MSPM0_HAS_ECC__
+  FlashAPIState = DL_FlashCTL_programMemoryBlockingFromRAM64WithECCGenerated(
+      FLASHCTL, EEPROM_START, data, size / sizeof(uint32_t) + 2, DL_FLASHCTL_REGION_SELECT_MAIN);
+#else
+  FlashAPIState = DL_FlashCTL_programMemoryFromRAM(
+      FLASHCTL, EEPROM_START, data, size / sizeof(uint32_t) + 2, DL_FLASHCTL_REGION_SELECT_MAIN);
+#endif
+  if (FlashAPIState == DL_FLASHCTL_COMMAND_STATUS_FAILED)
+    return 2;
 
   return 0;
 }

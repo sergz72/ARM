@@ -9,6 +9,7 @@
 #include <common_printf.h>
 #include "adc_commands.h"
 #include "dac_commands.h"
+#include "multimeter_commands.h"
 
 static char usart_buffer[UART_BUFFER_SIZE];
 static char *usart_buffer_write_p, *usart_buffer_read_p;
@@ -65,6 +66,7 @@ int main(void)
   shell_init(common_printf, NULL);
   register_dac_commands();
   register_adc_commands();
+  register_multimeter_commands();
 
   getstring_init(command_line, sizeof(command_line), getch_, puts_);
 
