@@ -1,5 +1,6 @@
 #include "board.h"
 #include "multimeter_commands.h"
+#include <limits.h>
 #include <shell.h>
 #include <multimeter.h>
 #include <stdio.h>
@@ -21,39 +22,37 @@ static int calibrate_handler(printf_func pfunc, gets_func gfunc, int argc, char 
 static const ShellCommandItem calibrate_command_items[] = {
   {NULL, param_handler, calibrate_handler},
   {NULL, param_handler, NULL},
-  {NULL, param_handler, NULL},
   {NULL, NULL, calibrate_handler}
 };
 static const ShellCommand calibrate_command = {
   calibrate_command_items,
   "calibrate",
-  "calibrate [level gain R]",
+  "calibrate [level R]",
   NULL,
   NULL
 };
 
 static int getr_handler(printf_func pfunc, gets_func gfunc, int argc, char **argv, void *data)
 {
-  unsigned long long int value;
+  getr_result value;
   int rc = calculateR(&value);
   if (rc)
     return rc;
 
-  if (value < 1000000)
-    pfunc("R = %d.%03d Ohm", value / 1000, value % 1000);
+  if (value.r == LONG_LONG_MAX)
+    pfunc("R = infinity, level = %d\r\n", value.level);
+  else if (value.r < 1000000)
+    pfunc("R = %d.%03d Ohm, level = %d", value.r / 1000, value.r % 1000, value.level);
   else
-    pfunc("R = %d.%06d kOhm", value / 1000000, value % 1000000);
+    pfunc("R = %d.%06d kOhm, level = %d", value.r / 1000000, value.r % 1000000, value.level);
 
   return 0;
 }
 
 void print_calibration_data(printf_func pfunc)
 {
-  for (int l = 0; l <= DAC_MAX_LEVEL; l++)
-  {
-    for (int g = 0; g <= ADC_MAX_GAIN; g++)
-      pfunc("level %d gain %d r=%d v=%d\r\n", l, g, calibration_data->r[l][g], calibration_data->v[l][g]);
-  }
+  for (int l = 0; l <= MAX_LEVEL; l++)
+    pfunc("level %d dac_level %d gain %d r=%d v=%d\r\n", l, dac_levels[l], adc_gains[l], calibration_data->vr[l].r, calibration_data->vr[l].v);
 }
 
 static int calibrate_handler(printf_func pfunc, gets_func gfunc, int argc, char **argv, void *data)
@@ -64,16 +63,13 @@ static int calibrate_handler(printf_func pfunc, gets_func gfunc, int argc, char 
     return 0;
   }
   int level = atoi(argv[0]);
-  if (level < 0 || level > DAC_MAX_LEVEL)
+  if (level < 0 || level > MAX_LEVEL)
     return 1;
-  int gain = atoi(argv[1]);
-  if (gain < 0 || gain > ADC_MAX_GAIN)
-    return 2;
-  int R = atoi(argv[2]);
+  int R = atoi(argv[1]);
   if (R <= 0)
     return 3;
   int result;
-  int rc = calibrateR(level, gain, R, &result);
+  int rc = calibrateR(level, R, &result);
   if (rc)
     return rc;
   pfunc("result = %d uV\r\n", result);

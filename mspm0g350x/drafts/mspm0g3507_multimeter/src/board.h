@@ -61,7 +61,7 @@
 #define ADC_MIN_VALUE         0xFFFE0000
 #define ADC_MAX_GAIN 3
 
-#define EEPROM_START 0x7C00
+#define EEPROM_START 0x7F00
 
 void SystemInit(void);
 unsigned int mv_to_12(unsigned int mv);

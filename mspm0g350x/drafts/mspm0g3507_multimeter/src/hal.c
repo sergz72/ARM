@@ -329,7 +329,7 @@ int adc_read(int gain, int *value_uv)
   else if (value == ADC_MIN_VALUE)
     *value_uv = INT_MIN;
   else
-    *value_uv = (int)((long long int)value * ADC_REFERENCE_VOLTAGE / ADC_MAX_VALUE);
+    *value_uv = (int)((long long int)value * ADC_REFERENCE_VOLTAGE / ADC_MAX_VALUE / (1<<gain));
 
   return 0;
 }
