@@ -2,6 +2,7 @@
 #include "multimeter.h"
 #include <limits.h>
 #include <string.h>
+#include <systick.h>
 
 const unsigned int dac_levels[MAX_LEVEL+1] = {DAC_LEVEL_0, DAC_LEVEL_1, DAC_LEVEL_2, DAC_LEVEL_3, DAC_LEVEL_4};
 const int adc_gains[MAX_LEVEL+1] = {ADC_GAIN_LEVEL_0, ADC_GAIN_LEVEL_1, ADC_GAIN_LEVEL_2, ADC_GAIN_LEVEL_3, ADC_GAIN_LEVEL_4};
@@ -14,6 +15,7 @@ int calibrateR(int level, int R, int *result)
   if (level < 0 || level > MAX_LEVEL)
     return 1;
   dac_set(dac_levels[level]);
+  delayms(1000);
   int uV;
   int rc = adc_read(adc_gains[level], &uV);
   if (rc)
@@ -32,25 +34,27 @@ int calibrateR(int level, int R, int *result)
   return eeprom_write(&calibration_data_buffer, sizeof(calibration_data_t));
 }
 
-int calculateR(getr_result *value)
+int calculateR(getr_result *value, printf_func pfunc)
 {
   for (value->level = 0; value->level <= MAX_LEVEL; value->level++)
   {
     dac_set(dac_levels[value->level]);
-    int uV;
-    int rc = adc_read(adc_gains[value->level], &uV);
+    delayms(1000);
+    int rc = adc_read(adc_gains[value->level], &value->uV);
     if (rc)
       return rc;
-    if (uV == INT_MAX)
+    if (pfunc)
+      pfunc("adc_read[%d] = %d uV\r\n", value->level, value->uV);
+    if (value->uV == INT_MAX)
     {
       value->r = LONG_LONG_MAX;
       return 0;
     }
-    if (uV < 0)
-      uV = 0;
-    if (uV >= ADC_REFERENCE_VOLTAGE / 20 || value->level == MAX_LEVEL)
+    if (value->uV < 0)
+      value->uV = 0;
+    if ((value->uV >= ADC_REFERENCE_VOLTAGE / 20) || (value->level == MAX_LEVEL))
     {
-      value->r = (long long int)calibration_data->vr[value->level].r * (long long int)uV / calibration_data->vr[value->level].v;
+      value->r = (long long int)calibration_data->vr[value->level].r * (long long int)value->uV / calibration_data->vr[value->level].v;
       return 0;
     }
   }

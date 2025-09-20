@@ -35,16 +35,16 @@ static const ShellCommand calibrate_command = {
 static int getr_handler(printf_func pfunc, gets_func gfunc, int argc, char **argv, void *data)
 {
   getr_result value;
-  int rc = calculateR(&value);
+  int rc = calculateR(&value, pfunc);
   if (rc)
     return rc;
 
   if (value.r == LONG_LONG_MAX)
-    pfunc("R = infinity, level = %d\r\n", value.level);
+    pfunc("R = infinity, level = %d, uV = %d\r\n", value.level, value.uV);
   else if (value.r < 1000000)
-    pfunc("R = %d.%03d Ohm, level = %d", value.r / 1000, value.r % 1000, value.level);
+    pfunc("R = %d.%03d Ohm, level = %d, uV = %d", value.r / 1000, value.r % 1000, value.level, value.uV);
   else
-    pfunc("R = %d.%06d kOhm, level = %d", value.r / 1000000, value.r % 1000000, value.level);
+    pfunc("R = %d.%06d kOhm, level = %d, uV = %d", value.r / 1000000, value.r % 1000000, value.level, value.uV);
 
   return 0;
 }

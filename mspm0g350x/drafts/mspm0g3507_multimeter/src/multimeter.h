@@ -1,6 +1,8 @@
 #ifndef _MULTIMETER_H
 #define _MULTIMETER_H
 
+#include <shell.h>
+
 #define MAX_LEVEL 4
 
 #define DAC_LEVEL_0   1
@@ -29,10 +31,11 @@ typedef struct
 typedef struct
 {
   unsigned long long int r;
+  int uV;
   int level;
 } getr_result;
 
-int calculateR(getr_result *value);
+int calculateR(getr_result *value, printf_func pfunc);
 int calibrateR(int level, int R, int *result);
 
 extern const calibration_data_t *calibration_data;
