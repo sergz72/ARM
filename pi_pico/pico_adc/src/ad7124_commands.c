@@ -126,7 +126,7 @@ static const ShellCommandItem read_register_command_items[] = {
 static const ShellCommand read_register_command = {
   read_register_command_items,
   "ad7124_read_register",
-  "ad7124_read_register read_register reg_no length",
+  "ad7124_read_register reg_no length",
   NULL,
   NULL
 };

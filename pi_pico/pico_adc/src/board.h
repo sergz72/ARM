@@ -66,6 +66,12 @@
 #define ADS1232_DRDY_GET(channel) gpio_get(SPI1_RX_PIN)
 #define ADS1232_TIMEOUT 1000
 
+#define AD7793_MAX_CHANNELS 1
+#define AD7793_TIMEOUT      1000
+#define AD7793_RDY_GET(channel) gpio_get(SPI1_RX_PIN)
+#define AD7793_INPUT_COEFFICIENT 1.0
+#define AD7793_VREF 2.5
+
 void SystemInit(void);
 void WS2812Init(void);
 void put_pixel(unsigned int pixel_grb);
