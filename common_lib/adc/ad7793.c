@@ -174,11 +174,13 @@ void ad7793_set_gain(int channel, unsigned char channel_no, int value)
 
 int ad7793_read(int channel, unsigned char channel_no, unsigned char gain, int *result, int timeout)
 {
+  unsigned char data[3];
+  if (!AD7793_RDY_GET(channel))
+    ad7793_read_register(channel, AD7793_REGISTER_DATA, data, 3);
   ad7793_set_mode(channel, AD7793_MODE_SINGLE_CONVERSION);
   int rc = ad7793_wait(channel, timeout);
   if (rc)
     return rc;
-  unsigned char data[3];
   ad7793_read_register(channel, AD7793_REGISTER_DATA, data, 3);
   *result = (data[0] << 16) | (data[1] << 8) | data[2];
   return 0;

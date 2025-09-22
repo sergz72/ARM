@@ -6,6 +6,8 @@
 #include <ad7124.h>
 #include <ad7705.h>
 #include <ad7793.h>
+#include <ads1232.h>
+#include <ads1220.h>
 
 void set_cpha1(void)
 {
@@ -50,6 +52,11 @@ void delayms(unsigned int ms)
   sleep_ms(ms);
 }
 
+void delay(unsigned int us)
+{
+  sleep_us(us);
+}
+
 void ads1259_spi_transfer(int channel, const unsigned char *wdata, unsigned int wlength, unsigned char *rdata,
                           unsigned int rlength)
 {
@@ -85,4 +92,10 @@ void ad7793_spi_transfer(int channel, const unsigned char *wdata, unsigned int w
 void ads1232_spi_transfer(int channel, unsigned char *rdata)
 {
   spi_read_blocking(spi1, 0, rdata, 3);
+}
+
+void ads1220_spi_transfer(int channel, const unsigned char *wdata, unsigned int wlength, unsigned char *rdata,
+                          unsigned int rlength)
+{
+  ads1259_spi_transfer(channel, wdata, wlength, rdata, rlength);
 }

@@ -72,11 +72,18 @@
 #define AD7793_INPUT_COEFFICIENT 1.0
 #define AD7793_VREF 1.17
 
+#define ADS1220_MAX_CHANNELS 1
+#define ADS1220_DRDY_GET(channel) gpio_get(ADS1259_DRDY_PIN)
+#define ADS1220_TIMEOUT      1000
+#define ADS1220_INPUT_COEFFICIENT 1.0
+#define ADS1220_VREF 2.048
+
 void SystemInit(void);
 void WS2812Init(void);
 void put_pixel(unsigned int pixel_grb);
 unsigned int urgb_u32(unsigned int r, unsigned int g, unsigned int b);
 void delayms(unsigned int ms);
+void delay(unsigned int us);
 void set_cpha1(void);
 void set_cpol1cpha1(void);
 
