@@ -172,7 +172,7 @@ static int read_voltage_func(printf_func pfunc, unsigned char channel, unsigned 
   int rc = ad7793_read_voltage(&configuration, &result, AD7793_TIMEOUT);
   if (rc)
     return rc;
-  pfunc("code = %08X, result = %f uV\r\n", result.value, result.voltage);
+  pfunc("code = %08X, result = %f V\r\n", result.value, result.voltage);
   return 0;
 }
 

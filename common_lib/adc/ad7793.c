@@ -88,7 +88,7 @@ void ad7793_set_bias(int channel, unsigned char bias)
 
 void ad7793_set_io(int channel, unsigned char iexcdir, unsigned char iexcen)
 {
-  iexcdir = (iexcdir & 0x0C) | (iexcen & 3);
+  iexcdir = ((iexcdir << 2) & 0x0C) | (iexcen & 3);
   ad7793_write_register(channel, AD7793_REGISTER_IO, &iexcdir, 1);
 }
 

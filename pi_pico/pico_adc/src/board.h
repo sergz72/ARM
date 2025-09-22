@@ -70,7 +70,7 @@
 #define AD7793_TIMEOUT      1000
 #define AD7793_RDY_GET(channel) gpio_get(SPI1_RX_PIN)
 #define AD7793_INPUT_COEFFICIENT 1.0
-#define AD7793_VREF 2.5
+#define AD7793_VREF 1.17
 
 void SystemInit(void);
 void WS2812Init(void);
