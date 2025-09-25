@@ -70,6 +70,7 @@ void SPI_Enable(SPI_TypeDef *instance);
 void SPI_Disable(SPI_TypeDef *instance);
 int SPI_Send8(SPI_TypeDef *instance, unsigned char data, unsigned int timeout);
 int SPI_Send16(SPI_TypeDef *instance, unsigned short data, unsigned int timeout);
+int SPI_WaitSend(SPI_TypeDef *instance, unsigned int timeout);
 
 void I2S_Init(SPI_TypeDef *instance, const I2S_InitStruct *init);
 void I2S_Enable(SPI_TypeDef *instance);

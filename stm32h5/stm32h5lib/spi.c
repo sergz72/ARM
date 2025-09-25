@@ -83,6 +83,13 @@ int SPI_Send8(SPI_TypeDef *instance, unsigned char data, unsigned int timeout)
   return 0;
 }
 
+int SPI_WaitSend(SPI_TypeDef *instance, unsigned int timeout)
+{
+  while (!(instance->SR & SPI_SR_TXC) && timeout)
+    timeout--;
+  return timeout ? 0 : 1;
+}
+
 int SPI_Send16(SPI_TypeDef *instance, unsigned short data, unsigned int timeout)
 {
   while (!(instance->SR & SPI_SR_TXP) && timeout)
