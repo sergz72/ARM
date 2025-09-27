@@ -3,9 +3,9 @@
 #include <getstring.h>
 #include <stdio.h>
 #include <common_printf.h>
-#include <delay_systick.h>
 #include "multimeter_commands.h"
 #include "multimeter.h"
+#include "ui.h"
 
 static int led_state;
 static char command_line[200];
@@ -34,6 +34,8 @@ int main(void)
   CDCInit();
 
   multimeter_init();
+
+  UI_Init();
 
   while (1)
   {

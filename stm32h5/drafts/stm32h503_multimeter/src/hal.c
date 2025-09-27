@@ -1,6 +1,8 @@
 #include "board.h"
 #include <pll.h>
 #include <nvic.h>
+#include <lcd_sh1107.h>
+#include <spi.h>
 
 const RCCConfig rcc_config =
 {
@@ -15,6 +17,30 @@ const RCCConfig rcc_config =
   .ppre3 = 1
 };
 
+static const SPI_InitStruct spi_init = {
+  .fifo_threshold = 8,
+  .io_swap = 0,
+  .alternate_function_gpio_control = 0,
+  .comm_mode = SPI_COMM_MODE_SIMPLEX_TX,
+  .master = 1,
+  .clock_phase = 1,
+  .clock_polarity = 1,
+  .data_size = 8,
+  .dxp_interrupt_enable = 0,
+  .rxp_interrupt_enable = 0,
+  .txp_interrupt_enable = 0,
+  .eot_interrupt_enable = 0,
+  .txtf_interrupt_enable = 0,
+  .lsb_first = 0,
+  .ss_output_enable = 1,
+  .ti_mode = 0,
+  .tx_dma_enable = 0,
+  .rx_dma_enable = 0,
+  .software_slave_management = 0,
+  .internal_slave_select = 0,
+  .baud_rate = 2000000
+};
+
 volatile int capacity_measurement_done;
 
 static void GPIOInit(void)
@@ -22,29 +48,25 @@ static void GPIOInit(void)
   GPIO_InitTypeDef init;
 
   LED_OFF;
-  init.Pin = GPIO_Pin_13;
+  init.Pin = LED_PIN;
   init.Mode = GPIO_MODE_OUTPUT_PP;
   init.Speed = GPIO_SPEED_FREQ_LOW;
   init.Pull = GPIO_NOPULL;
   // LED
-  GPIO_Init(GPIOC, &init);
+  GPIO_Init(LED_PORT, &init);
 
-  init.Pin = GPIO_Pin_1 | GPIO_Pin_2;
+  init.Pin = BUTTON_OFF_PIN | BUTTON1_PIN | BUTTON2_PIN | BUTTON3_PIN;
   init.Mode = GPIO_MODE_INPUT;
   init.Speed = GPIO_SPEED_FREQ_LOW;
-  init.Pull = GPIO_PULLDOWN;
-  // BUTTONs
-  GPIO_Init(GPIOB, &init);
+  init.Pull = GPIO_PULLUP;
+  // BUTTONS
+  GPIO_Init(BUTTONS_PORT, &init);
 
   //clr discharge pin
   R_PORT->BSRR = R_DISCHARGE_PIN<<16;
-  CHARGE_OFF;
-
-  init.Pin = R_CHARGE_PIN;
-  init.Mode = GPIO_MODE_OUTPUT_PP;
-  init.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
-  init.Pull = GPIO_NOPULL;
-  GPIO_Init(R_PORT, &init);
+  //set charge1 & charge2 pins
+  R_PORT->BSRR = R_CHARGE1_PIN | R_CHARGE2_PIN;
+  charge_off();
   discharge_on();
 }
 
@@ -72,7 +94,7 @@ static void TIM2Init(void)
   RCC->APB1LENR |= RCC_APB1LENR_TIM2EN;
 
   // input capture pins: PA3=CH4, PA5=CH1
-  init.Pin = CAPTURE_PIN_CHARGE | CAPTURE_PIN_CX;
+  init.Pin = CAPTURE_PIN_CHARGE1 | CAPTURE_PIN_CHARGE2 | CAPTURE_PIN_CX;
   init.Mode = GPIO_MODE_AF_PP;
   init.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
   init.Pull = GPIO_NOPULL;
@@ -89,6 +111,40 @@ static void TIM2Init(void)
   TIM2->CCER = TIM_CCER_CC1E | TIM_CCER_CC4E;
 
   NVIC_Init(TIM2_IRQn, TIMER_INTERRUPT_PRIORITY, 0, ENABLE);
+}
+
+static void SPI2Init(void)
+{
+  GPIO_InitTypeDef init;
+
+  RCC->APB1LENR |= RCC_APB1LENR_SPI2EN;
+
+  init.Pin = LCD_SCK_PIN | LCD_DIN_PIN | LCD_CS_PIN;
+  init.Mode = GPIO_MODE_AF_PP;
+  init.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+  init.Pull = GPIO_NOPULL;
+  init.Alternate = GPIO_AF5_SPI2;
+  GPIO_Init(LCD_PORT, &init);
+
+  LCD_RST_CLR;
+  init.Pin = LCD_RST_PIN | LCD_DC_PIN;
+  init.Mode = GPIO_MODE_OUTPUT_PP;
+  init.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+  init.Pull = GPIO_NOPULL;
+  GPIO_Init(LCD_PORT, &init);
+
+  SPI_Init(LCD_SPI_INSTANCE, &spi_init);
+  SPI_Enable(LCD_SPI_INSTANCE);
+}
+
+static void ADS1220_SPI_Init(void)
+{
+  //todo
+}
+
+static void AD7793_SPI_Init(void)
+{
+  //todo
 }
 
 void SystemInit(void)
@@ -110,6 +166,9 @@ void SystemInit(void)
 
   USB_Init();
   TIM2Init();
+  SPI2Init();
+  ADS1220_SPI_Init();
+  AD7793_SPI_Init();
 }
 
 void _init(void)
@@ -138,6 +197,27 @@ void discharge_on(void)
   GPIO_Init(R_PORT, &init);
 }
 
+void charge_off(void)
+{
+  GPIO_InitTypeDef init;
+
+  init.Pin = R_CHARGE1_PIN | R_CHARGE2_PIN;
+  init.Mode = GPIO_MODE_ANALOG;
+  init.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+  init.Pull = GPIO_NOPULL;
+  GPIO_Init(R_PORT, &init);
+}
+
+void charge_on(int channel)
+{
+  GPIO_InitTypeDef init;
+
+  init.Pin = channel ? R_CHARGE2_PIN : R_CHARGE1_PIN;
+  init.Mode = GPIO_MODE_OUTPUT_PP;
+  init.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+  init.Pull = GPIO_NOPULL;
+  GPIO_Init(R_PORT, &init);
+}
 unsigned int get_capacity_measurement_start_time(void)
 {
   return TIM2->CCR4;
@@ -148,7 +228,7 @@ unsigned int get_capacity_measurement_end_time(void)
   return TIM2->CCR1;
 }
 
-void capacity_measurement_start(void)
+void capacity_measurement_start(int channel)
 {
   discharge_off();
   TIM2->CNT = 0;
@@ -156,7 +236,7 @@ void capacity_measurement_start(void)
   TIM2->SR = 0;
   //start TIM2
   TIM2->CR1 = TIM_CR1_CEN;
-  CHARGE_ON;
+  charge_on(channel);
 }
 
 void TIM2_IRQHandler(void)
@@ -168,4 +248,57 @@ void TIM2_IRQHandler(void)
   TIM2->DIER = 0;
   //clear interrupt flags
   TIM2->SR = 0;
+}
+
+void SH1107_Write(int num_bytes, unsigned char dc, const unsigned char *buffer)
+{
+  if (dc)
+    LCD_DC_SET;
+  else
+    LCD_DC_CLR;
+  // spi fifo size is 16
+  int l = num_bytes > 16 ? 16 : num_bytes;
+  num_bytes -= l;
+  while (l--)
+    SPI_Send8(LCD_SPI_INSTANCE, *buffer++, SPI_TIMEOUT);
+  LCD_SPI_INSTANCE->CR1 |= SPI_CR1_CSTART;
+  while (num_bytes--)
+    SPI_Send8(LCD_SPI_INSTANCE, *buffer++, SPI_TIMEOUT);
+  SPI_WaitSend(LCD_SPI_INSTANCE, SPI_TIMEOUT);
+}
+
+void SPI_MOSI_SET(int channel)
+{
+  //todo
+}
+
+void SPI_MOSI_CLR(int channel)
+{
+  //todo
+}
+
+int SPI_CHECK_MISO(int channel)
+{
+  //todo
+  return 0;
+}
+
+void SPI_CLK_SET(int channel)
+{
+  //todo
+}
+
+void SPI_CLK_CLR(int channel)
+{
+  //todo
+}
+
+void SPI_CS_SET(int channel)
+{
+  //todo
+}
+
+void SPI_CS_CLR(int channel)
+{
+  //todo
 }

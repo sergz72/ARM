@@ -1,6 +1,5 @@
 #include "board.h"
 #include "multimeter.h"
-#include <delay_systick.h>
 
 #define CAPACITANCE_COEFFICIENT 1962851UL
 
@@ -25,7 +24,7 @@ int get_capacitance(unsigned int *pF, unsigned int *diff)
   capacity_measurement_done = 0;
   unsigned int start_time = get_capacity_measurement_start_time();
   unsigned int end_time = get_capacity_measurement_end_time();
-  CHARGE_OFF;
+  charge_off();
   discharge_on();
   if (!timeout)
     return 1;

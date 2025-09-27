@@ -3,7 +3,6 @@
 #include <cdc_class.h>
 #include <cstdlib>
 #include <cstring>
-#include <delay_systick.h>
 #include <usb_device_drd.h>
 
 static const USBDeviceConfiguration configuration =

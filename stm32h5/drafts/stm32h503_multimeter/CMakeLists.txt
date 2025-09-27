@@ -47,6 +47,7 @@ file(GLOB SOURCES
         "src/main.cpp"
         "src/main.c"
         "src/hal.c"
+        "src/ui.c"
         "src/multimeter_commands.c"
         "src/multimeter.c"
         "../startup_stm32h503xx.s"
@@ -62,6 +63,13 @@ file(GLOB SOURCES
         "../../common_lib/myprintf.c"
         "../../common_lib/ultoa.c"
         "../../common_lib/delay_systick.c"
+        "../../common_lib/spi_soft.c"
+        "../../common_lib/adc/ad7793.c"
+        "../../common_lib/adc/ads1220.c"
+        "../../common_lib/display/lcd_sh1107.c"
+        "../../common_lib/display/lcd.c"
+        "../../common_lib/display/font.c"
+        "../../common_lib/display/fonts/font10.c"
         "../../../usblib/usb_device.cpp"
         "../../../usblib/usb_device_drd.cpp"
         "../../../usblib/cdc_class.cpp"
@@ -69,13 +77,13 @@ file(GLOB SOURCES
 
 if (CLANG)
     include_directories(src ../cmsis ../cmsis/device ../stm32h5lib ../../common_lib ../../../usblib
-            ../../common_lib/shell
+            ../../common_lib/shell ../../common_lib/adc ../../common_lib/display
             /opt/arm/arm-none-eabi/include/c++/14.3.1 /opt/arm/arm-none-eabi/include
             /opt/arm/arm-none-eabi/include/c++/14.3.1/arm-none-eabi
     )
 else()
     include_directories(src ../cmsis ../cmsis/device ../stm32h5lib ../../common_lib ../../../usblib
-            ../../common_lib/shell)
+            ../../common_lib/shell ../../common_lib/adc ../../common_lib/display)
 endif()
 
 add_executable(${PROJECT_NAME}.elf ${SOURCES} ${LINKER_SCRIPT})
