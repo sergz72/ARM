@@ -72,5 +72,7 @@ int main(void)
     }
     else
       cnt_led++;
+
+    Process_Timer_Event();
   }
 }

@@ -3,6 +3,10 @@
 #include <nvic.h>
 #include <lcd_sh1107.h>
 #include <spi.h>
+#include <spi_soft.h>
+#include <ad7793.h>
+#include <ads1220.h>
+#include <string.h>
 
 const RCCConfig rcc_config =
 {
@@ -46,6 +50,14 @@ volatile int capacity_measurement_done;
 static void GPIOInit(void)
 {
   GPIO_InitTypeDef init;
+
+  POWER_ON;
+  init.Pin = ON_PIN;
+  init.Mode = GPIO_MODE_OUTPUT_PP;
+  init.Speed = GPIO_SPEED_FREQ_LOW;
+  init.Pull = GPIO_NOPULL;
+  // POWER ON PIN
+  GPIO_Init(ON_PORT, &init);
 
   LED_OFF;
   init.Pin = LED_PIN;
@@ -139,12 +151,43 @@ static void SPI2Init(void)
 
 static void ADS1220_SPI_Init(void)
 {
-  //todo
+  GPIO_InitTypeDef init;
+
+  spi_channel_init(ADS1220_CHANNEL, 1);
+
+  SPI_CLK_IDLE(ADS1220_CHANNEL);
+  init.Pin = ADS1220_CS_PIN | ADS1220_MOSI_PIN | ADS1220_SCK_PIN;
+  init.Mode = GPIO_MODE_OUTPUT_PP;
+  init.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+  init.Pull = GPIO_NOPULL;
+  GPIO_Init(ADS1220_PORT, &init);
+
+  init.Pin = ADS1220_MISO_PIN;
+  init.Mode = GPIO_MODE_INPUT;
+  init.Pull = GPIO_PULLUP;
+  GPIO_Init(ADS1220_PORT, &init);
+
+  init.Pin = ADS1220_DRDY_PIN;
+  GPIO_Init(ADS1220_DRDY_PORT, &init);
 }
 
 static void AD7793_SPI_Init(void)
 {
-  //todo
+  GPIO_InitTypeDef init;
+
+  spi_channel_init(AD7793_CHANNEL, 1);
+
+  SPI_CLK_IDLE(AD7793_CHANNEL);
+  init.Pin = AD7793_CS_PIN | AD7793_DIN_PIN | AD7793_SCK_PIN;
+  init.Mode = GPIO_MODE_OUTPUT_PP;
+  init.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+  init.Pull = GPIO_NOPULL;
+  GPIO_Init(AD7793_PORT, &init);
+
+  init.Pin = AD7793_DOUT_PIN;
+  init.Mode = GPIO_MODE_INPUT;
+  init.Pull = GPIO_PULLUP;
+  GPIO_Init(AD7793_PORT, &init);
 }
 
 void SystemInit(void)
@@ -267,38 +310,88 @@ void SH1107_Write(int num_bytes, unsigned char dc, const unsigned char *buffer)
   SPI_WaitSend(LCD_SPI_INSTANCE, SPI_TIMEOUT);
 }
 
+void spi_delay(int channel)
+{
+  delay(1);
+}
+
 void SPI_MOSI_SET(int channel)
 {
-  //todo
+  if (channel == ADS1220_CHANNEL)
+    ADS1220_PORT->BSRR = ADS1220_MOSI_PIN;
+  else
+    AD7793_PORT->BSRR = AD7793_DIN_PIN;
 }
 
 void SPI_MOSI_CLR(int channel)
 {
-  //todo
+  if (channel == ADS1220_CHANNEL)
+    ADS1220_PORT->BSRR = ADS1220_MOSI_PIN << 16;
+  else
+    AD7793_PORT->BSRR = AD7793_DIN_PIN << 16;
 }
 
 int SPI_CHECK_MISO(int channel)
 {
-  //todo
-  return 0;
+  if (channel == ADS1220_CHANNEL)
+    return ADS1220_PORT->IDR & ADS1220_MISO_PIN;
+  return AD7793_PORT->IDR & AD7793_DOUT_PIN;
 }
 
-void SPI_CLK_SET(int channel)
+void SPI_CLK_IDLE(int channel)
 {
-  //todo
+  if (channel == ADS1220_CHANNEL)
+    ADS1220_PORT->BSRR = ADS1220_SCK_PIN;
+  else
+    AD7793_PORT->BSRR = AD7793_SCK_PIN;
 }
 
-void SPI_CLK_CLR(int channel)
+void SPI_CLK_ACTIVE(int channel)
 {
-  //todo
+  if (channel == ADS1220_CHANNEL)
+    ADS1220_PORT->BSRR = ADS1220_SCK_PIN << 16;
+  else
+    AD7793_PORT->BSRR = AD7793_SCK_PIN << 16;
 }
 
 void SPI_CS_SET(int channel)
 {
-  //todo
+  if (channel == ADS1220_CHANNEL)
+    ADS1220_PORT->BSRR = ADS1220_CS_PIN;
+  else
+    AD7793_PORT->BSRR = AD7793_CS_PIN;
 }
 
 void SPI_CS_CLR(int channel)
 {
-  //todo
+  if (channel == ADS1220_CHANNEL)
+    ADS1220_PORT->BSRR = ADS1220_CS_PIN << 16;
+  else
+    AD7793_PORT->BSRR = AD7793_CS_PIN << 16;
+}
+
+static void hal_spi_transfer(int channel, const unsigned char *wdata, unsigned int wlength, unsigned char *rdata,
+                          unsigned int rlength)
+{
+  unsigned int length = wlength + rlength;
+  unsigned char wbuffer[length];
+  unsigned char rbuffer[length];
+  if (wlength > 0)
+    memcpy(wbuffer, wdata, wlength);
+  memset(wbuffer + wlength, 0, rlength);
+  spi_transfer(channel, wbuffer, rbuffer, length, 1);
+  if (rlength > 0)
+    memcpy(rdata, rbuffer + wlength, rlength);
+}
+
+void ad7793_spi_transfer(int channel, const unsigned char *wdata, unsigned int wlength, unsigned char *rdata,
+                          unsigned int rlength)
+{
+  hal_spi_transfer(AD7793_CHANNEL, wdata, wlength, rdata, rlength);
+}
+
+void ads1220_spi_transfer(int channel, const unsigned char *wdata, unsigned int wlength, unsigned char *rdata,
+                          unsigned int rlength)
+{
+  hal_spi_transfer(ADS1220_CHANNEL, wdata, wlength, rdata, rlength);
 }
