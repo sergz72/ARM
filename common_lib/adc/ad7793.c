@@ -172,29 +172,49 @@ void ad7793_set_gain(int channel, unsigned char channel_no, int value)
   ad7793_write_register(channel, AD7793_REGISTER_GAIN, data, 3);
 }
 
-int ad7793_read(int channel, unsigned char channel_no, unsigned char gain, int *result, int timeout)
+void ad7793_read_start(int channel, unsigned char channel_no, unsigned char gain)
 {
   unsigned char data[3];
+  ad7793_set_channel_and_gain(channel, channel_no, gain);
   if (!AD7793_RDY_GET(channel))
     ad7793_read_register(channel, AD7793_REGISTER_DATA, data, 3);
   ad7793_set_mode(channel, AD7793_MODE_SINGLE_CONVERSION);
+}
+
+void ad7793_read_finish(int channel, int *result)
+{
+  unsigned char data[3];
+  ad7793_read_register(channel, AD7793_REGISTER_DATA, data, 3);
+  *result = (data[0] << 16) | (data[1] << 8) | data[2];
+}
+
+int ad7793_read(int channel, unsigned char channel_no, unsigned char gain, int *result, int timeout)
+{
+  ad7793_read_start(channel, channel_no, gain);
   int rc = ad7793_wait(channel, timeout);
   if (rc)
     return rc;
-  ad7793_read_register(channel, AD7793_REGISTER_DATA, data, 3);
-  *result = (data[0] << 16) | (data[1] << 8) | data[2];
+  ad7793_read_finish(channel, result);
   return 0;
+}
+
+void ad7793_read_voltage_finish(const ad7793_read_voltage_configuration *configuration,
+                                 ad7793_data *result)
+{
+  ad7793_read_finish(configuration->channel, &result->value);
+  if (configurations[configuration->channel][0] & 0x10) // unipolar
+    result->voltage = (double)result->value * configuration->vref / (double)0xFFFFFF / configuration->input_divider_coefficient;
+  else
+    result->voltage = (double)(result->value - 0x800000) * configuration->vref / (double)0x7FFFFF / configuration->input_divider_coefficient;
 }
 
 int ad7793_read_voltage(const ad7793_read_voltage_configuration *configuration,
                         ad7793_data *result, int timeout)
 {
-  int rc = ad7793_read(configuration->channel, configuration->channel_no, configuration->gain, &result->value, timeout);
+  ad7793_read_start(configuration->channel, configuration->channel_no, configuration->gain);
+  int rc = ad7793_wait(configuration->channel, timeout);
   if (rc)
     return rc;
-  if (configurations[configuration->channel][0] & 0x10) // unipolar
-    result->voltage = (double)result->value * configuration->vref / (double)0xFFFFFF / configuration->input_divider_coefficient;
-  else
-    result->voltage = (double)(result->value - 0x800000) * configuration->vref / (double)0x7FFFFF / configuration->input_divider_coefficient;
+  ad7793_read_voltage_finish(configuration, result);
   return 0;
 }

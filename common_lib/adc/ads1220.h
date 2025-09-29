@@ -129,6 +129,11 @@ void ads1220_set_idac(int channel, unsigned char idac_current, unsigned char ida
 int ads1220_read_temperature(int channel, ads1220_data *result, int timeout);
 int ads1220_calibrate_offset(int channel, unsigned char channel_no, int steps);
 
-extern int ads1220_offsets[AD7793_MAX_CHANNELS][ADS1220_MAX_MUX+1][ADS1220_MAX_GAIN+1];
+void ads1220_read_start(int channel, unsigned char channel_no, unsigned char gain, int pga_bypass);
+void ads1220_read_finish(int *result);
+void ads1220_read_voltage_finish(const ads1220_read_voltage_configuration * configuration,
+                                  ads1220_data *result);
+
+extern int ads1220_offsets[ADS1220_MAX_CHANNELS][ADS1220_MAX_MUX+1][ADS1220_MAX_GAIN+1];
 
 #endif
