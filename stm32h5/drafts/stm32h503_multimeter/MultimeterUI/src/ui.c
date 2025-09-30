@@ -97,7 +97,7 @@ void DrawVoltage(int line, int value_uV)
   else if (value_uV == INT_MIN)
     LcdDrawText(VALUE_X, line*MAIN_FONT.char_height, "UNDERVOLT", &MAIN_FONT, WHITE_COLOR, BLACK_COLOR, NULL);
   else
-    LcdPrintf("%2d.%05d", VALUE_X, line*MAIN_FONT.char_height, &MAIN_FONT, 0,
+    LcdPrintf("%3d.%05d", VALUE_X, line*MAIN_FONT.char_height, &MAIN_FONT, 1,
               value_uV / 1000000, abs(value_uV/10) % 100000);
 }
 
@@ -107,7 +107,7 @@ void DrawCurrent(int line, int value_nA)
     LcdDrawText(VALUE_X, line*MAIN_FONT.char_height, "OVERCURR ", &MAIN_FONT, WHITE_COLOR, BLACK_COLOR, NULL);
   else if (value_nA == INT_MIN)
     LcdDrawText(VALUE_X, line*MAIN_FONT.char_height, "UNDERCURR", &MAIN_FONT, WHITE_COLOR, BLACK_COLOR, NULL);
-  LcdPrintf("%3d.%04d", VALUE_X, line*MAIN_FONT.char_height, &MAIN_FONT, 0,
+  LcdPrintf("%3d.%04d", VALUE_X, line*MAIN_FONT.char_height, &MAIN_FONT, 1,
             value_nA / 1000000, abs(value_nA/100) % 10000);
 }
 
@@ -117,9 +117,13 @@ void DrawPower(int line, int uV, int nA)
     LcdDrawText(VALUE_X, line*MAIN_FONT.char_height, "OVERLOAD ", &MAIN_FONT, WHITE_COLOR, BLACK_COLOR, NULL);
   else
   {
+    if (uV < 0)
+      uV = -uV;
+    if (nA < 0)
+      nA = -nA;
     int uwatt = (int)((long long int)uV * (long long int)nA / 1000000000LL);
-    LcdPrintf("%3d.%04d", VALUE_X, line*MAIN_FONT.char_height, &MAIN_FONT, 0,
-              uwatt / 1000000, abs(uwatt/10) % 100000);
+    LcdPrintf("%2d.%06d", VALUE_X, line*MAIN_FONT.char_height, &MAIN_FONT, 1,
+              uwatt / 1000000, abs(uwatt) % 1000000);
   }
 }
 

@@ -1,7 +1,5 @@
 #include "board.h"
 #include <lcd_sh1107.h>
-#include <ad7793.h>
-#include <ads1220.h>
 #include <string.h>
 #include "multimeter.h"
 
@@ -14,6 +12,20 @@ extern unsigned int key;
 static unsigned char lcd_buffer[SIZE], *lcd_buffer_p = lcd_buffer;
 
 volatile int capacity_measurement_done;
+
+multimeter_result_t multimeter_result_hal =
+{
+  .frequency_hz = 0,
+  .inductance_nH = 0,
+  .diode_voltage_uV = {0,0},
+  .voltage_current = {{0, 0}, {0, 0}},
+  .resistance_mOhm = {0, 0},
+  .temperature_Cx100 = 0,
+  .vdda_mV = 0,
+  .capacitance = {0, 0, 0}
+};
+
+unsigned int measurement_statuses = 0;
 
 void discharge_off(void)
 {
@@ -58,16 +70,6 @@ void SH1107_Write(int num_bytes, unsigned char dc, const unsigned char *buffer)
   }
 }
 
-void ad7793_spi_transfer(int channel, const unsigned char *wdata, unsigned int wlength, unsigned char *rdata,
-                          unsigned int rlength)
-{
-}
-
-void ads1220_spi_transfer(int channel, const unsigned char *wdata, unsigned int wlength, unsigned char *rdata,
-                          unsigned int rlength)
-{
-}
-
 void delayms(unsigned int ms)
 {
 
@@ -102,87 +104,98 @@ unsigned int get_keyboard_status(void)
 
 unsigned int check_measurements_statuses(void)
 {
-  return 0;
+  return measurement_statuses;
 }
 
 void start_voltage_measurements(void)
 {
-
+  measurement_statuses |= VOLTAGE1_MEASUREMENT | VOLTAGE2_MEASUREMENT;
 }
 
 void start_frequency_measurement(void)
 {
-
+  measurement_statuses |= FREQUENCY_MEASUREMENT;
 }
 
 void start_resistance_measurement(int channel, enum resistance_measurements_modes mode)
 {
-
+  measurement_statuses |= channel ? RESISTANCE2_MEASUREMENT_HIGH : RESISTANCE1_MEASUREMENT_HIGH;
 }
 
 void start_capacitance_measurement(int channel)
 {
-
+  measurement_statuses |= CAPACITANCE_MEASUREMENT_1K;
 }
 
 void start_current_measurement(int channel)
 {
-
+  measurement_statuses |= channel ? CURRENT2_MEASUREMENT : CURRENT1_MEASUREMENT;
 }
 
 unsigned int start_extra_measurements(int channel, int extra_measurement_no)
 {
-  return 0;
+  measurement_statuses |= channel ? VDDA_MEASUREMENT : TEMPERATURE_MEASUREMENT;
+  return channel ? VDDA_MEASUREMENT : TEMPERATURE_MEASUREMENT;
 }
 
 void start_diode_voltage_measurement(int channel)
 {
-
+  measurement_statuses |= channel ? DIODE_VOLTAGE_MEASUREMENT2 : DIODE_VOLTAGE_MEASUREMENT1;
 }
 
 unsigned int finish_voltage_measurement(int channel)
 {
-  return 0;
+  measurement_statuses &= ~(channel ? VOLTAGE2_MEASUREMENT : VOLTAGE1_MEASUREMENT);
+  return multimeter_result_hal.voltage_current[channel].voltage_uV;
 }
 
 unsigned int finish_frequency_measurement(void)
 {
-  return 0;
+  measurement_statuses &= ~FREQUENCY_MEASUREMENT;
+  return multimeter_result_hal.frequency_hz;
 }
 
 unsigned int finish_resistance_measurement(int channel, int mode)
 {
-  return 0;
+  measurement_statuses &= ~(channel ? RESISTANCE2_MEASUREMENT_HIGH : RESISTANCE1_MEASUREMENT_HIGH);
+  return mode ? multimeter_result_hal.resistance_mOhm[1] : multimeter_result_hal.resistance_mOhm[0];
 }
 
 unsigned int finish_current_measurement(int channel)
 {
-  return 0;
+  measurement_statuses &= ~(channel ? CURRENT2_MEASUREMENT : CURRENT1_MEASUREMENT);
+  return multimeter_result_hal.voltage_current[channel].current_nA;
 }
 
 void finish_capacitance_measurement(void)
 {
-
+  measurement_statuses &= ~CAPACITANCE_MEASUREMENT_100K;
+  multimeter_result.capacitance = multimeter_result_hal.capacitance;
 }
 
 unsigned int finish_capacitance_measurement_1k(void)
 {
+  measurement_statuses &= ~CAPACITANCE_MEASUREMENT_1K;
+  multimeter_result.capacitance = multimeter_result_hal.capacitance;
   return 0;
 }
 
 unsigned int finish_temperature_measurement(void)
 {
-  return 0;
+  measurement_statuses &= ~TEMPERATURE_MEASUREMENT;
+  return multimeter_result_hal.temperature_Cx100;
 }
 
 unsigned int finish_vdda_measurement(void)
 {
-  return 0;
+  measurement_statuses &= ~VDDA_MEASUREMENT;
+  return multimeter_result_hal.vdda_mV;
 }
 
 unsigned int finish_diode_voltage_measurement(int channel)
 {
-  return 0;
+  measurement_statuses &= ~(channel ? DIODE_VOLTAGE_MEASUREMENT2 : DIODE_VOLTAGE_MEASUREMENT1);
+  return multimeter_result_hal.diode_voltage_uV[channel];
 }
 
 void power_off(void)

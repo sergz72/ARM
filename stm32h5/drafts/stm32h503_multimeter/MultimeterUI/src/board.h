@@ -5,14 +5,6 @@
 #define NULL 0
 #endif
 
-#define AD7793_MAX_CHANNELS 2
-#define ADS1220_MAX_CHANNELS 2
-#define AD7793_CHANNEL 1
-#define ADS1220_CHANNEL 0
-
-#define AD7793_RDY_GET(channel) 0
-#define ADS1220_DRDY_GET(channel) 0
-
 #define LCD_RST_SET
 #define DRAW_TEXT_MAX 20
 

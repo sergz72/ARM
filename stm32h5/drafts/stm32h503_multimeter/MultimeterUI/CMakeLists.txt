@@ -12,8 +12,6 @@ add_executable(MultimeterUI
         ../../my/Programs/ARM_CLION/common_lib/display/lcd.c
         ../../my/Programs/ARM_CLION/common_lib/display/font.c
         ../../my/Programs/ARM_CLION/common_lib/display/fonts/font10.c
-        ../../my/Programs/ARM_CLION/common_lib/adc/ad7793.c
-        ../../my/Programs/ARM_CLION/common_lib/adc/ads1220.c
         ../../my/Programs/ARM_CLION/common_lib/myprintf.c
         ../../my/Programs/ARM_CLION/common_lib/ultoa.c
         ../../my/Programs/ARM_CLION/common_lib/itoa.c
