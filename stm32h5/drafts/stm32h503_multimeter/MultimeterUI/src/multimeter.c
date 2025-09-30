@@ -1,14 +1,10 @@
 #include "board.h"
 #include "multimeter.h"
 
-enum multimeter_states {IDLE, CHECK};
-
 static unsigned int capacitance_coefficient[2] = {CAPACITANCE_COEFFICIENT_1K, CAPACITANCE_COEFFICIENT_100K};
 static unsigned int capacitance_offset[2] = {CAPACITANCE_OFFSET_1K, CAPACITANCE_OFFSET_100K};
 
-static enum multimeter_modes multimeter_mode = FREQUENCY;
-
-static enum multimeter_states multimeter_state = IDLE;
+enum multimeter_modes multimeter_mode = FREQUENCY;
 
 static unsigned int started_measurements = 0;
 
@@ -16,6 +12,7 @@ multimeter_result_t multimeter_result =
 {
   .frequency_hz = 0,
   .inductance_nH = 0,
+  .diode_voltage_uV = {0,0},
   .voltage_current = {{0, 0}, {0, 0}},
   .resistance_mOhm = {0, 0},
   .temperature_Cx100 = 0,
@@ -118,95 +115,125 @@ static unsigned int check_extra(int channel, unsigned int extra_measurements)
   return extra_measurements;
 }
 
-static void finish_measurements(unsigned int changes)
+static unsigned int build_changes(unsigned int *value, unsigned int new_value, unsigned int change_flag)
 {
-  if (changes & VOLTAGE1_MEASUREMENT)
+  if (new_value != *value)
   {
-    multimeter_result.voltage_current[0].voltage_uV = finish_voltage_measurement(0);
+    *value = new_value;
+    return change_flag;
+  }
+  return 0;
+}
+
+static unsigned int finish_measurements(unsigned int finished_measurements)
+{
+  unsigned int changes = 0;
+  if (finished_measurements & VOLTAGE1_MEASUREMENT)
+  {
+    changes |= build_changes((unsigned int*)&multimeter_result.voltage_current[0].voltage_uV, finish_voltage_measurement(0), VOLTAGE1_CHANGED);
     start_current_measurement(0);
     started_measurements |= CURRENT1_MEASUREMENT;
   }
-  if (changes & VOLTAGE2_MEASUREMENT)
+  if (finished_measurements & VOLTAGE2_MEASUREMENT)
   {
-    multimeter_result.voltage_current[1].voltage_uV = finish_voltage_measurement(1);
+    changes |= build_changes((unsigned int*)&multimeter_result.voltage_current[1].voltage_uV, finish_voltage_measurement(1), VOLTAGE2_CHANGED);
     start_current_measurement(1);
     started_measurements |= CURRENT2_MEASUREMENT;
   }
-  if (changes & CURRENT1_MEASUREMENT)
+  if (finished_measurements & CURRENT1_MEASUREMENT)
   {
-    multimeter_result.voltage_current[0].current_nA = finish_current_measurement(0);
+    changes |= build_changes((unsigned int*)&multimeter_result.voltage_current[0].current_nA, finish_current_measurement(0), CURRENT1_CHANGED);
     if (multimeter_mode == RESISTANCE)
     {
       start_resistance_measurement(0, HIGH);
       started_measurements |= RESISTANCE1_MEASUREMENT_HIGH;
     }
+    else if (multimeter_mode == DIODE_TEST)
+      start_diode_voltage_measurement(0);
     else
       started_measurements |= start_extra_measurements(0, 0);
   }
-  if (changes & CURRENT2_MEASUREMENT)
+  if (finished_measurements & CURRENT2_MEASUREMENT)
   {
-    multimeter_result.voltage_current[1].current_nA = finish_current_measurement(1);
+    changes |= build_changes((unsigned int*)&multimeter_result.voltage_current[1].current_nA, finish_current_measurement(1), CURRENT2_CHANGED);
     if (multimeter_mode == RESISTANCE)
     {
       start_resistance_measurement(1, HIGH);
       started_measurements |= RESISTANCE2_MEASUREMENT_HIGH;
     }
+    else if (multimeter_mode == DIODE_TEST)
+      start_diode_voltage_measurement(1);
     else
       started_measurements |= start_extra_measurements(1, 0);
   }
-  if (changes & TEMPERATURE_MEASUREMENT)
+  if (finished_measurements & DIODE_VOLTAGE_MEASUREMENT1)
   {
-    multimeter_result.temperature_Cx100 = finish_temperature_measurement();
+    changes |= build_changes(&multimeter_result.diode_voltage_uV[0], finish_diode_voltage_measurement(0), DIODE_VOLTAGE1_CHANGED);
+    started_measurements |= start_extra_measurements(0, 0);
+  }
+  if (finished_measurements & DIODE_VOLTAGE_MEASUREMENT2)
+  {
+    changes |= build_changes(&multimeter_result.diode_voltage_uV[1], finish_diode_voltage_measurement(1), DIODE_VOLTAGE2_CHANGED);
+    started_measurements |= start_extra_measurements(1, 0);
+  }
+  if (finished_measurements & TEMPERATURE_MEASUREMENT)
+  {
+    changes |= build_changes(&multimeter_result.temperature_Cx100, finish_temperature_measurement(), TEMPERATURE_CHANGED);
     started_measurements |= start_extra_measurements(0, 1) | start_extra_measurements(1, 1);
   }
-  if (changes & VDDA_MEASUREMENT)
+  if (finished_measurements & VDDA_MEASUREMENT)
   {
-    multimeter_result.vdda_mV = finish_vdda_measurement();
+    changes |= build_changes(&multimeter_result.vdda_mV, finish_vdda_measurement(), VDDA_CHANGED);
     started_measurements |= start_extra_measurements(0, 2) | start_extra_measurements(1, 2);
   }
-  if (changes & FREQUENCY_MEASUREMENT)
+  if (finished_measurements & FREQUENCY_MEASUREMENT)
   {
-    multimeter_result.frequency_hz = finish_frequency_measurement();
+    changes |= build_changes(&multimeter_result.frequency_hz, finish_frequency_measurement(), FREQUENCY_CHANGED);
     if (multimeter_mode == INDUCTANCE)
-      multimeter_result.inductance_nH = calculate_inductance();
+      changes |= build_changes(&multimeter_result.inductance_nH, calculate_inductance(), INDUCTANCE_CHANGED);
   }
-  if (changes & RESISTANCE1_MEASUREMENT_HIGH)
+  unsigned int prev_resistance[2];
+  prev_resistance[0] = multimeter_result.resistance_mOhm[0];
+  prev_resistance[1] = multimeter_result.resistance_mOhm[1];
+  if (finished_measurements & RESISTANCE1_MEASUREMENT_HIGH)
     started_measurements |= check_extra(0, finish_resistance_measurement(0, HIGH));
-  if (changes & RESISTANCE2_MEASUREMENT_HIGH)
+  if (finished_measurements & RESISTANCE2_MEASUREMENT_HIGH)
     started_measurements |= check_extra(1, finish_resistance_measurement(1, HIGH));
-  if (changes & RESISTANCE1_MEASUREMENT_MEDIUM)
+  if (finished_measurements & RESISTANCE1_MEASUREMENT_MEDIUM)
     started_measurements |= check_extra(0, finish_resistance_measurement(0, MEDIUM));
-  if (changes & RESISTANCE2_MEASUREMENT_MEDIUM)
+  if (finished_measurements & RESISTANCE2_MEASUREMENT_MEDIUM)
     started_measurements |= check_extra(1, finish_resistance_measurement(1, MEDIUM));
-  if (changes & RESISTANCE1_MEASUREMENT_LOW)
+  if (finished_measurements & RESISTANCE1_MEASUREMENT_LOW)
     started_measurements |= check_extra(0, finish_resistance_measurement(0, LOW));
-  if (changes & RESISTANCE2_MEASUREMENT_LOW)
+  if (finished_measurements & RESISTANCE2_MEASUREMENT_LOW)
     started_measurements |= check_extra(1, finish_resistance_measurement(1, LOW));
-  if (changes & CAPACITANCE_MEASUREMENT_1K)
+  if (prev_resistance[0] != multimeter_result.resistance_mOhm[0])
+    changes |= RESISTANCE1_CHANGED;
+  if (prev_resistance[1] != multimeter_result.resistance_mOhm[1])
+    changes |= RESISTANCE2_CHANGED;
+  unsigned int prev_capacitance = multimeter_result.capacitance.pF;
+  if (finished_measurements & CAPACITANCE_MEASUREMENT_1K)
     started_measurements |= finish_capacitance_measurement_1k();
-  if (changes & CAPACITANCE_MEASUREMENT_100K)
+  if (finished_measurements & CAPACITANCE_MEASUREMENT_100K)
     finish_capacitance_measurement();
+  if (prev_capacitance != multimeter_result.capacitance.pF)
+    changes |= CAPACITANCE_CHANGED;
+  return changes;
 }
 
 unsigned int multimeter_timer_event(void)
 {
   unsigned int changes = 0;
-  switch (multimeter_state)
+  if (!started_measurements)
+    start_measurements();
+  else
   {
-    case IDLE:
-      multimeter_state = CHECK;
-      start_measurements();
-      break;
-    case CHECK:
-      changes = check_measurements_statuses();
-      if (changes)
-      {
-        finish_measurements(changes);
-        started_measurements &= ~changes;
-        if (!started_measurements)
-          multimeter_state = IDLE;
-      }
-      break;
+    unsigned int finished_measurements = check_measurements_statuses();
+    if (finished_measurements)
+    {
+      changes = finish_measurements(finished_measurements);
+      started_measurements &= ~finished_measurements;
+    }
   }
   return changes;
 }

@@ -1,6 +1,11 @@
 #include "board.h"
 #include <lcd_sh1107.h>
 #include <string.h>
+#include <stdarg.h>
+#include <stdio.h>
+#ifdef USE_MYVSPRINTF
+#include <myprintf.h>
+#endif
 
 #define SH1107_COLUMNADDR_LO 0
 #define SH1107_COLUMNADDR_HI 0x10
@@ -140,4 +145,26 @@ unsigned int LcdUpdate(void)
 #endif
 
 	return 0;
+}
+
+void LcdPrintf(const char *format, unsigned int column, unsigned int row, const FONT_INFO *f, int white_on_black, ...)
+{
+	static char buffer[LCD_PRINTF_BUFFER_LENGTH];
+	va_list vArgs;
+	unsigned int textColor, bkColor;
+
+	va_start(vArgs, white_on_black);
+#ifdef USE_VSNPRINTF
+	vsnprintf(buffer, sizeof(buffer), format, vArgs);
+#else
+#ifdef USE_MYVSPRINTF
+	myvsprintf(buffer, format, vArgs);
+#else
+	vsprintf_s(buffer, sizeof(buffer), format, vArgs);
+#endif
+#endif
+	va_end(vArgs);
+	textColor = white_on_black ? WHITE_COLOR : BLACK_COLOR;
+	bkColor = white_on_black ? BLACK_COLOR : WHITE_COLOR;
+	LcdDrawText(column, row, buffer, f, textColor, bkColor, NULL);
 }

@@ -35,6 +35,9 @@
 #define KB_BUTTON2_LONG 7
 #define KB_BUTTON3_LONG 8
 
+#define USE_MYVSPRINTF
+#define LCD_PRINTF_BUFFER_LENGTH 20
+
 extern volatile int capacity_measurement_done;
 
 #ifdef __cplusplus
@@ -52,6 +55,7 @@ void delayms(unsigned int ms);
 void delay(unsigned int us);
 int get_lcd_buffer_bit(int x, int y);
 unsigned int get_keyboard_status(void);
+void power_off(void);
 
 #ifdef __cplusplus
 }

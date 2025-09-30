@@ -14,6 +14,9 @@
 #define RESISTANCE1_CHANGED 128
 #define RESISTANCE2_CHANGED 256
 #define INDUCTANCE_CHANGED 512
+#define CAPACITANCE_CHANGED 1024
+#define DIODE_VOLTAGE1_CHANGED 2048
+#define DIODE_VOLTAGE2_CHANGED 4096
 
 #define VOLTAGE1_MEASUREMENT 1
 #define VOLTAGE2_MEASUREMENT 2
@@ -30,8 +33,13 @@
 #define RESISTANCE2_MEASUREMENT_LOW 4096
 #define TEMPERATURE_MEASUREMENT 8192
 #define VDDA_MEASUREMENT 16384
+#define DIODE_VOLTAGE_MEASUREMENT1 32768
+#define DIODE_VOLTAGE_MEASUREMENT2 65536
 
-enum multimeter_modes {FREQUENCY, RESISTANCE, CAPACITANCE, INDUCTANCE};
+enum multimeter_modes {FREQUENCY, RESISTANCE, DIODE_TEST, CONTINUITY, CAPACITANCE, INDUCTANCE};
+#define MULTIMETER_MAX_MODE INDUCTANCE
+#define MULTIMETER_MIN_MODE FREQUENCY
+
 enum resistance_measurements_modes {HIGH, MEDIUM, LOW};
 
 typedef struct
@@ -43,13 +51,14 @@ typedef struct
 
 typedef struct
 {
-  unsigned int voltage_uV;
-  unsigned int current_nA;
+  int voltage_uV;
+  int current_nA;
 } voltage_current_result;
 
 typedef struct
 {
   unsigned int frequency_hz;
+  unsigned int diode_voltage_uV[2];
   unsigned int resistance_mOhm[2];
   unsigned int inductance_nH;
   unsigned int temperature_Cx100;
@@ -59,6 +68,7 @@ typedef struct
 } multimeter_result_t;
 
 extern multimeter_result_t multimeter_result;
+extern enum multimeter_modes multimeter_mode;
 
 int get_capacitance(capacitance_result *result);
 int multimeter_init(void);
@@ -73,6 +83,7 @@ void start_resistance_measurement(int channel, enum resistance_measurements_mode
 void start_capacitance_measurement(int channel);
 void start_current_measurement(int channel);
 unsigned int start_extra_measurements(int channel, int extra_measurement_no);
+void start_diode_voltage_measurement(int channel);
 unsigned int finish_voltage_measurement(int channel);
 unsigned int finish_frequency_measurement(void);
 unsigned int finish_resistance_measurement(int channel, int mode);
@@ -81,5 +92,6 @@ void finish_capacitance_measurement(void);
 unsigned int finish_capacitance_measurement_1k(void);
 unsigned int finish_temperature_measurement(void);
 unsigned int finish_vdda_measurement(void);
+unsigned int finish_diode_voltage_measurement(int channel);
 
 #endif

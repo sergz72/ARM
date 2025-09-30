@@ -135,6 +135,11 @@ unsigned int start_extra_measurements(int channel, int extra_measurement_no)
   return 0;
 }
 
+void start_diode_voltage_measurement(int channel)
+{
+
+}
+
 unsigned int finish_voltage_measurement(int channel)
 {
   return 0;
@@ -173,4 +178,14 @@ unsigned int finish_temperature_measurement(void)
 unsigned int finish_vdda_measurement(void)
 {
   return 0;
+}
+
+unsigned int finish_diode_voltage_measurement(int channel)
+{
+  return 0;
+}
+
+void power_off(void)
+{
+
 }

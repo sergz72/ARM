@@ -25,5 +25,6 @@ void LCDSetContrast(unsigned char contrast);
 void LcdOff(void);
 void LcdOn(void);
 void LcdInvertDisplay(int invert);
+void LcdPrintf(const char *format, unsigned int column, unsigned int row, const FONT_INFO *f, int white_on_black, ...);
 
 #endif
