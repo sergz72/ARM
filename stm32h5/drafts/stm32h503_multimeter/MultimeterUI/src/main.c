@@ -4,6 +4,7 @@
 #include "multimeter.h"
 
 extern multimeter_result_t multimeter_result_hal;
+extern unsigned int capacitance_value;
 
 #define LED_SIZE 40
 
@@ -174,6 +175,54 @@ i2_changed (GtkWidget *widget,
   multimeter_result_hal.voltage_current[1].current_nA = value * 1000;
 }
 
+static void
+f_changed (GtkWidget *widget,
+              gpointer   data)
+{
+  int value = update_label(widget, data);
+  multimeter_result_hal.frequency_hz = value;
+}
+
+static void
+c_changed (GtkWidget *widget,
+              gpointer   data)
+{
+  int value = update_label(widget, data);
+  capacitance_value = value;
+}
+
+static void
+r1_changed (GtkWidget *widget,
+              gpointer   data)
+{
+  int value = update_label(widget, data);
+  multimeter_result_hal.resistance_mOhm[0] = value;
+}
+
+static void
+r2_changed (GtkWidget *widget,
+              gpointer   data)
+{
+  int value = update_label(widget, data);
+  multimeter_result_hal.resistance_mOhm[1] = value;
+}
+
+static void
+temp_changed (GtkWidget *widget,
+              gpointer   data)
+{
+  int value = update_label(widget, data);
+  multimeter_result_hal.temperature_Cx10 = value;
+}
+
+static void
+vdda_changed (GtkWidget *widget,
+              gpointer   data)
+{
+  int value = update_label(widget, data);
+  multimeter_result_hal.vdda_mV = value;
+}
+
 static GtkWidget*
 create_drawing_area(GtkWidget *hbox)
 {
@@ -256,7 +305,7 @@ create_scale(GtkWidget *vbox, const char *name, const char *unit, int lower, int
   GtkWidget *label = gtk_label_new (name);
   gtk_box_append (GTK_BOX (hbox), label);
   GtkWidget *value_label = gtk_label_new ("0");
-  gtk_widget_set_size_request (value_label, 60, 20);
+  gtk_widget_set_size_request (value_label, 100, 20);
   gtk_box_append (GTK_BOX (hbox), value_label);
   label = gtk_label_new (unit);
   gtk_box_append (GTK_BOX (hbox), label);
@@ -270,10 +319,16 @@ create_scale(GtkWidget *vbox, const char *name, const char *unit, int lower, int
 static void
 create_sliders(GtkWidget *vbox)
 {
+  create_scale(vbox, "TEMP", "C", 180, 250, G_CALLBACK(temp_changed));
+  create_scale(vbox, "VDDA", "mV", 3000, 3500, G_CALLBACK(vdda_changed));
   create_scale(vbox, "V1", "mV", -15000, 15000, G_CALLBACK(v1_changed));
   create_scale(vbox, "I1", "uA", -999999, 999999, G_CALLBACK(i1_changed));
   create_scale(vbox, "V2", "mV", -15000, 15000, G_CALLBACK(v2_changed));
   create_scale(vbox, "I2", "uA", -999999, 999999, G_CALLBACK(i2_changed));
+  create_scale(vbox, "F", "Hz", 0, 199999999, G_CALLBACK(f_changed));
+  create_scale(vbox, "C", "tick", 0, 1999999999, G_CALLBACK(c_changed));
+  create_scale(vbox, "R1", "mOhm", 0, 999999999, G_CALLBACK(r1_changed));
+  create_scale(vbox, "R2", "mOhm", 0, 999999999, G_CALLBACK(r2_changed));
 }
 
 static void

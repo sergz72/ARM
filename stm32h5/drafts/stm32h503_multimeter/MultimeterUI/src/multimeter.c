@@ -1,8 +1,9 @@
 #include "board.h"
 #include "multimeter.h"
+#include <limits.h>
 
-static unsigned int capacitance_coefficient[2] = {CAPACITANCE_COEFFICIENT_1K, CAPACITANCE_COEFFICIENT_100K};
-static unsigned int capacitance_offset[2] = {CAPACITANCE_OFFSET_1K, CAPACITANCE_OFFSET_100K};
+static unsigned int capacitance_coefficient[3] = {0, CAPACITANCE_COEFFICIENT_1K, CAPACITANCE_COEFFICIENT_100K};
+static unsigned int capacitance_offset[3] = {0, CAPACITANCE_OFFSET_1K, CAPACITANCE_OFFSET_100K};
 
 enum multimeter_modes multimeter_mode = FREQUENCY;
 
@@ -15,10 +16,12 @@ multimeter_result_t multimeter_result =
   .diode_voltage_uV = {0,0},
   .voltage_current = {{0, 0}, {0, 0}},
   .resistance_mOhm = {0, 0},
-  .temperature_Cx100 = 0,
+  .temperature_Cx10 = 0,
   .vdda_mV = 0,
   .capacitance = {0, 0, 0}
 };
+
+int planned_capacitance_measurement = 0;
 
 static void calculate_capacitance(int channel, unsigned int difference, capacitance_result *result)
 {
@@ -31,52 +34,50 @@ static void calculate_capacitance(int channel, unsigned int difference, capacita
   result->channel = channel;
 }
 
-int get_capacitance(capacitance_result *result)
+static void start_capacitance_measurement(int channel)
 {
-  capacity_measurement_start(CAPACITANCE_CHANNEL_1K);
-  int timeout = 3000;
-  while (timeout)
+  planned_capacitance_measurement = channel;
+}
+
+static unsigned int check_capacitance_measurement_status(void)
+{
+  if (planned_capacitance_measurement && capacitor_is_discharged())
   {
-    delayms(1);
-    if (capacity_measurement_done)
-      break;
-    timeout--;
+    capacitance_measurement_start(planned_capacitance_measurement);
+    planned_capacitance_measurement = 0;
+    return 0;
   }
-  capacity_measurement_done = 0;
-  unsigned int start_time = get_capacity_measurement_start_time();
-  unsigned int end_time = get_capacity_measurement_end_time();
-  charge_off();
-  discharge_on();
-  if (!timeout)
-    return 1;
+  if (capacitance_measurement_done)
+  {
+    charge_off();
+    discharge_on();
+    capacitance_measurement_done = 0;
+    return started_measurements & (CAPACITANCE_MEASUREMENT_100K | CAPACITANCE_MEASUREMENT_1K);
+  }
+  return 0;
+}
+
+static void finish_capacitance_measurement(void)
+{
+  unsigned int start_time = get_capacitance_measurement_start_time();
+  unsigned int end_time = get_capacitance_measurement_end_time();
+  unsigned int difference = end_time - start_time;
+  calculate_capacitance(CAPACITANCE_CHANNEL_100K, difference, &multimeter_result.capacitance);
+}
+
+static unsigned int finish_capacitance_measurement_1k(void)
+{
+  unsigned int start_time = get_capacitance_measurement_start_time();
+  unsigned int end_time = get_capacitance_measurement_end_time();
   unsigned int difference = end_time - start_time;
   if (difference >= CAPACITANCE_MIN_VALUE_1K)
   {
-    calculate_capacitance(CAPACITANCE_CHANNEL_1K, difference, result);
+    calculate_capacitance(CAPACITANCE_CHANNEL_1K, difference, &multimeter_result.capacitance);
     return 0;
   }
 
-  delayms(500);
-  capacity_measurement_start(CAPACITANCE_CHANNEL_100K);
-  timeout = 3000;
-  while (timeout)
-  {
-    delayms(1);
-    if (capacity_measurement_done)
-      break;
-    timeout--;
-  }
-  capacity_measurement_done = 0;
-  start_time = get_capacity_measurement_start_time();
-  end_time = get_capacity_measurement_end_time();
-  charge_off();
-  discharge_on();
-  if (!timeout)
-    return 1;
-  difference = end_time - start_time;
-  calculate_capacitance(CAPACITANCE_CHANNEL_100K, difference, result);
-
-  return 0;
+  start_capacitance_measurement(CAPACITANCE_CHANNEL_100K);
+  return CAPACITANCE_MEASUREMENT_100K;
 }
 
 void multimeter_set_mode(enum multimeter_modes mode)
@@ -103,9 +104,25 @@ static void start_measurements(void)
   }
 }
 
+/*
+ * L = (NOM / F / F / C) * 100 / PI2
+ * C in pF
+ * L in uH
+ * F in HZ
+ */
+#define NOM (2500000000 * 100000000)
+#define PI2 987
+#define DEFAULT_L_CAP 3400 //pF
 static unsigned int calculate_inductance(void)
 {
-  return 0;
+  unsigned long long int l;
+  unsigned long long int f2;
+  unsigned long long int c = DEFAULT_L_CAP / 100;
+  if (!c || !multimeter_result.frequency_hz)
+    return UINT_MAX;
+  f2 = (unsigned long long int)multimeter_result.frequency_hz * multimeter_result.frequency_hz;
+  l = NOM / f2 / c;
+  return l * 100 / PI2;
 }
 
 static unsigned int check_extra(int channel, unsigned int extra_measurements)
@@ -178,7 +195,7 @@ static unsigned int finish_measurements(unsigned int finished_measurements)
   }
   if (finished_measurements & TEMPERATURE_MEASUREMENT)
   {
-    changes |= build_changes(&multimeter_result.temperature_Cx100, finish_temperature_measurement(), TEMPERATURE_CHANGED);
+    changes |= build_changes(&multimeter_result.temperature_Cx10, finish_temperature_measurement(), TEMPERATURE_CHANGED);
     started_measurements |= start_extra_measurements(0, 1) | start_extra_measurements(1, 1);
   }
   if (finished_measurements & VDDA_MEASUREMENT)
@@ -228,7 +245,7 @@ unsigned int multimeter_timer_event(void)
     start_measurements();
   else
   {
-    unsigned int finished_measurements = check_measurements_statuses();
+    unsigned int finished_measurements = check_measurements_statuses() | check_capacitance_measurement_status();
     if (finished_measurements)
     {
       changes = finish_measurements(finished_measurements);

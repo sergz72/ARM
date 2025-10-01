@@ -30,7 +30,7 @@
 #define USE_MYVSPRINTF
 #define LCD_PRINTF_BUFFER_LENGTH 20
 
-extern volatile int capacity_measurement_done;
+extern volatile int capacitance_measurement_done;
 
 #ifdef __cplusplus
 extern "C" {
@@ -40,9 +40,9 @@ void charge_off(void);
 void charge_on(int channel);
 void discharge_off(void);
 void discharge_on(void);
-void capacity_measurement_start(int channel);
-unsigned int get_capacity_measurement_start_time(void);
-unsigned int get_capacity_measurement_end_time(void);
+void capacitance_measurement_start(int channel);
+unsigned int get_capacitance_measurement_start_time(void);
+unsigned int get_capacitance_measurement_end_time(void);
 void delayms(unsigned int ms);
 void delay(unsigned int us);
 int get_lcd_buffer_bit(int x, int y);

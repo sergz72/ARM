@@ -8,7 +8,7 @@
 
 #define MAIN_FONT courierNew10ptFontInfo
 #define VALUE_X (2*(MAIN_FONT.character_max_width+MAIN_FONT.character_spacing))
-#define VDDA_X  (7*(MAIN_FONT.character_max_width+MAIN_FONT.character_spacing))
+#define VDDA_X  (6*(MAIN_FONT.character_max_width+MAIN_FONT.character_spacing))
 #define F_X     (MAIN_FONT.character_max_width+MAIN_FONT.character_spacing)
 
 static void DrawF(void)
@@ -131,40 +131,42 @@ void DrawTemperature(unsigned int value)
 {
   if (value > 999)
     value = 999;
-  LcdPrintf("%2d.%d", 0, 0, &MAIN_FONT, 0, value / 10, value % 10);
+  LcdPrintf("%2d.%d", 0, 0, &MAIN_FONT, 1, value / 10, value % 10);
 }
 
 void DrawVdda(unsigned int value_mV)
 {
   if (value_mV > 9999)
     value_mV = 9999;
-  LcdPrintf("%d.%02d", 0, VDDA_X, &MAIN_FONT, 0, value_mV / 1000, (value_mV/10) % 100);
+  LcdPrintf("%d.%02d", VDDA_X, 0, &MAIN_FONT, 1, value_mV / 1000, (value_mV/10) % 100);
 }
 
 void DrawFrequency(int line, unsigned int value)
 {
   if (value > 999999999)
     value = 999999999;
-  LcdPrintf("%3d.%06d", line*MAIN_FONT.char_height, F_X, &MAIN_FONT, 0, value / 1000000, value % 1000000);
+  LcdPrintf("%3d.%06d", F_X, line*MAIN_FONT.char_height, &MAIN_FONT, 1, value / 1000000, value % 1000000);
 }
 
 void DrawInductance(int line, unsigned int value_nH)
 {
-  if (value_nH < 1000000)
-    LcdPrintf("%3d.%03dn", line*MAIN_FONT.char_height, VALUE_X, &MAIN_FONT, 0,
+  if (value_nH == UINT_MAX)
+    LcdDrawText(VALUE_X, line*MAIN_FONT.char_height, "ERROR    ", &MAIN_FONT, WHITE_COLOR, BLACK_COLOR, NULL);
+  else if (value_nH < 1000000)
+    LcdPrintf("%3d.%03dn", VALUE_X, line*MAIN_FONT.char_height, &MAIN_FONT, 1,
               value_nH / 1000, value_nH % 1000);
   else
-    LcdPrintf("%3d.%03dm", line*MAIN_FONT.char_height, VALUE_X, &MAIN_FONT, 0,
+    LcdPrintf("%3d.%03dm", VALUE_X, line*MAIN_FONT.char_height, &MAIN_FONT, 1,
               value_nH / 1000000, (value_nH/1000) % 1000);
 }
 
 void DrawCapacitance(int line, unsigned int value_pF)
 {
   if (value_pF < 10000000)
-    LcdPrintf("%4d.%03dp", line*MAIN_FONT.char_height, F_X, &MAIN_FONT, 0,
+    LcdPrintf("%4d.%03dn", F_X, line*MAIN_FONT.char_height, &MAIN_FONT, 1,
               value_pF / 1000, value_pF % 1000);
   else
-    LcdPrintf("%4d.%03dn", line*MAIN_FONT.char_height, F_X, &MAIN_FONT, 0,
+    LcdPrintf("%4d.%03du", F_X, line*MAIN_FONT.char_height, &MAIN_FONT, 1,
               value_pF / 1000000, (value_pF/1000) % 1000);
 }
 
@@ -173,17 +175,17 @@ void DrawResistance(int line, unsigned int value_mOhm)
   if (value_mOhm == UINT_MAX)
     LcdDrawText(VALUE_X, line*MAIN_FONT.char_height, "---------", &MAIN_FONT, WHITE_COLOR, BLACK_COLOR, NULL);
   else if (value_mOhm < 10000000)
-    LcdPrintf("%4d.%03d ", line*MAIN_FONT.char_height, VALUE_X, &MAIN_FONT, 0,
+    LcdPrintf("%4d.%03d ", VALUE_X, line*MAIN_FONT.char_height, &MAIN_FONT, 1,
               value_mOhm / 1000, value_mOhm % 1000);
   else
-    LcdPrintf("%4d.%03dK", line*MAIN_FONT.char_height, VALUE_X, &MAIN_FONT, 0,
+    LcdPrintf("%4d.%03dK", VALUE_X, line*MAIN_FONT.char_height, &MAIN_FONT, 1,
               value_mOhm / 1000000, (value_mOhm/1000) % 1000);
 }
 
 void Process_Timer_Event(unsigned char keyboard_status, unsigned int multimeter_changes)
 {
   if (multimeter_changes & TEMPERATURE_CHANGED)
-    DrawTemperature(multimeter_result.temperature_Cx100);
+    DrawTemperature(multimeter_result.temperature_Cx10);
   if (multimeter_changes & VDDA_CHANGED)
     DrawVdda(multimeter_result.vdda_mV);
   if (multimeter_changes & VOLTAGE1_CHANGED)
@@ -201,7 +203,7 @@ void Process_Timer_Event(unsigned char keyboard_status, unsigned int multimeter_
   if (multimeter_changes & FREQUENCY_CHANGED && (multimeter_mode == FREQUENCY || multimeter_mode == INDUCTANCE))
     DrawFrequency(7, multimeter_result.frequency_hz);
   if (multimeter_changes & INDUCTANCE_CHANGED && multimeter_mode == INDUCTANCE)
-    DrawInductance(8, multimeter_result.frequency_hz);
+    DrawInductance(8, multimeter_result.inductance_nH);
   if (multimeter_changes & CAPACITANCE_CHANGED && multimeter_mode == CAPACITANCE)
     DrawCapacitance(7, multimeter_result.capacitance.pF);
   if (multimeter_changes & RESISTANCE1_CHANGED && (multimeter_mode == RESISTANCE || multimeter_mode == CONTINUITY))

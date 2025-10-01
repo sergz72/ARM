@@ -1,8 +1,8 @@
 #ifndef STM32H503_MULTIMETER_MULTIMETER_H
 #define STM32H503_MULTIMETER_MULTIMETER_H
 
-#define CAPACITANCE_CHANNEL_1K   0
-#define CAPACITANCE_CHANNEL_100K 1
+#define CAPACITANCE_CHANNEL_1K   1
+#define CAPACITANCE_CHANNEL_100K 2
 
 #define VOLTAGE1_CHANGED 1
 #define CURRENT1_CHANGED 2
@@ -61,7 +61,7 @@ typedef struct
   unsigned int diode_voltage_uV[2];
   unsigned int resistance_mOhm[2];
   unsigned int inductance_nH;
-  unsigned int temperature_Cx100;
+  unsigned int temperature_Cx10;
   unsigned int vdda_mV;
   capacitance_result capacitance;
   voltage_current_result voltage_current[2];
@@ -70,7 +70,6 @@ typedef struct
 extern multimeter_result_t multimeter_result;
 extern enum multimeter_modes multimeter_mode;
 
-int get_capacitance(capacitance_result *result);
 int multimeter_init(void);
 
 unsigned int multimeter_timer_event(void);
@@ -80,18 +79,16 @@ unsigned int check_measurements_statuses(void);
 void start_voltage_measurements(void);
 void start_frequency_measurement(void);
 void start_resistance_measurement(int channel, enum resistance_measurements_modes mode);
-void start_capacitance_measurement(int channel);
 void start_current_measurement(int channel);
 unsigned int start_extra_measurements(int channel, int extra_measurement_no);
 void start_diode_voltage_measurement(int channel);
 unsigned int finish_voltage_measurement(int channel);
 unsigned int finish_frequency_measurement(void);
-unsigned int finish_resistance_measurement(int channel, int mode);
+unsigned int finish_resistance_measurement(int channel, enum resistance_measurements_modes mode);
 unsigned int finish_current_measurement(int channel);
-void finish_capacitance_measurement(void);
-unsigned int finish_capacitance_measurement_1k(void);
 unsigned int finish_temperature_measurement(void);
 unsigned int finish_vdda_measurement(void);
 unsigned int finish_diode_voltage_measurement(int channel);
+int capacitor_is_discharged(void);
 
 #endif

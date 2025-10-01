@@ -11,7 +11,8 @@ extern unsigned int key;
 
 static unsigned char lcd_buffer[SIZE], *lcd_buffer_p = lcd_buffer;
 
-volatile int capacity_measurement_done;
+volatile int capacitance_measurement_done;
+static int capacity_measurement_channel;
 
 multimeter_result_t multimeter_result_hal =
 {
@@ -20,12 +21,13 @@ multimeter_result_t multimeter_result_hal =
   .diode_voltage_uV = {0,0},
   .voltage_current = {{0, 0}, {0, 0}},
   .resistance_mOhm = {0, 0},
-  .temperature_Cx100 = 0,
+  .temperature_Cx10 = 0,
   .vdda_mV = 0,
   .capacitance = {0, 0, 0}
 };
 
 unsigned int measurement_statuses = 0;
+unsigned int capacitance_value = 0;
 
 void discharge_off(void)
 {
@@ -43,20 +45,20 @@ void charge_on(int channel)
 {
 }
 
-unsigned int get_capacity_measurement_start_time(void)
+unsigned int get_capacitance_measurement_start_time(void)
 {
   return 0;
 }
 
-unsigned int get_capacity_measurement_end_time(void)
+unsigned int get_capacitance_measurement_end_time(void)
 {
-  return 0;
+  return capacity_measurement_channel == CAPACITANCE_CHANNEL_100K ? capacitance_value : capacitance_value / 100;
 }
 
-void capacity_measurement_start(int channel)
+void capacitance_measurement_start(int channel)
 {
-  discharge_off();
-  charge_on(channel);
+  capacity_measurement_channel = channel;
+  capacitance_measurement_done = 1;
 }
 
 void SH1107_Write(int num_bytes, unsigned char dc, const unsigned char *buffer)
@@ -122,11 +124,6 @@ void start_resistance_measurement(int channel, enum resistance_measurements_mode
   measurement_statuses |= channel ? RESISTANCE2_MEASUREMENT_HIGH : RESISTANCE1_MEASUREMENT_HIGH;
 }
 
-void start_capacitance_measurement(int channel)
-{
-  measurement_statuses |= CAPACITANCE_MEASUREMENT_1K;
-}
-
 void start_current_measurement(int channel)
 {
   measurement_statuses |= channel ? CURRENT2_MEASUREMENT : CURRENT1_MEASUREMENT;
@@ -155,10 +152,25 @@ unsigned int finish_frequency_measurement(void)
   return multimeter_result_hal.frequency_hz;
 }
 
-unsigned int finish_resistance_measurement(int channel, int mode)
+unsigned int finish_resistance_measurement(int channel, enum resistance_measurements_modes mode)
 {
-  measurement_statuses &= ~(channel ? RESISTANCE2_MEASUREMENT_HIGH : RESISTANCE1_MEASUREMENT_HIGH);
-  return mode ? multimeter_result_hal.resistance_mOhm[1] : multimeter_result_hal.resistance_mOhm[0];
+  switch (mode)
+  {
+    case HIGH:
+      measurement_statuses &= ~(channel ? RESISTANCE2_MEASUREMENT_HIGH : RESISTANCE1_MEASUREMENT_HIGH);
+      break;
+    case MEDIUM:
+      measurement_statuses &= ~(channel ? RESISTANCE2_MEASUREMENT_MEDIUM : RESISTANCE1_MEASUREMENT_MEDIUM);
+      break;
+    case LOW:
+      measurement_statuses &= ~(channel ? RESISTANCE2_MEASUREMENT_LOW : RESISTANCE1_MEASUREMENT_LOW);
+      break;
+  }
+  if (channel)
+    multimeter_result.resistance_mOhm[1] = multimeter_result_hal.resistance_mOhm[1];
+  else
+    multimeter_result.resistance_mOhm[0] = multimeter_result_hal.resistance_mOhm[0];
+  return 0;
 }
 
 unsigned int finish_current_measurement(int channel)
@@ -167,23 +179,10 @@ unsigned int finish_current_measurement(int channel)
   return multimeter_result_hal.voltage_current[channel].current_nA;
 }
 
-void finish_capacitance_measurement(void)
-{
-  measurement_statuses &= ~CAPACITANCE_MEASUREMENT_100K;
-  multimeter_result.capacitance = multimeter_result_hal.capacitance;
-}
-
-unsigned int finish_capacitance_measurement_1k(void)
-{
-  measurement_statuses &= ~CAPACITANCE_MEASUREMENT_1K;
-  multimeter_result.capacitance = multimeter_result_hal.capacitance;
-  return 0;
-}
-
 unsigned int finish_temperature_measurement(void)
 {
   measurement_statuses &= ~TEMPERATURE_MEASUREMENT;
-  return multimeter_result_hal.temperature_Cx100;
+  return multimeter_result_hal.temperature_Cx10;
 }
 
 unsigned int finish_vdda_measurement(void)
@@ -201,4 +200,9 @@ unsigned int finish_diode_voltage_measurement(int channel)
 void power_off(void)
 {
 
+}
+
+int capacitor_is_discharged(void)
+{
+  return 1;
 }
