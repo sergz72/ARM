@@ -15,7 +15,7 @@ MeasurementUnitAD7793::MeasurementUnitAD7793()
 
 int MeasurementUnitAD7793::GetNumChannels() const {return 4;}
 
-long long int MeasurementUnitAD7793::GetCurrentSourceValue(CurrentSourceLevel current_level)
+int MeasurementUnitAD7793::GetCurrentSourceValue(CurrentSourceLevel current_level)
 {
   //todo
   return 0;
@@ -44,7 +44,7 @@ int MeasurementUnitAD7793::SetChannelCurrentSource(int channel, CurrentSourceLev
   return 1;
 }
 
-void MeasurementUnitAD7793::StartMeasurement(int channel, unsigned int parameter)
+void MeasurementUnitAD7793::StartMeasurement(int channel)
 {
   //todo
 }
@@ -55,8 +55,14 @@ bool MeasurementUnitAD7793::IsMeasurementFinished()
   return true;
 }
 
-long long int MeasurementUnitAD7793::GetMeasurementResult()
+int MeasurementUnitAD7793::GetMeasurementResult()
 {
   //todo
   return 0;
+}
+
+int MeasurementUnitAD7793::SetGain(int gain)
+{
+  //todo
+  return 1;
 }

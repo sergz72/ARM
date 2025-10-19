@@ -4,7 +4,7 @@ class Thermometer: public MultimeterChannel
 {
 public:
   MultimeterChannelType GetChannelType() override { return CHANNEL_TYPE_TEMPERATURE; };
-  long long int GetMeasurementResult() override { /*todo*/ return 0; };
+  int GetMeasurementResult() override { /*todo*/ return 0; };
 };
 
 static Ampermeter ampermeter(1000);
@@ -21,7 +21,7 @@ MeasurementUnitADS1220::MeasurementUnitADS1220()
 
 int MeasurementUnitADS1220::GetNumChannels() const {return 4;}
 
-long long int MeasurementUnitADS1220::GetCurrentSourceValue(CurrentSourceLevel current_level)
+int MeasurementUnitADS1220::GetCurrentSourceValue(CurrentSourceLevel current_level)
 {
   //todo
   return 0;
@@ -50,7 +50,7 @@ int MeasurementUnitADS1220::SetChannelCurrentSource(int channel, CurrentSourceLe
   return 1;
 }
 
-void MeasurementUnitADS1220::StartMeasurement(int channel, unsigned int parameter)
+void MeasurementUnitADS1220::StartMeasurement(int channel)
 {
   //todo
 }
@@ -61,8 +61,14 @@ bool MeasurementUnitADS1220::IsMeasurementFinished()
   return true;
 }
 
-long long int MeasurementUnitADS1220::GetMeasurementResult()
+int MeasurementUnitADS1220::GetMeasurementResult()
 {
   //todo
   return 0;
+}
+
+int MeasurementUnitADS1220::SetGain(int gain)
+{
+  //todo
+  return 1;
 }

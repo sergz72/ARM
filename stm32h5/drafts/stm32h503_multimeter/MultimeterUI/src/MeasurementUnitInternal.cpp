@@ -6,7 +6,7 @@ public:
   MultimeterChannelType GetChannelType() override { return CHANNEL_TYPE_FREQUENCY; };
   void StartMeasurement() override { /*todo*/ }
   bool IsMeasurementFinished() override { /*todo*/ return true; }
-  long long int GetMeasurementResult() override {/*todo*/ return 0; }
+  int GetMeasurementResult() override {/*todo*/ return 0; }
 };
 
 class CapacitanceMeter: public MultimeterChannel
@@ -15,7 +15,7 @@ public:
   MultimeterChannelType GetChannelType() override { return CHANNEL_TYPE_CAPACITANCE; };
   void StartMeasurement() override { /*todo*/ }
   bool IsMeasurementFinished() override { /*todo*/ return true; }
-  long long int GetMeasurementResult() override {/*todo*/ return 0; }
+  int GetMeasurementResult() override {/*todo*/ return 0; }
 };
 
 static FrequencyMeter frequency_meter;
@@ -29,7 +29,7 @@ MeasurementUnitInternal::MeasurementUnitInternal()
 
 int MeasurementUnitInternal::GetNumChannels() const {return 2;}
 
-long long int MeasurementUnitInternal::GetCurrentSourceValue(CurrentSourceLevel current_level)
+int MeasurementUnitInternal::GetCurrentSourceValue(CurrentSourceLevel current_level)
 {
   return 0;
 }
@@ -52,7 +52,7 @@ int MeasurementUnitInternal::SetChannelCurrentSource(int channel, CurrentSourceL
   return 1;
 }
 
-void MeasurementUnitInternal::StartMeasurement(int channel, unsigned int parameter)
+void MeasurementUnitInternal::StartMeasurement(int channel)
 {
 }
 
@@ -61,7 +61,7 @@ bool MeasurementUnitInternal::IsMeasurementFinished()
   return false;
 }
 
-long long int MeasurementUnitInternal::GetMeasurementResult()
+int MeasurementUnitInternal::GetMeasurementResult()
 {
   return 0;
 }

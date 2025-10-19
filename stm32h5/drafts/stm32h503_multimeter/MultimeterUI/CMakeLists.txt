@@ -19,6 +19,8 @@ add_executable(MultimeterUI
         ../../my/Programs/ARM_CLION/common_lib/myprintf.c
         ../../my/Programs/ARM_CLION/common_lib/ultoa.c
         ../../my/Programs/ARM_CLION/common_lib/itoa.c
+        ../../my/Programs/ARM_CLION/common_lib/adc/ads1220.c
+        ../../my/Programs/ARM_CLION/common_lib/adc/ad7793.c
 )
 
 include_directories(

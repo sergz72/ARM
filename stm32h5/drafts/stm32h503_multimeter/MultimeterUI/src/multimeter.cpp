@@ -1,5 +1,8 @@
 #include "multimeter.h"
+
+#include <cmath>
 #include <cstring>
+#include <limits.h>
 
 void MultimeterChannel::SetParameters(MeasurementUint* _measurement_unit, int _channel_no)
 {
@@ -9,7 +12,7 @@ void MultimeterChannel::SetParameters(MeasurementUint* _measurement_unit, int _c
 
 void MultimeterChannel::StartMeasurement()
 {
-  measurement_unit->StartMeasurement(channel_no, 0);
+  measurement_unit->StartMeasurement(channel_no);
 }
 
 bool MultimeterChannel::IsMeasurementFinished()
@@ -22,6 +25,35 @@ bool MultimeterChannel::IsReadyForNewMeasurement()
   return true;
 }
 
+bool Meter::IsMeasurementFinished()
+{
+  bool finished = measurement_unit->IsMeasurementFinished();
+  if (finished)
+  {
+    result = measurement_unit->GetMeasurementResult();
+    if (result == INT_MAX || result == INT_MIN)
+    {
+      if (current_gain != 1)
+      {
+        current_gain = 1;
+        measurement_unit->SetGain(1);
+        measurement_unit->StartMeasurement(channel_no);
+        return false;
+      }
+      return true;
+    }
+    int gain = result == 0 ? INT_MAX : measurement_unit->GetMaxValue(channel_no) / abs(result);
+    gain = measurement_unit->SetGain(gain);
+    if (gain != current_gain)
+    {
+      measurement_unit->StartMeasurement(channel_no);
+      return false;
+    }
+    return true;
+  }
+  return false;
+}
+
 Ampermeter::Ampermeter(long long int _R)
 {
   R = _R;
@@ -32,9 +64,10 @@ MultimeterChannelType Ampermeter::GetChannelType()
   return CHANNEL_TYPE_CURRENT;
 }
 
-long long int Ampermeter::GetMeasurementResult()
+int Ampermeter::GetMeasurementResult()
 {
-  return measurement_unit->GetMeasurementResult() * 1000 / R;
+  return static_cast<int>(static_cast<long long int>(result) * measurement_unit->GetVref() * 1000 / R /
+              measurement_unit->GetMaxValue(channel_no));
 }
 
 Voltmeter::Voltmeter(long long int _coef)
@@ -47,9 +80,10 @@ MultimeterChannelType Voltmeter::GetChannelType()
   return CHANNEL_TYPE_VOLTAGE;
 }
 
-long long int Voltmeter::GetMeasurementResult()
+int Voltmeter::GetMeasurementResult()
 {
-  return measurement_unit->GetMeasurementResult() * coef / 1000000;
+  return static_cast<int>(static_cast<long long int>(result) * measurement_unit->GetVref() * coef / 1000000 /
+                            measurement_unit->GetMaxValue(channel_no));
 }
 
 Ohmmeter::Ohmmeter()
@@ -68,7 +102,7 @@ bool Ohmmeter::IsMeasurementFinished()
   return measurement_unit->IsMeasurementFinished();
 }
 
-long long int Ohmmeter::GetMeasurementResult()
+int Ohmmeter::GetMeasurementResult()
 {
   //todo
   return measurement_unit->GetMeasurementResult();
@@ -78,6 +112,12 @@ unsigned int MeasurementUint::GetTicks(unsigned int ms) const
 {
   return multimeter->GetTicks(ms);
 }
+
+int MeasurementUint::SetGain(int gain)
+{
+  return 1;
+}
+
 
 Multimeter::Multimeter(MeasurementUint **_units, unsigned int enabled_measurement_types, unsigned int _tick_ms)
 {

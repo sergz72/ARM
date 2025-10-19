@@ -45,36 +45,46 @@ public:
   virtual MultimeterChannelType GetChannelType() = 0;
   virtual void StartMeasurement();
   virtual bool IsMeasurementFinished();
-  virtual long long int GetMeasurementResult() = 0;
+  virtual int GetMeasurementResult() = 0;
   virtual bool IsReadyForNewMeasurement();
 };
 
-class Ampermeter: public MultimeterChannel
+class Meter: public MultimeterChannel
+{
+protected:
+  int current_gain;
+  int result;
+  Meter() { current_gain = 1; }
+  bool IsMeasurementFinished() override;
+  int GetMeasurementResult() override { return result; }
+};
+
+class Ampermeter: public Meter
 {
   unsigned int R;
 public:
   Ampermeter(long long int _R);
   MultimeterChannelType GetChannelType() override;
-  long long int GetMeasurementResult() override;
+  int GetMeasurementResult() override;
 };
 
-class Voltmeter: public MultimeterChannel
+class Voltmeter: public Meter
 {
   long long int coef;
 public:
   Voltmeter(long long int _coef);
   MultimeterChannelType GetChannelType() override;
-  long long int GetMeasurementResult() override;
+  int GetMeasurementResult() override;
 };
 
-class Ohmmeter: public MultimeterChannel
+class Ohmmeter: public Meter
 {
   CurrentSourceLevel current_level;
 public:
   Ohmmeter();
   MultimeterChannelType GetChannelType() override;
   bool IsMeasurementFinished() override;
-  long long int GetMeasurementResult() override;
+  int GetMeasurementResult() override;
 };
 
 class Multimeter;
@@ -86,13 +96,16 @@ public:
   void SetParameters(Multimeter *_multimeter) { multimeter = _multimeter; }
   virtual ~MeasurementUint() = default;
   virtual int GetNumChannels() const = 0;
-  virtual long long int GetCurrentSourceValue(CurrentSourceLevel current_level) = 0;
+  virtual int GetCurrentSourceValue(CurrentSourceLevel current_level) = 0;
   virtual MultimeterChannel *GetChannel(int channel) = 0;
   virtual int SetChannelCurrentSource(int channel, CurrentSourceLevel current_level) = 0;
-  virtual void StartMeasurement(int channel, unsigned int parameter) = 0;
+  virtual void StartMeasurement(int channel) = 0;
   virtual bool IsMeasurementFinished() = 0;
-  virtual long long int GetMeasurementResult() = 0;
+  virtual int GetMeasurementResult() = 0;
+  virtual int GetVref() = 0;
+  virtual int GetMaxValue(int channel) = 0;
   unsigned int GetTicks(unsigned int ms) const;
+  virtual int SetGain(int gain);
 };
 
 class Multimeter
