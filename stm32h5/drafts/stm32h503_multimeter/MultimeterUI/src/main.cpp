@@ -3,9 +3,6 @@
 #include <gtk/gtk.h>
 #include "multimeter.h"
 
-extern multimeter_result_t multimeter_result_hal;
-extern unsigned int capacitance_value;
-
 #define LED_SIZE 40
 
 int long_delay = 0;
@@ -14,6 +11,8 @@ unsigned int key = 0;
 int led_state = 0;
 
 static GtkWidget *led_area;
+
+extern Multimeter multimeter;
 
 static void
 draw_cb (GtkDrawingArea *drawing_area,
@@ -64,8 +63,8 @@ static gboolean time_handler(GtkWidget *widget)
   if (widget == NULL) return FALSE;
 
   unsigned char keyboard_status = get_keyboard_status();
-  unsigned int multimeter_changes = multimeter_timer_event();
-  Process_Timer_Event(keyboard_status, multimeter_changes);
+  multimeter.TimerEvent();
+  Process_Timer_Event(keyboard_status);
 
   gtk_widget_queue_draw(widget);
   gtk_widget_queue_draw(led_area);
@@ -148,7 +147,7 @@ v1_changed (GtkWidget *widget,
               gpointer   data)
 {
   int value = update_label(widget, data);
-  multimeter_result_hal.voltage_current[0].voltage_uV = value * 1000;
+  //todo multimeter_result_hal.voltage_current[0].voltage_uV = value * 1000;
 }
 
 static void
@@ -156,7 +155,7 @@ i1_changed (GtkWidget *widget,
               gpointer   data)
 {
   int value = update_label(widget, data);
-  multimeter_result_hal.voltage_current[0].current_nA = value * 1000;
+  //todo multimeter_result_hal.voltage_current[0].current_nA = value * 1000;
 }
 
 static void
@@ -164,7 +163,7 @@ v2_changed (GtkWidget *widget,
               gpointer   data)
 {
   int value = update_label(widget, data);
-  multimeter_result_hal.voltage_current[1].voltage_uV = value * 1000;
+  //todo multimeter_result_hal.voltage_current[1].voltage_uV = value * 1000;
 }
 
 static void
@@ -172,7 +171,7 @@ i2_changed (GtkWidget *widget,
               gpointer   data)
 {
   int value = update_label(widget, data);
-  multimeter_result_hal.voltage_current[1].current_nA = value * 1000;
+  //todo multimeter_result_hal.voltage_current[1].current_nA = value * 1000;
 }
 
 static void
@@ -180,7 +179,7 @@ f_changed (GtkWidget *widget,
               gpointer   data)
 {
   int value = update_label(widget, data);
-  multimeter_result_hal.frequency_hz = value;
+  //todo multimeter_result_hal.frequency_hz = value;
 }
 
 static void
@@ -188,7 +187,7 @@ c_changed (GtkWidget *widget,
               gpointer   data)
 {
   int value = update_label(widget, data);
-  capacitance_value = value;
+  //todo capacitance_value = value;
 }
 
 static void
@@ -196,7 +195,7 @@ r1_changed (GtkWidget *widget,
               gpointer   data)
 {
   int value = update_label(widget, data);
-  multimeter_result_hal.resistance_mOhm[0] = value;
+  //todo multimeter_result_hal.resistance_mOhm[0] = value;
 }
 
 static void
@@ -204,7 +203,7 @@ r2_changed (GtkWidget *widget,
               gpointer   data)
 {
   int value = update_label(widget, data);
-  multimeter_result_hal.resistance_mOhm[1] = value;
+  //todo multimeter_result_hal.resistance_mOhm[1] = value;
 }
 
 static void
@@ -212,7 +211,7 @@ temp_changed (GtkWidget *widget,
               gpointer   data)
 {
   int value = update_label(widget, data);
-  multimeter_result_hal.temperature_Cx10 = value;
+  //todo multimeter_result_hal.temperature_Cx10 = value;
 }
 
 static void
@@ -220,7 +219,7 @@ vdda_changed (GtkWidget *widget,
               gpointer   data)
 {
   int value = update_label(widget, data);
-  multimeter_result_hal.vdda_mV = value;
+  //todo multimeter_result_hal.vdda_mV = value;
 }
 
 static GtkWidget*

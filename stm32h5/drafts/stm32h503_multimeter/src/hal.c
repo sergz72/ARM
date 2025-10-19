@@ -7,6 +7,7 @@
 #include <ad7793.h>
 #include <ads1220.h>
 #include <string.h>
+#include "multimeter.h"
 
 const RCCConfig rcc_config =
 {
@@ -76,7 +77,9 @@ static const ads1220_configuration ads1220_config =
   .vref = ADS1220_VREF_INTERNAL
 };
 
-volatile int capacity_measurement_done;
+volatile int capacitance_measurement_done;
+unsigned int current_ads1220_measurement;
+unsigned int current_ad7793_measurement;
 
 static void GPIOInit(void)
 {
@@ -221,9 +224,16 @@ static void AD7793_SPI_Init(void)
   GPIO_Init(AD7793_PORT, &init);
 }
 
+static void ADCInit(void)
+{
+  //todo
+}
+
 void SystemInit(void)
 {
-  capacity_measurement_done = 0;
+  capacitance_measurement_done = 0;
+  current_ads1220_measurement = 0;
+  current_ad7793_measurement = 0;
 
   RCC->AHB2ENR |= RCC_AHB2ENR_GPIOCEN | RCC_AHB2ENR_GPIOBEN | RCC_AHB2ENR_GPIOAEN;
 
@@ -243,6 +253,7 @@ void SystemInit(void)
   SPI2Init();
   ADS1220_SPI_Init();
   AD7793_SPI_Init();
+  ADCInit();
 }
 
 void _init(void)
@@ -292,17 +303,17 @@ void charge_on(int channel)
   init.Pull = GPIO_NOPULL;
   GPIO_Init(R_PORT, &init);
 }
-unsigned int get_capacity_measurement_start_time(void)
+unsigned int get_capacitance_measurement_start_time(void)
 {
   return TIM2->CCR4;
 }
 
-unsigned int get_capacity_measurement_end_time(void)
+unsigned int get_capacitance_measurement_end_time(void)
 {
   return TIM2->CCR1;
 }
 
-void capacity_measurement_start(int channel)
+void capacitance_measurement_start(int channel)
 {
   discharge_off();
   TIM2->CNT = 0;
@@ -315,7 +326,7 @@ void capacity_measurement_start(int channel)
 
 void TIM2_IRQHandler(void)
 {
-  capacity_measurement_done = 1;
+  capacitance_measurement_done = 1;
   //stop timer
   TIM2->CR1 = 0;
   //disable TIM2 interrupts
@@ -439,4 +450,121 @@ int multimeter_init(void)
   ads1220_set_configuration(ADS1220_CHANNEL, &ads1220_config);
 
   return 0;
+}
+
+unsigned int get_keyboard_status(void)
+{
+  //todo
+  return 0;
+}
+
+void power_off(void)
+{
+  POWER_OFF;
+  while (1)
+    delayms(1);
+}
+
+unsigned int check_measurements_statuses(void)
+{
+  //todo
+  return 0;
+}
+
+void start_voltage_measurements(void)
+{
+  current_ads1220_measurement = VOLTAGE1_MEASUREMENT;
+  current_ad7793_measurement = VOLTAGE2_MEASUREMENT;
+  ads1220_read_start(0, ADS1220_MUX_AIN0_AIN1, ADS1220_PGA_GAIN_1, 1);
+  ad7793_read_start(0, AD7793_CHANNEL_AIN1N_AIN1N, AD7793_GAIN_1, 0);
+}
+
+void start_frequency_measurement(void)
+{
+  //todo
+}
+
+void start_resistance_measurement(int channel, enum resistance_measurements_modes mode)
+{
+  //todo
+}
+
+void start_current_measurement(int channel)
+{
+  if (channel)
+  {
+    current_ad7793_measurement = CURRENT2_MEASUREMENT;
+    ad7793_read_start(0, AD7793_CHANNEL_AIN1N_AIN1N, AD7793_GAIN_1, 0);
+  }
+  else
+  {
+    current_ads1220_measurement = CURRENT1_MEASUREMENT;
+    ads1220_read_start(0, ADS1220_MUX_AIN0_AIN1, ADS1220_PGA_GAIN_1, 1);
+  }
+}
+
+unsigned int start_extra_measurements(int channel, int extra_measurement_no)
+{
+  if (extra_measurement_no)
+    return 0;
+  if (channel)
+  {
+    ad7793_read_start(0, AD7793_CHANNEL_AVDD6, AD7793_GAIN_1, 0);
+    return VDDA_MEASUREMENT;
+  }
+  ads1220_read_start(0, ADS1220_MUX_AIN0_AIN1, ADS1220_PGA_GAIN_1, 1);
+  return TEMPERATURE_MEASUREMENT;
+}
+
+void start_diode_voltage_measurement(int channel)
+{
+  //todo
+}
+
+unsigned int finish_voltage_measurement(int channel)
+{
+  //todo
+  return 0;
+}
+
+unsigned int finish_frequency_measurement(void)
+{
+  //todo
+  return 0;
+}
+
+unsigned int finish_resistance_measurement(int channel, enum resistance_measurements_modes mode)
+{
+  //todo
+  return 0;
+}
+
+unsigned int finish_current_measurement(int channel)
+{
+  //todo
+  return 0;
+}
+
+unsigned int finish_temperature_measurement(void)
+{
+  //todo
+  return 0;
+}
+
+unsigned int finish_vdda_measurement(void)
+{
+  //todo
+  return 0;
+}
+
+unsigned int finish_diode_voltage_measurement(int channel)
+{
+  //todo
+  return 0;
+}
+
+int capacitor_is_discharged(void)
+{
+  //todo
+  return 1;
 }

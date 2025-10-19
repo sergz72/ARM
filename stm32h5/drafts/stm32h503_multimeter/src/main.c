@@ -73,6 +73,8 @@ int main(void)
     else
       cnt_led++;
 
-    Process_Timer_Event();
+    unsigned char keyboard_status = get_keyboard_status();
+    unsigned int multimeter_changes = multimeter_timer_event();
+    Process_Timer_Event(keyboard_status, multimeter_changes);
   }
 }

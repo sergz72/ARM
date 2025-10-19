@@ -119,7 +119,19 @@
 #define CAPACITANCE_OFFSET_100K 23
 #define CAPACITANCE_MIN_VALUE_1K 200000
 
-extern volatile int capacity_measurement_done;
+#define KB_MODE 1
+#define KB_BUTTON1 2
+#define KB_BUTTON2 3
+#define KB_BUTTON3 4
+#define KB_MODE_LONG 5
+#define KB_BUTTON1_LONG 6
+#define KB_BUTTON2_LONG 7
+#define KB_BUTTON3_LONG 8
+
+#define USE_MYVSPRINTF
+#define LCD_PRINTF_BUFFER_LENGTH 20
+
+extern volatile int capacitance_measurement_done;
 
 #ifdef __cplusplus
 extern "C" {
@@ -131,9 +143,9 @@ void charge_off(void);
 void charge_on(int channel);
 void discharge_off(void);
 void discharge_on(void);
-void capacity_measurement_start(int channel);
-unsigned int get_capacity_measurement_start_time(void);
-unsigned int get_capacity_measurement_end_time(void);
+void capacitance_measurement_start(int channel);
+unsigned int get_capacitance_measurement_start_time(void);
+unsigned int get_capacitance_measurement_end_time(void);
 
 void SPI_MOSI_SET(int channel);
 void SPI_MOSI_CLR(int channel);
@@ -142,6 +154,9 @@ void SPI_CLK_IDLE(int channel);
 void SPI_CLK_ACTIVE(int channel);
 void SPI_CS_SET(int channel);
 void SPI_CS_CLR(int channel);
+
+unsigned int get_keyboard_status(void);
+void power_off(void);
 
 #ifdef __cplusplus
 }

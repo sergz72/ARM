@@ -17,11 +17,11 @@ static const ShellCommand c_command = {
 
 static int c_handler(printf_func pfunc, gets_func gfunc, int argc, char **argv, void *data)
 {
-  capacitance_result result;
+  /*capacitance_result result;
   int rc = get_capacitance(&result);
   if (rc)
     return rc;
-  pfunc("Result = %d pF, difference = %d, channel = %d\r\n", result.pF, result.diff, result.channel);
+  pfunc("Result = %d pF, difference = %d, channel = %d\r\n", result.pF, result.diff, result.channel);*/
   return 0;
 }
 

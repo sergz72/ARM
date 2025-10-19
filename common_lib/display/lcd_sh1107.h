@@ -19,6 +19,10 @@
 
 #define SH1107_SEGREMAP 0xA0
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 void SH1107_Write(int num_bytes, unsigned char dc, const unsigned char *buffer); // should be defined in hal.c
 
 void LCDSetContrast(unsigned char contrast);
@@ -26,5 +30,9 @@ void LcdOff(void);
 void LcdOn(void);
 void LcdInvertDisplay(int invert);
 void LcdPrintf(const char *format, unsigned int column, unsigned int row, const FONT_INFO *f, int white_on_black, ...);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

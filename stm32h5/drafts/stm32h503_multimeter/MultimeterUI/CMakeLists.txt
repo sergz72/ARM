@@ -1,13 +1,17 @@
 cmake_minimum_required(VERSION 3.30)
-project(MultimeterUI C)
+project(MultimeterUI C CXX)
 
 set(CMAKE_C_STANDARD 23)
+set(CMAKE_CXX_STANDARD 23)
 
 add_executable(MultimeterUI
         src/hal.c
-        src/ui.c
-        src/main.c
-        src/multimeter.c
+        src/ui.cpp
+        src/main.cpp
+        src/multimeter.cpp
+        src/MeasurementUnitAD7793.cpp
+        src/MeasurementUnitADS1220.cpp
+        src/MeasurementUnitInternal.cpp
         ../../my/Programs/ARM_CLION/common_lib/display/lcd_sh1107.c
         ../../my/Programs/ARM_CLION/common_lib/display/lcd.c
         ../../my/Programs/ARM_CLION/common_lib/display/font.c

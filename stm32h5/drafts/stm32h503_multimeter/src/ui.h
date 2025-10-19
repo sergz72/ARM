@@ -1,7 +1,7 @@
-#ifndef STM32H503_MULTIMETER_UI_H
-#define STM32H503_MULTIMETER_UI_H
+#ifndef _MULTIMETER_UI_H
+#define _MULTIMETER_UI_H
 
 void UI_Init(void);
-void Process_Timer_Event(void);
+void Process_Timer_Event(unsigned char keyboard_status, unsigned int multimeter_changes);
 
 #endif

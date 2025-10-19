@@ -30,6 +30,8 @@
 #define USE_MYVSPRINTF
 #define LCD_PRINTF_BUFFER_LENGTH 20
 
+#define MEASUREMENT_UNITS_COUNT 3
+
 extern volatile int capacitance_measurement_done;
 
 #ifdef __cplusplus
