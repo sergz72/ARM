@@ -12,6 +12,7 @@ add_executable(MultimeterUI
         src/MeasurementUnitAD7793.cpp
         src/MeasurementUnitADS1220.cpp
         src/MeasurementUnitInternal.cpp
+        src/multimeter_init.cpp
         ../../my/Programs/ARM_CLION/common_lib/display/lcd_sh1107.c
         ../../my/Programs/ARM_CLION/common_lib/display/lcd.c
         ../../my/Programs/ARM_CLION/common_lib/display/font.c

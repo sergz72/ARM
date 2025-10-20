@@ -81,6 +81,7 @@ typedef struct
 typedef struct
 {
   int channel;
+  int unipolar;
   unsigned char channel_no;
   unsigned char gain;
   double input_divider_coefficient;
@@ -93,6 +94,10 @@ typedef struct
   double voltage;
 } ad7793_data;
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 void ad7793_spi_transfer(int channel, const unsigned char *wdata, unsigned int wlength, unsigned char *rdata,
                           unsigned int rlength); // should be defined in hal.c
 
@@ -102,25 +107,29 @@ void ad7793_read_register(int channel, unsigned char reg_no, unsigned char *data
 void ad7793_set_mode(int channel, unsigned char mode);
 void ad7793_set_mode_and_update_rate(int channel, unsigned char mode, unsigned char update_rate);
 void ad7793_set_configuration(int channel, const ad7793_configuration *config);
-void ad7793_set_channel_and_gain(int channel, unsigned char channel_no, unsigned char gain);
+void ad7793_set_channel_and_gain(int channel, unsigned char channel_no, unsigned char gain, int unipolar);
 void ad7793_set_io(int channel, unsigned char iexcdir, unsigned char iexcen);
 void ad7793_set_bias(int channel, unsigned char bias);
 int ad7793_wait(int channel, int timeout);
-int ad7793_calibrate_offset_internal(int channel, unsigned char channel_no, unsigned char gain, int timeout);
-int ad7793_calibrate_gain_internal(int channel, unsigned char channel_no, unsigned char gain, int timeout);
-int ad7793_calibrate_offset_system(int channel, unsigned char channel_no, unsigned char gain, int timeout);
-int ad7793_calibrate_gain_system(int channel, unsigned char channel_no, unsigned char gain, int timeout);
+int ad7793_calibrate_offset_internal(int channel, unsigned char channel_no, unsigned char gain, int unipolar, int timeout);
+int ad7793_calibrate_gain_internal(int channel, unsigned char channel_no, unsigned char gain, int unipolar, int timeout);
+int ad7793_calibrate_offset_system(int channel, unsigned char channel_no, unsigned char gain, int unipolar, int timeout);
+int ad7793_calibrate_gain_system(int channel, unsigned char channel_no, unsigned char gain, int unipolar, int timeout);
 int ad7793_get_offset(int channel, unsigned char channel_no);
 void ad7793_set_offset(int channel, unsigned char channel_no, int value);
 int ad7793_get_gain(int channel, unsigned char channel_no);
 void ad7793_set_gain(int channel, unsigned char channel_no, int value);
-int ad7793_read(int channel, unsigned char channel_no, unsigned char gain, int *result, int timeout);
+int ad7793_read(int channel, unsigned char channel_no, unsigned char gain, int unipolar, int *result, int timeout);
 int ad7793_read_voltage(const ad7793_read_voltage_configuration * configuration,
                         ad7793_data *result, int timeout);
 
-void ad7793_read_start(int channel, unsigned char channel_no, unsigned char gain);
+void ad7793_read_start(int channel, unsigned char channel_no, unsigned char gain, int unipolar);
 void ad7793_read_finish(int channel, int *result);
 void ad7793_read_voltage_finish(const ad7793_read_voltage_configuration *configuration,
                                  ad7793_data *result);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

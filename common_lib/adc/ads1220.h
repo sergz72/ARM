@@ -114,6 +114,10 @@ typedef struct
   double voltage;
 } ads1220_data;
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 void ads1220_spi_transfer(int channel, const unsigned char *wdata, unsigned int wlength, unsigned char *rdata,
                           unsigned int rlength); // should be defined in hal.c
 
@@ -135,5 +139,9 @@ void ads1220_read_voltage_finish(const ads1220_read_voltage_configuration * conf
                                   ads1220_data *result);
 
 extern int ads1220_offsets[ADS1220_MAX_CHANNELS][ADS1220_MAX_MUX+1][ADS1220_MAX_GAIN+1];
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

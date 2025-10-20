@@ -1,7 +1,7 @@
 #include "board.h"
 #include "ui.h"
 #include <gtk/gtk.h>
-#include "multimeter.h"
+#include "multimeter_init.h"
 
 #define LED_SIZE 40
 
@@ -12,7 +12,7 @@ int led_state = 0;
 
 static GtkWidget *led_area;
 
-extern Multimeter multimeter;
+extern multimeter_result_t multimeter_result_hal;
 
 static void
 draw_cb (GtkDrawingArea *drawing_area,
@@ -147,7 +147,7 @@ v1_changed (GtkWidget *widget,
               gpointer   data)
 {
   int value = update_label(widget, data);
-  //todo multimeter_result_hal.voltage_current[0].voltage_uV = value * 1000;
+  multimeter_result_hal.voltage_current[0].voltage_uV = value * 1000;
 }
 
 static void
@@ -155,7 +155,7 @@ i1_changed (GtkWidget *widget,
               gpointer   data)
 {
   int value = update_label(widget, data);
-  //todo multimeter_result_hal.voltage_current[0].current_nA = value * 1000;
+  multimeter_result_hal.voltage_current[0].current_nA = value * 1000;
 }
 
 static void
@@ -163,7 +163,7 @@ v2_changed (GtkWidget *widget,
               gpointer   data)
 {
   int value = update_label(widget, data);
-  //todo multimeter_result_hal.voltage_current[1].voltage_uV = value * 1000;
+  multimeter_result_hal.voltage_current[1].voltage_uV = value * 1000;
 }
 
 static void
@@ -171,7 +171,7 @@ i2_changed (GtkWidget *widget,
               gpointer   data)
 {
   int value = update_label(widget, data);
-  //todo multimeter_result_hal.voltage_current[1].current_nA = value * 1000;
+  multimeter_result_hal.voltage_current[1].current_nA = value * 1000;
 }
 
 static void
@@ -179,7 +179,7 @@ f_changed (GtkWidget *widget,
               gpointer   data)
 {
   int value = update_label(widget, data);
-  //todo multimeter_result_hal.frequency_hz = value;
+  multimeter_result_hal.frequency_hz = value;
 }
 
 static void
@@ -187,7 +187,7 @@ c_changed (GtkWidget *widget,
               gpointer   data)
 {
   int value = update_label(widget, data);
-  //todo capacitance_value = value;
+  multimeter_result_hal.capacitance.pF = value;
 }
 
 static void
@@ -195,7 +195,7 @@ r1_changed (GtkWidget *widget,
               gpointer   data)
 {
   int value = update_label(widget, data);
-  //todo multimeter_result_hal.resistance_mOhm[0] = value;
+  multimeter_result_hal.resistance_mOhm[0] = value;
 }
 
 static void
@@ -203,7 +203,7 @@ r2_changed (GtkWidget *widget,
               gpointer   data)
 {
   int value = update_label(widget, data);
-  //todo multimeter_result_hal.resistance_mOhm[1] = value;
+  multimeter_result_hal.resistance_mOhm[1] = value;
 }
 
 static void
@@ -211,7 +211,7 @@ temp_changed (GtkWidget *widget,
               gpointer   data)
 {
   int value = update_label(widget, data);
-  //todo multimeter_result_hal.temperature_Cx10 = value;
+  multimeter_result_hal.temperature_Cx10 = value;
 }
 
 static void
@@ -219,7 +219,7 @@ vdda_changed (GtkWidget *widget,
               gpointer   data)
 {
   int value = update_label(widget, data);
-  //todo multimeter_result_hal.vdda_mV = value;
+  multimeter_result_hal.vdda_mV = value;
 }
 
 static GtkWidget*
@@ -375,6 +375,8 @@ activate (GtkApplication *app,
   gtk_widget_set_vexpand (vbox, true);
 
   create_sliders(vbox);
+
+  multimeter_init();
 
   UI_Init();
 

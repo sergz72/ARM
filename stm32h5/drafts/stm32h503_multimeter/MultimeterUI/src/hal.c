@@ -1,6 +1,9 @@
 #include "board.h"
 #include <lcd_sh1107.h>
 #include <string.h>
+#include "ui.h"
+#include <ad7793.h>
+#include <ads1220.h>
 
 #define SIZE (LCD_HEIGHT * LCD_WIDTH / 8)
 
@@ -12,6 +15,18 @@ static unsigned char lcd_buffer[SIZE], *lcd_buffer_p = lcd_buffer;
 
 volatile int capacitance_measurement_done;
 static int capacitance_measurement_channel;
+
+multimeter_result_t multimeter_result_hal =
+{
+  .frequency_hz = 0,
+  .diode_voltage_uV = {0,0},
+  .resistance_mOhm = {0, 0},
+  .inductance_nH = 0,
+  .temperature_Cx10 = 0,
+  .vdda_mV = 0,
+  .capacitance = {0, 0, 0},
+  .voltage_current = {{0, 0}, {0, 0}}
+};
 
 void discharge_off(void)
 {
@@ -96,4 +111,16 @@ void power_off(void)
 int capacitor_is_discharged(void)
 {
   return 1;
+}
+
+void ad7793_spi_transfer(int channel, const unsigned char *wdata, unsigned int wlength, unsigned char *rdata,
+                          unsigned int rlength)
+{
+  //todo
+}
+
+void ads1220_spi_transfer(int channel, const unsigned char *wdata, unsigned int wlength, unsigned char *rdata,
+                          unsigned int rlength)
+{
+  //todo
 }

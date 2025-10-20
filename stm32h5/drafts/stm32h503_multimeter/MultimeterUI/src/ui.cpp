@@ -5,9 +5,7 @@
 #include <cstdlib>
 #include <fonts/font10.h>
 #include <multimeter.h>
-#include "MeasurementUnitAD7793.h"
-#include "MeasurementUnitADS1220.h"
-#include "MeasurementUnitInternal.h"
+#include "multimeter_init.h"
 
 enum MultimeterModes {FREQUENCY, RESISTANCE, DIODE_TEST, CONTINUITY, CAPACITANCE, INDUCTANCE};
 #define MULTIMETER_MAX_MODE INDUCTANCE
@@ -18,25 +16,19 @@ enum MultimeterModes {FREQUENCY, RESISTANCE, DIODE_TEST, CONTINUITY, CAPACITANCE
 #define VDDA_X  (6*(MAIN_FONT.character_max_width+MAIN_FONT.character_spacing))
 #define F_X     (MAIN_FONT.character_max_width+MAIN_FONT.character_spacing)
 
-#define ALWAYS_ENABLED_MEASUREMENTS ((1<<CHANNEL_TYPE_VOLTAGE)|(1<<CHANNEL_TYPE_CURRENT)|\
-                                     (1<<CHANNEL_TYPE_VDDA)|(1<<CHANNEL_TYPE_TEMPERATURE))
-
-#define DEFAULT_ENABLED_MEASUREMENTS (ALWAYS_ENABLED_MEASUREMENTS|(1<<CHANNEL_TYPE_FREQUENCY))
-
 static MultimeterModes multimeter_mode = MULTIMETER_MIN_MODE;
 
-static MeasurementUnitAD7793 UnitAD7793;
-static MeasurementUnitADS1220 UnitADS1220;
-static MeasurementUnitInternal UnitInternal;
-
-static const MeasurementUint *measurement_units[MEASUREMENT_UNITS_COUNT] = {
-  &UnitAD7793, &UnitADS1220, &UnitInternal
+multimeter_result_t multimeter_result =
+{
+  .frequency_hz = 0,
+  .diode_voltage_uV = {0,0},
+  .resistance_mOhm = {0, 0},
+  .inductance_nH = 0,
+  .temperature_Cx10 = 0,
+  .vdda_mV = 0,
+  .capacitance = {0, 0, 0},
+  .voltage_current = {{0, 0}, {0, 0}}
 };
-
-Multimeter multimeter(const_cast<MeasurementUint**>(measurement_units), DEFAULT_ENABLED_MEASUREMENTS, 100);
-
-static int last_voltage[2];
-static int last_current[2];
 
 static void DrawF()
 {
@@ -85,10 +77,6 @@ static void DrawMode()
 
 void UI_Init()
 {
-  last_current[0] = 0;
-  last_current[1] = 0;
-  last_voltage[0] = 0;
-  last_voltage[1] = 0;
   LcdInit();
   LcdScreenFill(BLACK_COLOR);
   int y = 0;
@@ -137,8 +125,8 @@ static void DrawCurrent(const int line, const int value_nA)
 
 static void DrawPower(const int line, int channel)
 {
-  int uV = last_voltage[channel];
-  int nA = last_current[channel];
+  int uV = multimeter_result.voltage_current[channel].voltage_uV;
+  int nA = multimeter_result.voltage_current[channel].current_nA;
 
   if (uV == INT_MAX || uV == INT_MIN || nA == INT_MAX || nA == INT_MIN)
     LcdDrawText(VALUE_X, line*MAIN_FONT.char_height, "OVERLOAD ", &MAIN_FONT, WHITE_COLOR, BLACK_COLOR, nullptr);
@@ -271,13 +259,13 @@ void Process_Timer_Event(const unsigned char keyboard_status)
       CHANNEL_TYPE_VOLTAGE:
         DrawVoltage(channel == 0 ? 1 : 4, result);
         power_changed[channel] = true;
-        last_voltage[channel] = result;
+        multimeter_result.voltage_current[channel].voltage_uV = result;
         multimeter_changes = true;
         break;
       CHANNEL_TYPE_CURRENT:
         DrawCurrent(channel == 0 ? 2 : 5, result);
         power_changed[channel] = true;
-        last_current[channel] = result;
+        multimeter_result.voltage_current[channel].current_nA = result;
         multimeter_changes = true;
         break;
       CHANNEL_TYPE_VDDA:

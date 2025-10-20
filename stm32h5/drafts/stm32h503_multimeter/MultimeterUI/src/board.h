@@ -32,6 +32,12 @@
 
 #define MEASUREMENT_UNITS_COUNT 3
 
+#define AD7793_MAX_CHANNELS 1
+#define AD7793_RDY_GET(channel) 0
+
+#define ADS1220_MAX_CHANNELS 1
+#define ADS1220_DRDY_GET(channel) 0
+
 extern volatile int capacitance_measurement_done;
 
 #ifdef __cplusplus

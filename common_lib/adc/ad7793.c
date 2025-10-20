@@ -67,10 +67,10 @@ void ad7793_set_configuration(int channel, const ad7793_configuration *config)
   configurations[channel][1] = data[1];
 }
 
-void ad7793_set_channel_and_gain(int channel, unsigned char channel_no, unsigned char gain)
+void ad7793_set_channel_and_gain(int channel, unsigned char channel_no, unsigned char gain, int unipolar)
 {
   unsigned char data[2];
-  data[0] = (configurations[channel][0] & 0xF8) | (gain & 7);
+  data[0] = (configurations[channel][0] & 0xE8) | (gain & 7) | (unipolar ? 0x10 : 0);
   data[1] = (configurations[channel][1] & 0xF8) | (channel_no & 7);
   ad7793_write_register(channel, AD7793_REGISTER_CONFIGURATION, data, 2);
   configurations[channel][0] = data[0];
@@ -104,30 +104,30 @@ int ad7793_wait(int channel, int timeout)
   return timeout == 0;
 }
 
-int ad7793_calibrate_offset_internal(int channel, unsigned char channel_no, unsigned char gain, int timeout)
+int ad7793_calibrate_offset_internal(int channel, unsigned char channel_no, unsigned char gain, int unipolar, int timeout)
 {
-  ad7793_set_channel_and_gain(channel, channel_no, gain);
+  ad7793_set_channel_and_gain(channel, channel_no, gain, unipolar);
   ad7793_set_mode(channel, AD7793_MODE_INTERNAL_OFFSET_CALIBRATION);
   return ad7793_wait(channel, timeout);
 }
 
-int ad7793_calibrate_gain_internal(int channel, unsigned char channel_no, unsigned char gain, int timeout)
+int ad7793_calibrate_gain_internal(int channel, unsigned char channel_no, unsigned char gain, int unipolar, int timeout)
 {
-  ad7793_set_channel_and_gain(channel, channel_no, gain);
+  ad7793_set_channel_and_gain(channel, channel_no, gain, unipolar);
   ad7793_set_mode(channel, AD7793_MODE_INTERNAL_GAIN_CALIBRATION);
   return ad7793_wait(channel, timeout);
 }
 
-int ad7793_calibrate_offset_system(int channel, unsigned char channel_no, unsigned char gain, int timeout)
+int ad7793_calibrate_offset_system(int channel, unsigned char channel_no, unsigned char gain, int unipolar, int timeout)
 {
-  ad7793_set_channel_and_gain(channel, channel_no, gain);
+  ad7793_set_channel_and_gain(channel, channel_no, gain, unipolar);
   ad7793_set_mode(channel, AD7793_MODE_SYSTEM_OFFSET_CALIBRATION);
   return ad7793_wait(channel, timeout);
 }
 
-int ad7793_calibrate_gain_system(int channel, unsigned char channel_no, unsigned char gain, int timeout)
+int ad7793_calibrate_gain_system(int channel, unsigned char channel_no, unsigned char gain, int unipolar, int timeout)
 {
-  ad7793_set_channel_and_gain(channel, channel_no, gain);
+  ad7793_set_channel_and_gain(channel, channel_no, gain, unipolar);
   ad7793_set_mode(channel, AD7793_MODE_SYSTEM_GAIN_CALIBRATION);
   return ad7793_wait(channel, timeout);
 }
@@ -136,7 +136,7 @@ int ad7793_get_offset(int channel, unsigned char channel_no)
 {
   int offset;
   unsigned char data[3];
-  ad7793_set_channel_and_gain(channel, channel_no, AD7793_GAIN_1);
+  ad7793_set_channel_and_gain(channel, channel_no, AD7793_GAIN_1, 1);
   ad7793_read_register(channel, AD7793_REGISTER_OFFSET, data, 3);
   offset = (data[0] << 16) | (data[1] << 8) | data[2];
   return offset;
@@ -148,7 +148,7 @@ void ad7793_set_offset(int channel, unsigned char channel_no, int value)
   data[0] = (unsigned char)(value >> 16);
   data[1] = (unsigned char)(value >> 8);
   data[2] = (unsigned char)value;
-  ad7793_set_channel_and_gain(channel, channel_no, AD7793_GAIN_1);
+  ad7793_set_channel_and_gain(channel, channel_no, AD7793_GAIN_1, 1);
   ad7793_write_register(channel, AD7793_REGISTER_OFFSET, data, 3);
 }
 
@@ -156,7 +156,7 @@ int ad7793_get_gain(int channel, unsigned char channel_no)
 {
   int gain;
   unsigned char data[3];
-  ad7793_set_channel_and_gain(channel, channel_no, AD7793_GAIN_1);
+  ad7793_set_channel_and_gain(channel, channel_no, AD7793_GAIN_1, 1);
   ad7793_read_register(channel, AD7793_REGISTER_GAIN, data, 3);
   gain = (data[0] << 16) | (data[1] << 8) | data[2];
   return gain;
@@ -168,14 +168,14 @@ void ad7793_set_gain(int channel, unsigned char channel_no, int value)
   data[0] = (unsigned char)(value >> 16);
   data[1] = (unsigned char)(value >> 8);
   data[2] = (unsigned char)value;
-  ad7793_set_channel_and_gain(channel, channel_no, AD7793_GAIN_1);
+  ad7793_set_channel_and_gain(channel, channel_no, AD7793_GAIN_1, 1);
   ad7793_write_register(channel, AD7793_REGISTER_GAIN, data, 3);
 }
 
-void ad7793_read_start(int channel, unsigned char channel_no, unsigned char gain)
+void ad7793_read_start(int channel, unsigned char channel_no, unsigned char gain, int unipolar)
 {
   unsigned char data[3];
-  ad7793_set_channel_and_gain(channel, channel_no, gain);
+  ad7793_set_channel_and_gain(channel, channel_no, gain, unipolar);
   if (!AD7793_RDY_GET(channel))
     ad7793_read_register(channel, AD7793_REGISTER_DATA, data, 3);
   ad7793_set_mode(channel, AD7793_MODE_SINGLE_CONVERSION);
@@ -188,9 +188,9 @@ void ad7793_read_finish(int channel, int *result)
   *result = (data[0] << 16) | (data[1] << 8) | data[2];
 }
 
-int ad7793_read(int channel, unsigned char channel_no, unsigned char gain, int *result, int timeout)
+int ad7793_read(int channel, unsigned char channel_no, unsigned char gain, int unipolar, int *result, int timeout)
 {
-  ad7793_read_start(channel, channel_no, gain);
+  ad7793_read_start(channel, channel_no, gain, unipolar);
   int rc = ad7793_wait(channel, timeout);
   if (rc)
     return rc;
@@ -211,7 +211,7 @@ void ad7793_read_voltage_finish(const ad7793_read_voltage_configuration *configu
 int ad7793_read_voltage(const ad7793_read_voltage_configuration *configuration,
                         ad7793_data *result, int timeout)
 {
-  ad7793_read_start(configuration->channel, configuration->channel_no, configuration->gain);
+  ad7793_read_start(configuration->channel, configuration->channel_no, configuration->gain, configuration->unipolar);
   int rc = ad7793_wait(configuration->channel, timeout);
   if (rc)
     return rc;
