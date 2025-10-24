@@ -1,3 +1,4 @@
+#include <ad7793.h>
 #include "MeasurementUnitAD7793.h"
 
 static Ampermeter ampermeter(1000);
@@ -46,23 +47,38 @@ int MeasurementUnitAD7793::SetChannelCurrentSource(int channel, CurrentSourceLev
 
 void MeasurementUnitAD7793::StartMeasurement(int channel)
 {
-  //todo
+  ad7793_read_start(0, channel, gains[channel], 0);
 }
 
 bool MeasurementUnitAD7793::IsMeasurementFinished()
 {
-  //todo
   return true;
 }
 
 int MeasurementUnitAD7793::GetMeasurementResult()
 {
-  //todo
-  return 0;
+  return ad7793_read_finish(0);
 }
 
-int MeasurementUnitAD7793::SetGain(int gain)
+int MeasurementUnitAD7793::SetGain(int channel, int gain)
 {
-  //todo
-  return 1;
+  if (gain < 2)
+    gain = 0;
+  else if (gain < 4)
+    gain = 1;
+  else if (gain < 8)
+    gain = 2;
+  else if (gain < 16)
+    gain = 3;
+  else if (gain < 32)
+    gain = 4;
+  else if (gain < 64)
+    gain = 5;
+  else if (gain < 128)
+    gain = 6;
+  else
+    gain = 7;
+
+  gains[channel] = gain;
+  return 1 << gain;
 }

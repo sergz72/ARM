@@ -124,7 +124,7 @@ int ad7793_read_voltage(const ad7793_read_voltage_configuration * configuration,
                         ad7793_data *result, int timeout);
 
 void ad7793_read_start(int channel, unsigned char channel_no, unsigned char gain, int unipolar);
-void ad7793_read_finish(int channel, int *result);
+int ad7793_read_finish(int channel);
 void ad7793_read_voltage_finish(const ad7793_read_voltage_configuration *configuration,
                                  ad7793_data *result);
 

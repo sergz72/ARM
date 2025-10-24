@@ -36,14 +36,14 @@ bool Meter::IsMeasurementFinished()
       if (current_gain != 1)
       {
         current_gain = 1;
-        measurement_unit->SetGain(1);
+        measurement_unit->SetGain(channel_no, 1);
         measurement_unit->StartMeasurement(channel_no);
         return false;
       }
       return true;
     }
     int gain = result == 0 ? INT_MAX : measurement_unit->GetMaxValue(channel_no) / abs(result);
-    gain = measurement_unit->SetGain(gain);
+    gain = measurement_unit->SetGain(channel_no, gain);
     if (gain != current_gain)
     {
       measurement_unit->StartMeasurement(channel_no);
@@ -113,7 +113,7 @@ unsigned int MeasurementUint::GetTicks(unsigned int ms) const
   return multimeter->GetTicks(ms);
 }
 
-int MeasurementUint::SetGain(int gain)
+int MeasurementUint::SetGain(int channel, int gain)
 {
   return 1;
 }
@@ -133,7 +133,7 @@ Multimeter::Multimeter(MeasurementUint **_units, unsigned int enabled_measuremen
     MeasurementUint *current_unit = measurement_units[unit];
     current_unit->SetParameters(this);
     int channels = current_unit->GetNumChannels();
-    for (int channel = 0; channel <= channels; channel++)
+    for (int channel = 0; channel < channels; channel++)
     {
       MultimeterChannel *c = current_unit->GetChannel(channel);
       MultimeterChannelType t = c->GetChannelType();
@@ -152,12 +152,15 @@ void Multimeter::EnableChannels(unsigned int _enabled_measurement_types)
 int Multimeter::GetNextChannel(int unit) const
 {
   int channel = current_channel[unit];
+  int stop_channel = channel;
   do
   {
     if (channel == measurement_units[unit]->GetNumChannels() - 1)
       channel = 0;
     else
       channel++;
+    if (channel == stop_channel)
+      return -1;
   } while (!(enabled_measurement_types & (1 << measurement_units[unit]->GetChannel(channel)->GetChannelType())));
   return channel;
 }
@@ -175,13 +178,20 @@ void Multimeter::TimerEvent()
         measurement_is_in_progress[i] = false;
         current_channel[i] = GetNextChannel(i);
       }
-      else
+    }
+    else
+    {
+      if (channel == -1)
       {
-        if (measurement_units[i]->GetChannel(channel)->IsReadyForNewMeasurement())
-        {
-          measurement_units[i]->GetChannel(channel)->StartMeasurement();
-          measurement_is_in_progress[i] = true;
-        }
+        channel = GetNextChannel(i);
+        if (channel == -1)
+          continue;
+        current_channel[i] = channel;
+      }
+      if (measurement_units[i]->GetChannel(channel)->IsReadyForNewMeasurement())
+      {
+        measurement_units[i]->GetChannel(channel)->StartMeasurement();
+        measurement_is_in_progress[i] = true;
       }
     }
   }

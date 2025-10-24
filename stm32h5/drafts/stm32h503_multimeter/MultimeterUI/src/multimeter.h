@@ -105,7 +105,7 @@ public:
   virtual int GetVref() = 0;
   virtual int GetMaxValue(int channel) = 0;
   unsigned int GetTicks(unsigned int ms) const;
-  virtual int SetGain(int gain);
+  virtual int SetGain(int channel, int gain);
 };
 
 class Multimeter

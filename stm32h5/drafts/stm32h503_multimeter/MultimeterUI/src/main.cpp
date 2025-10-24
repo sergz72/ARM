@@ -1,6 +1,8 @@
 #include "board.h"
 #include "ui.h"
 #include <gtk/gtk.h>
+#include <ad7793_emulator.h>
+#include <ads1220_emulator.h>
 #include "multimeter_init.h"
 
 #define LED_SIZE 40
@@ -147,7 +149,8 @@ v1_changed (GtkWidget *widget,
               gpointer   data)
 {
   int value = update_label(widget, data);
-  multimeter_result_hal.voltage_current[0].voltage_uV = value * 1000;
+  //multimeter_result_hal.voltage_current[0].voltage_uV = value * 1000;
+  ad7793_emulator_config[0].ain_uv[1] = value * 1000;
 }
 
 static void
@@ -155,7 +158,8 @@ i1_changed (GtkWidget *widget,
               gpointer   data)
 {
   int value = update_label(widget, data);
-  multimeter_result_hal.voltage_current[0].current_nA = value * 1000;
+  //multimeter_result_hal.voltage_current[0].current_nA = value * 1000;
+  ad7793_emulator_config[0].ain_uv[0] = value * 1000;
 }
 
 static void
@@ -375,6 +379,12 @@ activate (GtkApplication *app,
   gtk_widget_set_vexpand (vbox, true);
 
   create_sliders(vbox);
+
+  ads1220_emulator_init();
+  ad7793_emulator_init();
+  ads1220_emulator_config[0].vdda_mv = 3300;
+  ads1220_emulator_config[0].temperature = 220;
+  ad7793_emulator_config[0].vdda_mv = 3300;
 
   multimeter_init();
 

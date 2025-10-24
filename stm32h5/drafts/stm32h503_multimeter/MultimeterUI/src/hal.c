@@ -2,8 +2,6 @@
 #include <lcd_sh1107.h>
 #include <string.h>
 #include "ui.h"
-#include <ad7793.h>
-#include <ads1220.h>
 
 #define SIZE (LCD_HEIGHT * LCD_WIDTH / 8)
 
@@ -111,16 +109,4 @@ void power_off(void)
 int capacitor_is_discharged(void)
 {
   return 1;
-}
-
-void ad7793_spi_transfer(int channel, const unsigned char *wdata, unsigned int wlength, unsigned char *rdata,
-                          unsigned int rlength)
-{
-  //todo
-}
-
-void ads1220_spi_transfer(int channel, const unsigned char *wdata, unsigned int wlength, unsigned char *rdata,
-                          unsigned int rlength)
-{
-  //todo
 }

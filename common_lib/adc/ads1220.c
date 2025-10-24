@@ -100,14 +100,14 @@ void ads1220_read_start(int channel, unsigned char channel_no, unsigned char gai
   current_gain = gain;
 }
 
-void ads1220_read_finish(int *result)
+int ads1220_read_finish(void)
 {
   unsigned char data[3];
   ads1220_spi_transfer(current_channel, NULL, 0, data, 3);
   int value = (data[0] << 16) | (data[1] << 8) | data[2];
   if (value & 0x800000)
     value |= 0xFF000000;
-  *result = value - ads1220_offsets[current_channel][current_channel_no][current_gain];
+  return value - ads1220_offsets[current_channel][current_channel_no][current_gain];
 }
 
 int ads1220_read(int channel, unsigned char channel_no, unsigned char gain, int pga_bypass, int *result, int timeout)
@@ -116,14 +116,14 @@ int ads1220_read(int channel, unsigned char channel_no, unsigned char gain, int 
   int rc = ads1220_wait(channel, timeout);
   if (rc)
     return rc;
-  ads1220_read_finish(result);
+  *result = ads1220_read_finish();
   return 0;
 }
 
 void ads1220_read_voltage_finish(const ads1220_read_voltage_configuration * configuration,
                                   ads1220_data *result)
 {
-  ads1220_read_finish(&result->value);
+  result->value = ads1220_read_finish();
   result->voltage = (double)result->value * configuration->vref / (double)0x7FFFFF /
                     configuration->input_divider_coefficient / (1<<configuration->gain);
 }

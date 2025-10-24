@@ -5,6 +5,7 @@
 
 class MeasurementUnitAD7793: public MeasurementUint
 {
+  unsigned char gains[3];
 public:
   MeasurementUnitAD7793();
   int GetNumChannels() const override;
@@ -16,7 +17,7 @@ public:
   int GetMeasurementResult() override;
   int GetVref() override { return 1170; };
   int GetMaxValue(int channel) override { return (1 << 24) - 1; };
-  int SetGain(int gain) override;
+  int SetGain(int channel, int gain) override;
 };
 
 

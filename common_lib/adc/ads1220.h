@@ -134,7 +134,7 @@ int ads1220_read_temperature(int channel, ads1220_data *result, int timeout);
 int ads1220_calibrate_offset(int channel, unsigned char channel_no, int steps);
 
 void ads1220_read_start(int channel, unsigned char channel_no, unsigned char gain, int pga_bypass);
-void ads1220_read_finish(int *result);
+int ads1220_read_finish(void);
 void ads1220_read_voltage_finish(const ads1220_read_voltage_configuration * configuration,
                                   ads1220_data *result);
 
