@@ -14,8 +14,6 @@ int led_state = 0;
 
 static GtkWidget *led_area;
 
-extern multimeter_result_t multimeter_result_hal;
-
 static void
 draw_cb (GtkDrawingArea *drawing_area,
          cairo_t        *cr,
@@ -167,7 +165,7 @@ v2_changed (GtkWidget *widget,
               gpointer   data)
 {
   int value = update_label(widget, data);
-  multimeter_result_hal.voltage_current[1].voltage_uV = value * 1000;
+  //multimeter_result_hal.voltage_current[1].voltage_uV = value * 1000;
 }
 
 static void
@@ -175,7 +173,7 @@ i2_changed (GtkWidget *widget,
               gpointer   data)
 {
   int value = update_label(widget, data);
-  multimeter_result_hal.voltage_current[1].current_nA = value * 1000;
+  //multimeter_result_hal.voltage_current[1].current_nA = value * 1000;
 }
 
 static void
@@ -183,7 +181,7 @@ f_changed (GtkWidget *widget,
               gpointer   data)
 {
   int value = update_label(widget, data);
-  multimeter_result_hal.frequency_hz = value;
+  //multimeter_result_hal.frequency_hz = value;
 }
 
 static void
@@ -191,7 +189,7 @@ c_changed (GtkWidget *widget,
               gpointer   data)
 {
   int value = update_label(widget, data);
-  multimeter_result_hal.capacitance.pF = value;
+  //multimeter_result_hal.capacitance.pF = value;
 }
 
 static void
@@ -199,7 +197,7 @@ r1_changed (GtkWidget *widget,
               gpointer   data)
 {
   int value = update_label(widget, data);
-  multimeter_result_hal.resistance_mOhm[0] = value;
+  //multimeter_result_hal.resistance_mOhm[0] = value;
 }
 
 static void
@@ -207,7 +205,7 @@ r2_changed (GtkWidget *widget,
               gpointer   data)
 {
   int value = update_label(widget, data);
-  multimeter_result_hal.resistance_mOhm[1] = value;
+  //multimeter_result_hal.resistance_mOhm[1] = value;
 }
 
 static void
@@ -215,7 +213,7 @@ temp_changed (GtkWidget *widget,
               gpointer   data)
 {
   int value = update_label(widget, data);
-  multimeter_result_hal.temperature_Cx10 = value;
+  ads1220_emulator_config[0].temperature = value;
 }
 
 static void
@@ -223,7 +221,7 @@ vdda_changed (GtkWidget *widget,
               gpointer   data)
 {
   int value = update_label(widget, data);
-  multimeter_result_hal.vdda_mV = value;
+  ad7793_emulator_config[0].vdda_mv = value;
 }
 
 static GtkWidget*

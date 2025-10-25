@@ -6,6 +6,7 @@
 class MeasurementUnitADS1220: public MeasurementUint
 {
   unsigned char gains[3];
+  bool temperature_sensor_mode;
 public:
   explicit MeasurementUnitADS1220();
   int GetNumChannels() const override;

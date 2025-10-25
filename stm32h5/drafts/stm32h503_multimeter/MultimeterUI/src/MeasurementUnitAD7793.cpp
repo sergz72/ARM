@@ -1,17 +1,28 @@
 #include <ad7793.h>
 #include "MeasurementUnitAD7793.h"
 
+class VDDAMeter: public MultimeterChannel
+{
+public:
+  MultimeterChannelType GetChannelType() override { return CHANNEL_TYPE_VDDA; };
+  int GetMeasurementResult() override
+  {
+    return static_cast<int>(static_cast<long long int>(measurement_unit->GetMeasurementResult()) * measurement_unit->GetVref() * 6000 /
+                            measurement_unit->GetMaxValue(channel_no));
+  };
+};
+
 static Ampermeter ampermeter(1000);
 static Voltmeter voltmeter(10);
-static Voltmeter voltmeter_vdda(CHANNEL_TYPE_VDDA, 4);
+static VDDAMeter voltmeter_vdda;
 static Ohmmeter ohmmeter;
 
 MeasurementUnitAD7793::MeasurementUnitAD7793()
 {
-  ampermeter.SetParameters(this, 0);
-  voltmeter.SetParameters(this, 1);
-  ohmmeter.SetParameters(this, 3);
-  voltmeter_vdda.SetParameters(this, 7);
+  ampermeter.SetParameters(this, AD7793_CHANNEL_AIN1P_AIN1N);
+  voltmeter.SetParameters(this, AD7793_CHANNEL_AIN2P_AIN2N);
+  ohmmeter.SetParameters(this, AD7793_CHANNEL_AIN3P_AIN3N);
+  voltmeter_vdda.SetParameters(this, AD7793_CHANNEL_AVDD6);
 }
 
 int MeasurementUnitAD7793::GetNumChannels() const {return 4;}
@@ -52,12 +63,12 @@ void MeasurementUnitAD7793::StartMeasurement(int channel)
 
 bool MeasurementUnitAD7793::IsMeasurementFinished()
 {
-  return true;
+  return AD7793_RDY_GET(0) == 0;
 }
 
 int MeasurementUnitAD7793::GetMeasurementResult()
 {
-  return ad7793_read_finish(0) - 0x800000;
+  return ad7793_read_finish(0);
 }
 
 int MeasurementUnitAD7793::SetGain(int channel, int gain)

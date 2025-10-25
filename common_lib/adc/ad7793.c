@@ -185,7 +185,10 @@ int ad7793_read_finish(int channel)
 {
   unsigned char data[3];
   ad7793_read_register(channel, AD7793_REGISTER_DATA, data, 3);
-  return (data[0] << 16) | (data[1] << 8) | data[2];
+  int result = (data[0] << 16) | (data[1] << 8) | data[2];
+  if (configurations[channel][0] & 0x10) // unipolar
+    return result;
+  return result - 0x800000;
 }
 
 int ad7793_read(int channel, unsigned char channel_no, unsigned char gain, int unipolar, int *result, int timeout)
@@ -202,10 +205,9 @@ void ad7793_read_voltage_finish(const ad7793_read_voltage_configuration *configu
                                  ad7793_data *result)
 {
   result->value = ad7793_read_finish(configuration->channel);
-  if (configurations[configuration->channel][0] & 0x10) // unipolar
-    result->voltage = (double)result->value * configuration->vref / (double)0xFFFFFF / configuration->input_divider_coefficient;
-  else
-    result->voltage = (double)(result->value - 0x800000) * configuration->vref / (double)0x7FFFFF / configuration->input_divider_coefficient;
+  double maximum = configurations[configuration->channel][0] & 0x10 // unipolar
+      ? 0x7FFFFF : 0xFFFFFF;
+  result->voltage = (double)result->value * configuration->vref / maximum / configuration->input_divider_coefficient;
 }
 
 int ad7793_read_voltage(const ad7793_read_voltage_configuration *configuration,

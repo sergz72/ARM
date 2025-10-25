@@ -14,18 +14,6 @@ static unsigned char lcd_buffer[SIZE], *lcd_buffer_p = lcd_buffer;
 volatile int capacitance_measurement_done;
 static int capacitance_measurement_channel;
 
-multimeter_result_t multimeter_result_hal =
-{
-  .frequency_hz = 0,
-  .diode_voltage_uV = {0,0},
-  .resistance_mOhm = {0, 0},
-  .inductance_nH = 0,
-  .temperature_Cx10 = 0,
-  .vdda_mV = 0,
-  .capacitance = {0, 0, 0},
-  .voltage_current = {{0, 0}, {0, 0}}
-};
-
 void discharge_off(void)
 {
 }

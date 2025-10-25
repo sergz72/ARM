@@ -21,7 +21,7 @@ typedef struct
   unsigned int resistance_mOhm[2];
   unsigned int inductance_nH;
   unsigned int temperature_Cx10;
-  unsigned int vdda_mV;
+  unsigned int vdda_uV;
   capacitance_result capacitance;
   voltage_current_result voltage_current[2];
 } multimeter_result_t;

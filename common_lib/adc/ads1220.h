@@ -137,6 +137,8 @@ void ads1220_read_start(int channel, unsigned char channel_no, unsigned char gai
 int ads1220_read_finish(void);
 void ads1220_read_voltage_finish(const ads1220_read_voltage_configuration * configuration,
                                   ads1220_data *result);
+void ads1220_enter_temperature_sensor_mode(int channel);
+void ads1220_leave_temperature_sensor_mode(int channel);
 
 extern int ads1220_offsets[ADS1220_MAX_CHANNELS][ADS1220_MAX_MUX+1][ADS1220_MAX_GAIN+1];
 

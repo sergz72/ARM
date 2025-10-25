@@ -18,6 +18,7 @@ static const unsigned int mux_to_ainm[ADS1220_MAX_MUX+1] = {1, 2, 3, 2, 3, 3, 0,
 void ads1220_emulator_init(void)
 {
   memset(configuration, 0, sizeof(configuration));
+  memset(ads1220_emulator_config, 0, sizeof(ads1220_emulator_config));
 }
 
 static void calculate_value(int channel, unsigned char *data)
@@ -28,17 +29,17 @@ static void calculate_value(int channel, unsigned char *data)
   int vainp;
   switch (ainp)
   {
-    case AVDD4:
-      vainp = ads1220_emulator_config->vdda_mv * 250;
-      break;
-    case VREFP4:
-      vainp = ads1220_emulator_config->vref_mv * 250;
-      break;
-    case AVSS:
-      vainp = 0;
-    default:
-      vainp = ads1220_emulator_config[channel].ain_uv[ainp];
-      break;
+  case AVDD4:
+    vainp = ads1220_emulator_config->vdda_mv * 250;
+    break;
+  case VREFP4:
+    vainp = ads1220_emulator_config->vref_mv * 250;
+    break;
+  case AVSS:
+    vainp = 0;
+  default:
+    vainp = ads1220_emulator_config[channel].ain_uv[ainp];
+    break;
   }
   int vainm = ainm == AVSS ? 0 : ads1220_emulator_config[channel].ain_uv[ainm];
 
@@ -49,7 +50,7 @@ static void calculate_value(int channel, unsigned char *data)
   else if (uV <= -vref_uv)
     value = 0;
   else
-    value = (int)(uV * 0x7FFFFF / vref_uv) + 0x800000;
+    value = (int)(uV * 0x7FFFFF / vref_uv);
   *data++ = (value >> 16) & 0xFF;
   *data++ = (value >> 8) & 0xFF;
   *data = value & 0xFF;

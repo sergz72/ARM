@@ -150,7 +150,7 @@ void ads1220_set_idac(int channel, unsigned char idac_current, unsigned char ida
   configurations[channel][3] = data[1];
 }
 
-static void ads1220_enter_temperature_sensor_mode(int channel)
+void ads1220_enter_temperature_sensor_mode(int channel)
 {
   unsigned char data;
   data = configurations[channel][1] | 2;
@@ -158,7 +158,7 @@ static void ads1220_enter_temperature_sensor_mode(int channel)
   configurations[channel][1] = data;
 }
 
-static void ads1220_leave_temperature_sensor_mode(int channel)
+void ads1220_leave_temperature_sensor_mode(int channel)
 {
   unsigned char data;
   data = configurations[channel][1] & 0xFD;

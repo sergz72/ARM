@@ -70,11 +70,9 @@ public:
 
 class Voltmeter: public Meter
 {
-  MultimeterChannelType channel_type;
   long long int coef;
 public:
   Voltmeter(long long int _coef);
-  Voltmeter(MultimeterChannelType _channel_type, long long int _coef);
   MultimeterChannelType GetChannelType() override;
   int GetMeasurementResult() override;
 };

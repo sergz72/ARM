@@ -1,5 +1,6 @@
 #include <ad7793.h>
 #include <ad7793_emulator.h>
+#include <string.h>
 
 ad7793_emulator_configuration ad7793_emulator_config[AD7793_MAX_CHANNELS];
 
@@ -20,6 +21,7 @@ void ad7793_emulator_init(void)
     configuration[channel].internal_reference = 0;
     configuration[channel].vbias = 0;
   }
+  memset(ad7793_emulator_config, 0, sizeof(ad7793_emulator_config));
 }
 
 static void calculate_value(int channel, unsigned char *data)

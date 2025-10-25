@@ -25,7 +25,7 @@ multimeter_result_t multimeter_result =
   .resistance_mOhm = {0, 0},
   .inductance_nH = 0,
   .temperature_Cx10 = 0,
-  .vdda_mV = 0,
+  .vdda_uV = 0,
   .capacitance = {0, 0, 0},
   .voltage_current = {{0, 0}, {0, 0}}
 };
@@ -149,11 +149,12 @@ static void DrawTemperature(unsigned int value)
   LcdPrintf("%2d.%d", 0, 0, &MAIN_FONT, 1, value / 10, value % 10);
 }
 
-static void DrawVdda(unsigned int value_mV)
+static void DrawVdda(unsigned int value_uV)
 {
-  if (value_mV > 9999)
-    value_mV = 9999;
-  LcdPrintf("%d.%02d", VDDA_X, 0, &MAIN_FONT, 1, value_mV / 1000, (value_mV/10) % 100);
+  value_uV = value_uV / 1000;
+  if (value_uV > 9999)
+    value_uV = 9999;
+  LcdPrintf("%d.%02d", VDDA_X, 0, &MAIN_FONT, 1, value_uV / 1000, (value_uV/10) % 100);
 }
 
 static void DrawFrequency(const int line, unsigned int value)
@@ -248,8 +249,9 @@ void Process_Timer_Event(const unsigned char keyboard_status)
     switch (channel_type)
     {
       case CHANNEL_TYPE_FREQUENCY:
-        if (multimeter_mode == FREQUENCY)
+        if (multimeter_mode == FREQUENCY && result != multimeter_result.frequency_hz)
         {
+          multimeter_result.frequency_hz = result;
           DrawFrequency(7, result);
           if (multimeter_mode == INDUCTANCE)
             DrawInductance(8, calculate_inductance(result));
@@ -257,35 +259,54 @@ void Process_Timer_Event(const unsigned char keyboard_status)
         }
         break;
       case CHANNEL_TYPE_VOLTAGE:
-        DrawVoltage(channel == 0 ? 1 : 4, result);
-        power_changed[channel] = true;
-        multimeter_result.voltage_current[channel].voltage_uV = result;
-        multimeter_changes = true;
+        if (multimeter_result.voltage_current[channel].voltage_uV != result)
+        {
+          multimeter_result.voltage_current[channel].voltage_uV = result;
+          DrawVoltage(channel == 0 ? 1 : 4, result);
+          power_changed[channel] = true;
+          multimeter_result.voltage_current[channel].voltage_uV = result;
+          multimeter_changes = true;
+        }
         break;
       case CHANNEL_TYPE_CURRENT:
-        DrawCurrent(channel == 0 ? 2 : 5, result);
-        power_changed[channel] = true;
-        multimeter_result.voltage_current[channel].current_nA = result;
-        multimeter_changes = true;
+        if (multimeter_result.voltage_current[channel].current_nA != result)
+        {
+          multimeter_result.voltage_current[channel].current_nA = result;
+          DrawCurrent(channel == 0 ? 2 : 5, result);
+          power_changed[channel] = true;
+          multimeter_result.voltage_current[channel].current_nA = result;
+          multimeter_changes = true;
+        }
         break;
       case CHANNEL_TYPE_VDDA:
-        DrawVdda(result);
-        multimeter_changes = true;
+        if (multimeter_result.vdda_uV != result)
+        {
+          multimeter_result.vdda_uV = result;
+          DrawVdda(result);
+          multimeter_changes = true;
+        }
         break;
       case CHANNEL_TYPE_TEMPERATURE:
-        DrawTemperature(result);
-        multimeter_changes = true;
+        if (multimeter_result.temperature_Cx10 != result)
+        {
+          multimeter_result.temperature_Cx10 = result;
+          DrawTemperature(result);
+          multimeter_changes = true;
+        }
         break;
       case CHANNEL_TYPE_CAPACITANCE:
-        if (multimeter_mode == CAPACITANCE)
+        if (multimeter_mode == CAPACITANCE && multimeter_result.capacitance.pF != result)
         {
+          multimeter_result.capacitance.pF = result;
           DrawCapacitance(7, result);
           multimeter_changes = true;
         }
         break;
       case CHANNEL_TYPE_RESISTANCE:
-        if (multimeter_mode == RESISTANCE || multimeter_mode == CONTINUITY || multimeter_mode == DIODE_TEST)
+        if (multimeter_mode == RESISTANCE || multimeter_mode == CONTINUITY || multimeter_mode == DIODE_TEST &&
+            multimeter_result.resistance_mOhm[channel] != result)
         {
+          multimeter_result.resistance_mOhm[channel] = result;
           DrawResistance(channel == 0 ? 7 : 8, result);
           multimeter_changes = true;
         }

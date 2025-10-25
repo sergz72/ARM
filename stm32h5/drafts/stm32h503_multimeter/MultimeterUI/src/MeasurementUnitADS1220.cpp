@@ -5,7 +5,7 @@ class Thermometer: public MultimeterChannel
 {
 public:
   MultimeterChannelType GetChannelType() override { return CHANNEL_TYPE_TEMPERATURE; };
-  int GetMeasurementResult() override { /*todo*/ return 0; };
+  int GetMeasurementResult() override { return measurement_unit->GetMeasurementResult() * 10 / 32; };
 };
 
 static Ampermeter ampermeter(1000);
@@ -15,11 +15,12 @@ static Thermometer thermometer;
 
 MeasurementUnitADS1220::MeasurementUnitADS1220()
 {
-  ampermeter.SetParameters(this, 0);
-  voltmeter.SetParameters(this, 1);
-  ohmmeter.SetParameters(this, 2);
-  thermometer.SetParameters(this, 3);
+  ampermeter.SetParameters(this, ADS1220_MUX_AIN0_AIN1);
+  voltmeter.SetParameters(this, ADS1220_MUX_AIN1_AIN2);
+  ohmmeter.SetParameters(this, ADS1220_MUX_AIN3_AVSS);
+  thermometer.SetParameters(this, ADS1220_MUX_AIN0_AIN1);
   gains[0] = gains[1] = gains[2] = 1;
+  temperature_sensor_mode = false;
 }
 
 int MeasurementUnitADS1220::GetNumChannels() const {return 4;}
@@ -68,17 +69,28 @@ int MeasurementUnitADS1220::SetChannelCurrentSource(int channel, CurrentSourceLe
 
 void MeasurementUnitADS1220::StartMeasurement(int channel)
 {
+  if (channel == 3)
+  {
+    ads1220_enter_temperature_sensor_mode(0);
+    temperature_sensor_mode = true;
+  }
   ads1220_read_start(0, channel, gains[channel], gains[channel] <= 4);
 }
 
 bool MeasurementUnitADS1220::IsMeasurementFinished()
 {
-  return true;
+  return ADS1220_DRDY_GET(channel) == 0;
 }
 
 int MeasurementUnitADS1220::GetMeasurementResult()
 {
-  return ads1220_read_finish();
+  int value = ads1220_read_finish();
+  if (temperature_sensor_mode)
+  {
+    ads1220_leave_temperature_sensor_mode(0);
+    temperature_sensor_mode = false;
+  }
+  return value;
 }
 
 int MeasurementUnitADS1220::SetGain(int channel, int gain)

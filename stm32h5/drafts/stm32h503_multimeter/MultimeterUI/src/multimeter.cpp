@@ -47,6 +47,7 @@ bool Meter::IsMeasurementFinished()
     if (gain != current_gain)
     {
       measurement_unit->StartMeasurement(channel_no);
+      current_gain = gain;
       return false;
     }
     return true;
@@ -72,19 +73,12 @@ int Ampermeter::GetMeasurementResult()
 
 Voltmeter::Voltmeter(long long int _coef)
 {
-  channel_type = CHANNEL_TYPE_VOLTAGE;
-  coef = _coef;
-}
-
-Voltmeter::Voltmeter(MultimeterChannelType _channel_type, long long int _coef)
-{
-  channel_type = _channel_type;
   coef = _coef;
 }
 
 MultimeterChannelType Voltmeter::GetChannelType()
 {
-  return channel_type;
+  return CHANNEL_TYPE_VOLTAGE;
 }
 
 int Voltmeter::GetMeasurementResult()
@@ -186,7 +180,6 @@ void Multimeter::TimerEvent()
         result->value = measurement_units[i]->GetChannel(channel)->GetMeasurementResult();
         result->done = true;
         measurement_is_in_progress[i] = false;
-        current_channel[i] = GetNextChannel(i);
       }
     }
     else
