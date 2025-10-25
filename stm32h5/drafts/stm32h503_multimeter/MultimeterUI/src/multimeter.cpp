@@ -72,17 +72,24 @@ int Ampermeter::GetMeasurementResult()
 
 Voltmeter::Voltmeter(long long int _coef)
 {
+  channel_type = CHANNEL_TYPE_VOLTAGE;
+  coef = _coef;
+}
+
+Voltmeter::Voltmeter(MultimeterChannelType _channel_type, long long int _coef)
+{
+  channel_type = _channel_type;
   coef = _coef;
 }
 
 MultimeterChannelType Voltmeter::GetChannelType()
 {
-  return CHANNEL_TYPE_VOLTAGE;
+  return channel_type;
 }
 
 int Voltmeter::GetMeasurementResult()
 {
-  return static_cast<int>(static_cast<long long int>(result) * measurement_unit->GetVref() * coef / 1000000 /
+  return static_cast<int>(static_cast<long long int>(result) * measurement_unit->GetVref() * coef * 1000 /
                             measurement_unit->GetMaxValue(channel_no));
 }
 
@@ -126,6 +133,7 @@ Multimeter::Multimeter(MeasurementUint **_units, unsigned int enabled_measuremen
   memset(current_channel, 0, sizeof(current_channel));
   memset(measurement_is_in_progress, false, sizeof(measurement_is_in_progress));
   memset(channel_mappings, -1, sizeof(channel_mappings));
+  memset(measurement_results, 0, sizeof(measurement_results));
   int indexes[CHANNEL_TYPE_MAX+1];
   memset(indexes, 0, sizeof(indexes));
   for (int unit = 0; unit < MEASUREMENT_UNITS_COUNT; unit++)
@@ -152,17 +160,17 @@ void Multimeter::EnableChannels(unsigned int _enabled_measurement_types)
 int Multimeter::GetNextChannel(int unit) const
 {
   int channel = current_channel[unit];
-  int stop_channel = channel;
-  do
+  int n = measurement_units[unit]->GetNumChannels();
+  while (n--)
   {
     if (channel == measurement_units[unit]->GetNumChannels() - 1)
       channel = 0;
     else
       channel++;
-    if (channel == stop_channel)
-      return -1;
-  } while (!(enabled_measurement_types & (1 << measurement_units[unit]->GetChannel(channel)->GetChannelType())));
-  return channel;
+    if (enabled_measurement_types & (1 << measurement_units[unit]->GetChannel(channel)->GetChannelType()))
+      return channel;
+  };
+  return -1;
 }
 
 void Multimeter::TimerEvent()
@@ -174,20 +182,19 @@ void Multimeter::TimerEvent()
     {
       if (measurement_units[i]->GetChannel(channel)->IsMeasurementFinished())
       {
-        measurement_results[i][current_channel[i]] = measurement_units[i]->GetChannel(channel)->GetMeasurementResult();
+        MeasurementResult *result = &measurement_results[i][channel];
+        result->value = measurement_units[i]->GetChannel(channel)->GetMeasurementResult();
+        result->done = true;
         measurement_is_in_progress[i] = false;
         current_channel[i] = GetNextChannel(i);
       }
     }
     else
     {
+      channel = GetNextChannel(i);
       if (channel == -1)
-      {
-        channel = GetNextChannel(i);
-        if (channel == -1)
-          continue;
-        current_channel[i] = channel;
-      }
+        continue;
+      current_channel[i] = channel;
       if (measurement_units[i]->GetChannel(channel)->IsReadyForNewMeasurement())
       {
         measurement_units[i]->GetChannel(channel)->StartMeasurement();
@@ -199,7 +206,30 @@ void Multimeter::TimerEvent()
 
 int Multimeter::GetMeasurementResult(MultimeterChannelType *channel_type, int *channel_no)
 {
-  //todo
+  for (int unit = 0; unit < MEASUREMENT_UNITS_COUNT; unit++)
+  {
+    for (int channel = 0; channel < MULTIMETER_MAX_CHANNELS_PER_UNIT; channel++)
+    {
+      MeasurementResult *result = &measurement_results[unit][channel];
+      if (result->done)
+      {
+        MultimeterChannelType ctype = measurement_units[unit]->GetChannel(channel)->GetChannelType();
+        *channel_type = ctype;
+        for (int ch = 0; ch < MULTIMETER_MAX_CHANNELS_PER_CHANNEL_TYPE; ch++)
+        {
+          int mapping = channel_mappings[ctype][ch];
+          if (mapping == ((unit << 16) | channel))
+          {
+            *channel_no = ch;
+            result->done = false;
+            return result->value;
+          }
+        }
+        goto exit;
+      }
+    }
+  }
+exit:
   *channel_type = CHANNEL_TYPE_NONE;
   return 0;
 }

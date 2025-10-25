@@ -25,7 +25,22 @@ void ad7793_emulator_init(void)
 static void calculate_value(int channel, unsigned char *data)
 {
   int value;
-  long long int uV = (long long int)ad7793_emulator_config[channel].ain_uv[configuration[channel].channel] * gains[configuration[channel].gain];
+  int ch = configuration[channel].channel;
+  long long int uV;
+  switch (ch)
+  {
+    case 0:
+    case 1:
+    case 2:
+      uV = (long long int)ad7793_emulator_config[channel].ain_uv[ch] * gains[configuration[channel].gain];
+      break;
+    case 7:
+      uV = ad7793_emulator_config[channel].vdda_mv * 167;
+      break;
+    default:
+      uV = 0;
+      break;
+  }
   int vref_uv = ad7793_emulator_config[channel].vref_mv * 1000;
   if (configuration[channel].unipolar)
   {
@@ -53,7 +68,7 @@ void ad7793_spi_transfer(int channel, const unsigned char *wdata, unsigned int w
 {
   if (!wlength)
     return;
-  unsigned char register_no = wdata[0] >> 3;
+  unsigned char register_no = (wdata[0] >> 3) & 7;
   unsigned char read = wdata[0] & 0x40;
   unsigned char write_disable = wdata[0] & 0x80;
   if (!read && write_disable)

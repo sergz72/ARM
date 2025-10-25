@@ -43,7 +43,7 @@ MultimeterChannel *MeasurementUnitInternal::GetChannel(int channel)
     case 1:
       return &capacitance_meter;
     default:
-      return NULL;
+      return nullptr;
   }
 }
 

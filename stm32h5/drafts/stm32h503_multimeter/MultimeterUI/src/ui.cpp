@@ -247,7 +247,7 @@ void Process_Timer_Event(const unsigned char keyboard_status)
     int result = multimeter.GetMeasurementResult(&channel_type, &channel);
     switch (channel_type)
     {
-      CHANNEL_TYPE_FREQUENCY:
+      case CHANNEL_TYPE_FREQUENCY:
         if (multimeter_mode == FREQUENCY)
         {
           DrawFrequency(7, result);
@@ -256,34 +256,34 @@ void Process_Timer_Event(const unsigned char keyboard_status)
           multimeter_changes = true;
         }
         break;
-      CHANNEL_TYPE_VOLTAGE:
+      case CHANNEL_TYPE_VOLTAGE:
         DrawVoltage(channel == 0 ? 1 : 4, result);
         power_changed[channel] = true;
         multimeter_result.voltage_current[channel].voltage_uV = result;
         multimeter_changes = true;
         break;
-      CHANNEL_TYPE_CURRENT:
+      case CHANNEL_TYPE_CURRENT:
         DrawCurrent(channel == 0 ? 2 : 5, result);
         power_changed[channel] = true;
         multimeter_result.voltage_current[channel].current_nA = result;
         multimeter_changes = true;
         break;
-      CHANNEL_TYPE_VDDA:
+      case CHANNEL_TYPE_VDDA:
         DrawVdda(result);
         multimeter_changes = true;
         break;
-      CHANNEL_TYPE_TEMPERATURE:
+      case CHANNEL_TYPE_TEMPERATURE:
         DrawTemperature(result);
         multimeter_changes = true;
         break;
-      CHANNEL_TYPE_CAPACITANCE:
+      case CHANNEL_TYPE_CAPACITANCE:
         if (multimeter_mode == CAPACITANCE)
         {
           DrawCapacitance(7, result);
           multimeter_changes = true;
         }
         break;
-      CHANNEL_TYPE_RESISTANCE:
+      case CHANNEL_TYPE_RESISTANCE:
         if (multimeter_mode == RESISTANCE || multimeter_mode == CONTINUITY || multimeter_mode == DIODE_TEST)
         {
           DrawResistance(channel == 0 ? 7 : 8, result);

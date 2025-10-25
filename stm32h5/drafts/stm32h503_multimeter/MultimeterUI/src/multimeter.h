@@ -70,9 +70,11 @@ public:
 
 class Voltmeter: public Meter
 {
+  MultimeterChannelType channel_type;
   long long int coef;
 public:
   Voltmeter(long long int _coef);
+  Voltmeter(MultimeterChannelType _channel_type, long long int _coef);
   MultimeterChannelType GetChannelType() override;
   int GetMeasurementResult() override;
 };
@@ -108,6 +110,12 @@ public:
   virtual int SetGain(int channel, int gain);
 };
 
+typedef struct
+{
+  int value;
+  bool done;
+} MeasurementResult;
+
 class Multimeter
 {
   MeasurementUint **measurement_units;
@@ -115,7 +123,7 @@ class Multimeter
   unsigned int enabled_channels[MEASUREMENT_UNITS_COUNT];
   bool measurement_is_in_progress[MEASUREMENT_UNITS_COUNT];
   int channel_mappings[CHANNEL_TYPE_MAX+1][MULTIMETER_MAX_CHANNELS_PER_CHANNEL_TYPE];
-  long long int measurement_results[MEASUREMENT_UNITS_COUNT][MULTIMETER_MAX_CHANNELS_PER_UNIT];
+  MeasurementResult measurement_results[MEASUREMENT_UNITS_COUNT][MULTIMETER_MAX_CHANNELS_PER_UNIT];
   unsigned int enabled_measurement_types;
   unsigned int tick_ms;
 

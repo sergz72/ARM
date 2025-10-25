@@ -3,7 +3,7 @@
 
 static Ampermeter ampermeter(1000);
 static Voltmeter voltmeter(10);
-static Voltmeter voltmeter_vdda(4);
+static Voltmeter voltmeter_vdda(CHANNEL_TYPE_VDDA, 4);
 static Ohmmeter ohmmeter;
 
 MeasurementUnitAD7793::MeasurementUnitAD7793()
@@ -11,7 +11,7 @@ MeasurementUnitAD7793::MeasurementUnitAD7793()
   ampermeter.SetParameters(this, 0);
   voltmeter.SetParameters(this, 1);
   ohmmeter.SetParameters(this, 3);
-  voltmeter_vdda.SetParameters(this, 4);
+  voltmeter_vdda.SetParameters(this, 7);
 }
 
 int MeasurementUnitAD7793::GetNumChannels() const {return 4;}
@@ -57,7 +57,7 @@ bool MeasurementUnitAD7793::IsMeasurementFinished()
 
 int MeasurementUnitAD7793::GetMeasurementResult()
 {
-  return ad7793_read_finish(0);
+  return ad7793_read_finish(0) - 0x800000;
 }
 
 int MeasurementUnitAD7793::SetGain(int channel, int gain)
