@@ -24,8 +24,9 @@ void ads1220_emulator_init(void)
 static void calculate_value(int channel, unsigned char *data)
 {
   int value;
-  unsigned int ainp = mux_to_ainp[configuration[channel].mux];
-  unsigned int ainm = mux_to_ainm[configuration[channel].mux];
+  unsigned char mux = configuration[channel].mux;
+  unsigned int ainp = mux_to_ainp[mux];
+  unsigned int ainm = mux_to_ainm[mux];
   int vainp;
   switch (ainp)
   {
@@ -46,7 +47,7 @@ static void calculate_value(int channel, unsigned char *data)
   long long int uV = (long long int)(vainp-vainm) * gains[configuration[channel].gain];
   int vref_uv = ads1220_emulator_config[channel].vref_mv * 1000;
   if (uV >= vref_uv)
-    value = 0xFFFFFF;
+    value = 0x7FFFFF;
   else if (uV <= -vref_uv)
     value = 0;
   else

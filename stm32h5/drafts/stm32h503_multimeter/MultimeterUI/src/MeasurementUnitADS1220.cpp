@@ -15,9 +15,9 @@ static Thermometer thermometer;
 
 MeasurementUnitADS1220::MeasurementUnitADS1220()
 {
-  ampermeter.SetParameters(this, ADS1220_MUX_AIN0_AIN1);
+  ampermeter.SetParameters(this, ADS1220_MUX_AIN2_AIN3);
   voltmeter.SetParameters(this, ADS1220_MUX_AIN1_AIN2);
-  ohmmeter.SetParameters(this, ADS1220_MUX_AIN3_AVSS);
+  ohmmeter.SetParameters(this, ADS1220_MUX_AIN0_AVSS);
   thermometer.SetParameters(this, ADS1220_MUX_SHORT);
   gains[0] = gains[1] = gains[2] = 1;
   temperature_sensor_mode = false;
@@ -54,7 +54,7 @@ MultimeterChannel *MeasurementUnitADS1220::GetChannel(int channel)
 
 int MeasurementUnitADS1220::SetChannelCurrentSource(int channel, CurrentSourceLevel current_level)
 {
-  if (channel != ADS1220_MUX_AIN3_AVSS)
+  if (channel != ADS1220_MUX_AIN0_AVSS)
     return 1;
   unsigned char current;
   switch (current_level)

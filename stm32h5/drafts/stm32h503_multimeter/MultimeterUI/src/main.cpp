@@ -163,9 +163,7 @@ v2_changed (GtkWidget *widget,
               gpointer   data)
 {
   int value = update_label(widget, data);
-  int i = ads1220_emulator_config->ain_uv[2] = ads1220_emulator_config->ain_uv[1];
-  ads1220_emulator_config->ain_uv[1] = value * 100;
-  ads1220_emulator_config->ain_uv[2] = ads1220_emulator_config->ain_uv[1] + i;
+  ads1220_emulator_config->ain_uv[1] = ads1220_emulator_config->ain_uv[2] + value * 100;
 }
 
 static void
@@ -173,7 +171,9 @@ i2_changed (GtkWidget *widget,
               gpointer   data)
 {
   int value = update_label(widget, data);
-  ads1220_emulator_config->ain_uv[2] = ads1220_emulator_config->ain_uv[1] + value;
+  int u = ads1220_emulator_config->ain_uv[1] - ads1220_emulator_config->ain_uv[2];
+  ads1220_emulator_config->ain_uv[2] = value;
+  ads1220_emulator_config->ain_uv[1] = value + u;
 }
 
 static void

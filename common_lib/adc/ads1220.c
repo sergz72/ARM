@@ -1,5 +1,6 @@
 #include "board.h"
 #include <ads1220.h>
+#include <limits.h>
 #include <string.h>
 
 static unsigned char configurations[AD7793_MAX_CHANNELS][4];
@@ -105,6 +106,10 @@ int ads1220_read_finish(void)
   unsigned char data[3];
   ads1220_spi_transfer(current_channel, NULL, 0, data, 3);
   int value = (data[0] << 16) | (data[1] << 8) | data[2];
+  if (value == 0x7FFFFF)
+    return INT_MAX;
+  if (value == 0x800000)
+    return INT_MIN;
   if (value & 0x800000)
     value |= 0xFF000000;
   return value - ads1220_offsets[current_channel][current_channel_no][current_gain];

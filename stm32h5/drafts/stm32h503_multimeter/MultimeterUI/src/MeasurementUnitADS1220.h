@@ -5,7 +5,7 @@
 
 class MeasurementUnitADS1220: public MeasurementUint
 {
-  unsigned char gains[3];
+  unsigned char gains[15];
   bool temperature_sensor_mode;
 public:
   explicit MeasurementUnitADS1220();
@@ -17,7 +17,7 @@ public:
   bool IsMeasurementFinished() override;
   int GetMeasurementResult() override;
   int GetVref() override { return 2500; };
-  int GetMaxValue(int channel) override { return (1 << 24) - 1; };
+  int GetMaxValue(int channel) override { return (1 << 23) - 1; };
   int SetGain(int channel, int gain) override;
 };
 
