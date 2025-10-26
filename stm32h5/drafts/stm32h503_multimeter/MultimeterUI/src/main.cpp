@@ -147,8 +147,7 @@ v1_changed (GtkWidget *widget,
               gpointer   data)
 {
   int value = update_label(widget, data);
-  //multimeter_result_hal.voltage_current[0].voltage_uV = value * 1000;
-  ad7793_emulator_config[0].ain_uv[1] = value * 1000;
+  ad7793_emulator_config[0].ain_uv[1] = value * 100;
 }
 
 static void
@@ -156,8 +155,7 @@ i1_changed (GtkWidget *widget,
               gpointer   data)
 {
   int value = update_label(widget, data);
-  //multimeter_result_hal.voltage_current[0].current_nA = value * 1000;
-  ad7793_emulator_config[0].ain_uv[0] = value * 1000;
+  ad7793_emulator_config[0].ain_uv[0] = value;
 }
 
 static void
@@ -165,7 +163,9 @@ v2_changed (GtkWidget *widget,
               gpointer   data)
 {
   int value = update_label(widget, data);
-  //multimeter_result_hal.voltage_current[1].voltage_uV = value * 1000;
+  int i = ads1220_emulator_config->ain_uv[2] = ads1220_emulator_config->ain_uv[1];
+  ads1220_emulator_config->ain_uv[1] = value * 100;
+  ads1220_emulator_config->ain_uv[2] = ads1220_emulator_config->ain_uv[1] + i;
 }
 
 static void
@@ -173,7 +173,7 @@ i2_changed (GtkWidget *widget,
               gpointer   data)
 {
   int value = update_label(widget, data);
-  //multimeter_result_hal.voltage_current[1].current_nA = value * 1000;
+  ads1220_emulator_config->ain_uv[2] = ads1220_emulator_config->ain_uv[1] + value;
 }
 
 static void

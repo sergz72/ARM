@@ -1,5 +1,6 @@
 #include "board.h"
 #include <lcd_sh1107.h>
+#include <limits.h>
 #include <string.h>
 #include "ui.h"
 
@@ -97,4 +98,25 @@ void power_off(void)
 int capacitor_is_discharged(void)
 {
   return 1;
+}
+
+/*
+ * L = (NOM / F / F / C) * 100 / PI2
+ * C in pF
+ * L in uH
+ * F in HZ
+ */
+#define NOM (2500000000 * 100000000)
+#define PI2 987
+#define DEFAULT_L_CAP 3400 //pF
+unsigned int calculate_inductance(unsigned long long int frequency)
+{
+  unsigned long long int l;
+  unsigned long long int f2;
+  unsigned long long int c = DEFAULT_L_CAP / 100;
+  if (!frequency)
+    return UINT_MAX;
+  f2 = frequency * frequency;
+  l = NOM / f2 / c;
+  return l * 100 / PI2;
 }

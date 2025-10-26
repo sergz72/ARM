@@ -18,7 +18,7 @@ MeasurementUnitADS1220::MeasurementUnitADS1220()
   ampermeter.SetParameters(this, ADS1220_MUX_AIN0_AIN1);
   voltmeter.SetParameters(this, ADS1220_MUX_AIN1_AIN2);
   ohmmeter.SetParameters(this, ADS1220_MUX_AIN3_AVSS);
-  thermometer.SetParameters(this, ADS1220_MUX_AIN0_AIN1);
+  thermometer.SetParameters(this, ADS1220_MUX_SHORT);
   gains[0] = gains[1] = gains[2] = 1;
   temperature_sensor_mode = false;
 }
@@ -54,7 +54,7 @@ MultimeterChannel *MeasurementUnitADS1220::GetChannel(int channel)
 
 int MeasurementUnitADS1220::SetChannelCurrentSource(int channel, CurrentSourceLevel current_level)
 {
-  if (channel != 2)
+  if (channel != ADS1220_MUX_AIN3_AVSS)
     return 1;
   unsigned char current;
   switch (current_level)
@@ -69,7 +69,7 @@ int MeasurementUnitADS1220::SetChannelCurrentSource(int channel, CurrentSourceLe
 
 void MeasurementUnitADS1220::StartMeasurement(int channel)
 {
-  if (channel == 3)
+  if (channel == ADS1220_MUX_SHORT)
   {
     ads1220_enter_temperature_sensor_mode(0);
     temperature_sensor_mode = true;

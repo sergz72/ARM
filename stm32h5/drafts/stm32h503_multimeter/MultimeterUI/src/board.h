@@ -56,6 +56,7 @@ void delay(unsigned int us);
 int get_lcd_buffer_bit(int x, int y);
 unsigned int get_keyboard_status(void);
 void power_off(void);
+unsigned int calculate_inductance(unsigned long long int frequency);
 
 #ifdef __cplusplus
 }

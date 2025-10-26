@@ -1,5 +1,6 @@
 #include "board.h"
 #include <ad7793.h>
+#include <limits.h>
 #include <string.h>
 
 static unsigned char configurations[AD7793_MAX_CHANNELS][2];
@@ -187,8 +188,8 @@ int ad7793_read_finish(int channel)
   ad7793_read_register(channel, AD7793_REGISTER_DATA, data, 3);
   int result = (data[0] << 16) | (data[1] << 8) | data[2];
   if (configurations[channel][0] & 0x10) // unipolar
-    return result;
-  return result - 0x800000;
+    return result == 0xFFFFFF ? INT_MAX : result;
+  return result == 0xFFFFFF ? INT_MAX : (result == 0 ? INT_MIN : result - 0x800000);
 }
 
 int ad7793_read(int channel, unsigned char channel_no, unsigned char gain, int unipolar, int *result, int timeout)

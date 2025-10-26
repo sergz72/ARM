@@ -16,7 +16,7 @@ public:
   bool IsMeasurementFinished() override;
   int GetMeasurementResult() override;
   int GetVref() override { return 1170; };
-  int GetMaxValue(int channel) override { return (1 << 23) - 1; };
+  int GetMaxValue(int channel) override { return channel >= 2 ? (1 << 24) - 1 : (1 << 23) - 1; };
   int SetGain(int channel, int gain) override;
 };
 

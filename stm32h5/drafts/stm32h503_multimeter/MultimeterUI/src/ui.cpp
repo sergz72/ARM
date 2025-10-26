@@ -119,7 +119,7 @@ static void DrawCurrent(const int line, const int value_nA)
     LcdDrawText(VALUE_X, line*MAIN_FONT.char_height, "OVERCURR ", &MAIN_FONT, WHITE_COLOR, BLACK_COLOR, nullptr);
   else if (value_nA == INT_MIN)
     LcdDrawText(VALUE_X, line*MAIN_FONT.char_height, "UNDERCURR", &MAIN_FONT, WHITE_COLOR, BLACK_COLOR, nullptr);
-  LcdPrintf("%3d.%04d", VALUE_X, line*MAIN_FONT.char_height, &MAIN_FONT, 1,
+  LcdPrintf("%4d.%04d", VALUE_X, line*MAIN_FONT.char_height, &MAIN_FONT, 1,
             value_nA / 1000000, abs(value_nA/100) % 10000);
 }
 
@@ -196,27 +196,6 @@ static void DrawResistance(const int line, const unsigned int value_mOhm)
   else
     LcdPrintf("%4d.%03dK", VALUE_X, line*MAIN_FONT.char_height, &MAIN_FONT, 1,
               value_mOhm / 1000000, (value_mOhm/1000) % 1000);
-}
-
-/*
- * L = (NOM / F / F / C) * 100 / PI2
- * C in pF
- * L in uH
- * F in HZ
- */
-#define NOM (2500000000 * 100000000)
-#define PI2 987
-#define DEFAULT_L_CAP 3400 //pF
-static unsigned int calculate_inductance(unsigned long long int frequency)
-{
-  unsigned long long int l;
-  unsigned long long int f2;
-  unsigned long long int c = DEFAULT_L_CAP / 100;
-  if (!frequency)
-    return UINT_MAX;
-  f2 = frequency * frequency;
-  l = NOM / f2 / c;
-  return l * 100 / PI2;
 }
 
 void multimeter_set_mode(const MultimeterModes mode)

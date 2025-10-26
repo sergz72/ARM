@@ -58,7 +58,7 @@ int MeasurementUnitAD7793::SetChannelCurrentSource(int channel, CurrentSourceLev
 
 void MeasurementUnitAD7793::StartMeasurement(int channel)
 {
-  ad7793_read_start(0, channel, gains[channel], 0);
+  ad7793_read_start(0, channel, gains[channel], channel >= 2);
 }
 
 bool MeasurementUnitAD7793::IsMeasurementFinished()

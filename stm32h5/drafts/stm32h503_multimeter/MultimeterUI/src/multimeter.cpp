@@ -42,7 +42,7 @@ bool Meter::IsMeasurementFinished()
       }
       return true;
     }
-    int gain = result == 0 ? INT_MAX : measurement_unit->GetMaxValue(channel_no) / abs(result);
+    int gain = result == 0 ? INT_MAX : measurement_unit->GetMaxValue(channel_no) * current_gain / abs(result);
     gain = measurement_unit->SetGain(channel_no, gain);
     if (gain != current_gain)
     {
@@ -67,8 +67,12 @@ MultimeterChannelType Ampermeter::GetChannelType()
 
 int Ampermeter::GetMeasurementResult()
 {
-  return static_cast<int>(static_cast<long long int>(result) * measurement_unit->GetVref() * 1000 / R /
-              measurement_unit->GetMaxValue(channel_no));
+  if (result == INT_MAX)
+    return INT_MAX;
+  if (result == INT_MIN)
+    return INT_MIN;
+  return static_cast<int>(static_cast<long long int>(result) * measurement_unit->GetVref() * 1000000000 / R /
+              measurement_unit->GetMaxValue(channel_no) / current_gain);
 }
 
 Voltmeter::Voltmeter(long long int _coef)
@@ -83,8 +87,12 @@ MultimeterChannelType Voltmeter::GetChannelType()
 
 int Voltmeter::GetMeasurementResult()
 {
+  if (result == INT_MAX)
+    return INT_MAX;
+  if (result == INT_MIN)
+    return INT_MIN;
   return static_cast<int>(static_cast<long long int>(result) * measurement_unit->GetVref() * coef * 1000 /
-                            measurement_unit->GetMaxValue(channel_no));
+                            measurement_unit->GetMaxValue(channel_no) / current_gain);
 }
 
 Ohmmeter::Ohmmeter()
