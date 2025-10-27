@@ -40,7 +40,7 @@ protected:
   MeasurementUint *measurement_unit;
   int channel_no;
 public:
-  void SetParameters(MeasurementUint *_measurement_unit, int _channel_no);
+  virtual void SetParameters(MeasurementUint *_measurement_unit, int _channel_no);
   virtual ~MultimeterChannel() = default;
   virtual MultimeterChannelType GetChannelType() = 0;
   virtual void StartMeasurement();
@@ -61,9 +61,10 @@ protected:
 
 class Ampermeter: public Meter
 {
-  unsigned int R;
+  long long int multiplier;
 public:
-  Ampermeter(long long int _R);
+  explicit Ampermeter(long long int _R);
+  void SetParameters(MeasurementUint *_measurement_unit, int _channel_no) override;
   MultimeterChannelType GetChannelType() override;
   int GetMeasurementResult() override;
 };

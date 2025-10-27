@@ -49,7 +49,7 @@ static void calculate_value(int channel, unsigned char *data)
   if (uV >= vref_uv)
     value = 0x7FFFFF;
   else if (uV <= -vref_uv)
-    value = 0;
+    value = 0x800000;
   else
     value = (int)(uV * 0x7FFFFF / vref_uv);
   *data++ = (value >> 16) & 0xFF;

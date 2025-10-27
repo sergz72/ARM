@@ -57,7 +57,13 @@ bool Meter::IsMeasurementFinished()
 
 Ampermeter::Ampermeter(long long int _R)
 {
-  R = _R;
+  multiplier = _R;
+}
+
+void Ampermeter::SetParameters(MeasurementUint *_measurement_unit, int _channel_no)
+{
+  Meter::SetParameters(_measurement_unit, _channel_no);
+  multiplier = static_cast<long long int>(measurement_unit->GetVref()) * 1000000000LL / multiplier;
 }
 
 MultimeterChannelType Ampermeter::GetChannelType()
@@ -71,7 +77,7 @@ int Ampermeter::GetMeasurementResult()
     return INT_MAX;
   if (result == INT_MIN)
     return INT_MIN;
-  return static_cast<int>(static_cast<long long int>(result) * measurement_unit->GetVref() * 1000000000 / R /
+  return static_cast<int>(static_cast<long long int>(result) * multiplier /
               measurement_unit->GetMaxValue(channel_no) / current_gain);
 }
 
