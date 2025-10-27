@@ -97,6 +97,29 @@ int MeasurementUnitADS1220::GetMeasurementResult()
   return value;
 }
 
+int MeasurementUnitADS1220::GetGain(int channel, int gain)
+{
+  if (gain < 2)
+    return 1;
+  if (gain < 4)
+    return 2;
+
+  if (channel == ADS1220_MUX_AIN0_AVSS) // ohmmeter
+    return 4;
+
+  if (gain < 8)
+    return 4;
+  if (gain < 16)
+    return 8;
+  if (gain < 32)
+    return 16;
+  if (gain < 64)
+    return 32;
+  if (gain < 128)
+    return 64;
+  return 128;
+}
+
 int MeasurementUnitADS1220::SetGain(int channel, int gain)
 {
   if (gain < 2)
@@ -115,6 +138,9 @@ int MeasurementUnitADS1220::SetGain(int channel, int gain)
     gain = 6;
   else
     gain = 7;
+
+  if (channel == ADS1220_MUX_AIN0_AVSS && gain > 2) // ohmmeter
+    gain = 2;
 
   gains[channel] = gain;
   return 1 << gain;

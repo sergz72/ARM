@@ -74,6 +74,29 @@ int MeasurementUnitAD7793::GetMeasurementResult()
   return ad7793_read_finish(0);
 }
 
+int MeasurementUnitAD7793::GetGain(int channel, int gain)
+{
+  if (gain < 2)
+    return 1;
+  if (gain < 4)
+    return 2;
+
+  if (channel == AD7793_CHANNEL_AIN3P_AIN3N) // ohmmeter
+    return 4;
+
+  if (gain < 8)
+    return 4;
+  if (gain < 16)
+    return 8;
+  if (gain < 32)
+    return 16;
+  if (gain < 64)
+    return 32;
+  if (gain < 128)
+    return 64;
+  return 128;
+}
+
 int MeasurementUnitAD7793::SetGain(int channel, int gain)
 {
   if (gain < 2)
@@ -92,6 +115,9 @@ int MeasurementUnitAD7793::SetGain(int channel, int gain)
     gain = 6;
   else
     gain = 7;
+
+  if (channel == AD7793_CHANNEL_AIN3P_AIN3N && gain > 2) // ohmmeter
+    gain = 2;
 
   gains[channel] = gain;
   return 1 << gain;

@@ -19,6 +19,7 @@ public:
   int GetVref() override { return 2500; };
   int GetMaxValue(int channel) override { return (1 << 23) - 1; };
   int SetGain(int channel, int gain) override;
+  int GetGain(int channel, int gain) override;
 };
 
 

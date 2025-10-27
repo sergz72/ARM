@@ -111,16 +111,71 @@ MultimeterChannelType Ohmmeter::GetChannelType()
   return CHANNEL_TYPE_RESISTANCE;
 }
 
+void Ohmmeter::SetParameters(MeasurementUint *_measurement_unit, int _channel_no)
+{
+  Meter::SetParameters(_measurement_unit, _channel_no);
+  max_gain = measurement_unit->GetGain(channel_no, INT_MAX);
+  i_coef = measurement_unit->GetCurrentSourceValue(CURRENT_LEVEL_HI) /
+            measurement_unit->GetCurrentSourceValue(CURRENT_LEVEL_LO) + 1;
+}
+
+bool Ohmmeter::CurrentLevelHiHandler()
+{
+  if (current_gain == 1)
+  {
+    if (result >= measurement_unit->GetMaxValue(channel_no) / max_gain)
+      return true;
+    current_gain = max_gain;
+    measurement_unit->SetGain(channel_no, max_gain);
+    measurement_unit->StartMeasurement(channel_no);
+    return false;
+  }
+  return true;
+}
+
+bool Ohmmeter::CurrentLevelLoHandler()
+{
+  if (result >= measurement_unit->GetMaxValue(channel_no) / i_coef)
+    return true;
+  measurement_unit->SetChannelCurrentSource(channel_no, CURRENT_LEVEL_HI);
+  current_level = CURRENT_LEVEL_HI;
+  measurement_unit->StartMeasurement(channel_no);
+  return false;
+}
+
 bool Ohmmeter::IsMeasurementFinished()
 {
-  //todo
-  return measurement_unit->IsMeasurementFinished();
+  if (measurement_unit->IsMeasurementFinished())
+  {
+    result = measurement_unit->GetMeasurementResult();
+    if (result == INT_MAX)
+    {
+      if (current_level == CURRENT_LEVEL_LO)
+        return true;
+      measurement_unit->SetChannelCurrentSource(channel_no, CURRENT_LEVEL_LO);
+      current_level = CURRENT_LEVEL_LO;
+      current_gain = 1;
+      measurement_unit->SetGain(channel_no, 1);
+      measurement_unit->StartMeasurement(channel_no);
+      return false;
+    }
+    if (result < 0)
+      result = 0;
+    if (current_level == CURRENT_LEVEL_LO)
+      return CurrentLevelLoHandler();
+    return CurrentLevelHiHandler();
+  }
+  return false;
 }
 
 int Ohmmeter::GetMeasurementResult()
 {
-  //todo
-  return measurement_unit->GetMeasurementResult();
+  if (result == INT_MAX)
+    return INT_MAX;
+  int nV = static_cast<int>(static_cast<long long int>(result) * measurement_unit->GetVref() * 1000000 /
+                            measurement_unit->GetMaxValue(channel_no) / current_gain);
+  int uA = measurement_unit->GetCurrentSourceValue(current_level);
+  return nV / uA;
 }
 
 unsigned int MeasurementUint::GetTicks(unsigned int ms) const
@@ -129,6 +184,11 @@ unsigned int MeasurementUint::GetTicks(unsigned int ms) const
 }
 
 int MeasurementUint::SetGain(int channel, int gain)
+{
+  return 1;
+}
+
+int MeasurementUint::GetGain(int channel, int gain)
 {
   return 1;
 }

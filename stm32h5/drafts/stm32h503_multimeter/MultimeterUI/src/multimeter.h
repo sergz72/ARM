@@ -54,7 +54,7 @@ class Voltmeter: public Meter
 {
   long long int coef;
 public:
-  Voltmeter(long long int _coef);
+  explicit Voltmeter(long long int _coef);
   MultimeterChannelType GetChannelType() override;
   int GetMeasurementResult() override;
 };
@@ -62,8 +62,14 @@ public:
 class Ohmmeter: public Meter
 {
   CurrentSourceLevel current_level;
+  int max_gain;
+  int i_coef;
+
+  bool CurrentLevelHiHandler();
+  bool CurrentLevelLoHandler();
 public:
   Ohmmeter();
+  void SetParameters(MeasurementUint *_measurement_unit, int _channel_no) override;
   MultimeterChannelType GetChannelType() override;
   bool IsMeasurementFinished() override;
   int GetMeasurementResult() override;
@@ -96,6 +102,7 @@ public:
   virtual int GetVref() = 0;
   virtual int GetMaxValue(int channel) = 0;
   unsigned int GetTicks(unsigned int ms) const;
+  virtual int GetGain(int channel, int gain);
   virtual int SetGain(int channel, int gain);
 };
 
