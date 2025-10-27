@@ -8,7 +8,7 @@ class MeasurementUnitADS1220: public MeasurementUint
   unsigned char gains[15];
   bool temperature_sensor_mode;
 public:
-  explicit MeasurementUnitADS1220();
+  explicit MeasurementUnitADS1220(void (*_setChannelCurrentSourceCallback)(int channel, CurrentSourceLevel current_level));
   int GetNumChannels() const override;
   int GetCurrentSourceValue(CurrentSourceLevel current_level) override;
   MultimeterChannel *GetChannel(int channel) override;

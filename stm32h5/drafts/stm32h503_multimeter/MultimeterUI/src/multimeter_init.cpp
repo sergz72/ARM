@@ -5,8 +5,8 @@
 #include <ad7793.h>
 #include <ads1220.h>
 
-static MeasurementUnitAD7793 UnitAD7793;
-static MeasurementUnitADS1220 UnitADS1220;
+static MeasurementUnitAD7793 UnitAD7793(AD7793_SET_CHANNEL_CURRENT_SOURCE_CALLBACK);
+static MeasurementUnitADS1220 UnitADS1220(ADS1220_SET_CHANNEL_CURRENT_SOURCE_CALLBACK);
 static MeasurementUnitInternal UnitInternal;
 
 static const MeasurementUint *measurement_units[MEASUREMENT_UNITS_COUNT] = {

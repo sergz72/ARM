@@ -120,3 +120,13 @@ unsigned int calculate_inductance(unsigned long long int frequency)
   l = NOM / f2 / c;
   return l * 100 / PI2;
 }
+
+void ad7793_change_current_source_callback(int channel, CurrentSourceLevel current_level)
+{
+
+}
+
+void ads1220_change_current_source_callback(int channel, CurrentSourceLevel current_level)
+{
+
+}

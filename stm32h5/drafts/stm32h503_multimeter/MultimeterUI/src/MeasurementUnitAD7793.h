@@ -7,7 +7,7 @@ class MeasurementUnitAD7793: public MeasurementUint
 {
   unsigned char gains[3];
 public:
-  MeasurementUnitAD7793();
+  explicit MeasurementUnitAD7793(void (*_setChannelCurrentSourceCallback)(int channel, CurrentSourceLevel current_level));
   int GetNumChannels() const override;
   int GetCurrentSourceValue(CurrentSourceLevel current_level) override;
   MultimeterChannel *GetChannel(int channel) override;

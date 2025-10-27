@@ -21,7 +21,7 @@ public:
 static FrequencyMeter frequency_meter;
 static CapacitanceMeter capacitance_meter;
 
-MeasurementUnitInternal::MeasurementUnitInternal()
+MeasurementUnitInternal::MeasurementUnitInternal(): MeasurementUint(nullptr)
 {
   frequency_meter.SetParameters(this, 0);
   capacitance_meter.SetParameters(this, 1);

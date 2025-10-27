@@ -17,7 +17,8 @@ static Voltmeter voltmeter(10);
 static VDDAMeter voltmeter_vdda;
 static Ohmmeter ohmmeter;
 
-MeasurementUnitAD7793::MeasurementUnitAD7793()
+MeasurementUnitAD7793::MeasurementUnitAD7793(void (*_setChannelCurrentSourceCallback)(int channel, CurrentSourceLevel current_level))
+  : MeasurementUint(_setChannelCurrentSourceCallback)
 {
   ampermeter.SetParameters(this, AD7793_CHANNEL_AIN1P_AIN1N);
   voltmeter.SetParameters(this, AD7793_CHANNEL_AIN2P_AIN2N);
@@ -52,6 +53,8 @@ MultimeterChannel *MeasurementUnitAD7793::GetChannel(int channel)
 
 int MeasurementUnitAD7793::SetChannelCurrentSource(int channel, CurrentSourceLevel current_level)
 {
+  if (setChannelCurrentSourceCallback)
+    setChannelCurrentSourceCallback(channel, current_level);
   //todo
   return 1;
 }

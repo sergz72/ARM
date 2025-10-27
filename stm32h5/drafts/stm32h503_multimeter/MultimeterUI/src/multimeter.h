@@ -11,26 +11,7 @@
 #define MULTIMETER_MAX_CHANNELS_PER_UNIT 4
 #endif
 
-typedef enum
-{
-  CHANNEL_TYPE_NONE,
-  CHANNEL_TYPE_VOLTAGE,
-  CHANNEL_TYPE_CURRENT,
-  CHANNEL_TYPE_RESISTANCE,
-  CHANNEL_TYPE_TEMPERATURE,
-  CHANNEL_TYPE_VDDA,
-  CHANNEL_TYPE_CAPACITANCE,
-  CHANNEL_TYPE_FREQUENCY,
-  CHANNEL_TYPE_MAX = CHANNEL_TYPE_FREQUENCY
-} MultimeterChannelType;
-
-typedef enum
-{
-  CURRENT_LEVEL_LO,
-  CURRENT_LEVEL_MID,
-  CURRENT_LEVEL_HI,
-  CURRENT_LEVEL_MAX = CURRENT_LEVEL_HI
-} CurrentSourceLevel;
+#include "multimeter_enums.h"
 
 class MeasurementUint;
 
@@ -92,9 +73,18 @@ class Multimeter;
 
 class MeasurementUint
 {
+protected:
   Multimeter *multimeter;
+  void (*setChannelCurrentSourceCallback)(int channel, CurrentSourceLevel current_level);
 public:
-  void SetParameters(Multimeter *_multimeter) { multimeter = _multimeter; }
+  MeasurementUint(void (*_setChannelCurrentSourceCallback)(int channel, CurrentSourceLevel current_level))
+  {
+    setChannelCurrentSourceCallback = _setChannelCurrentSourceCallback;
+  }
+  void SetParameters(Multimeter *_multimeter)
+  {
+    multimeter = _multimeter;
+  }
   virtual ~MeasurementUint() = default;
   virtual int GetNumChannels() const = 0;
   virtual int GetCurrentSourceValue(CurrentSourceLevel current_level) = 0;

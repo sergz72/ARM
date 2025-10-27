@@ -133,7 +133,6 @@ int MeasurementUint::SetGain(int channel, int gain)
   return 1;
 }
 
-
 Multimeter::Multimeter(MeasurementUint **_units, unsigned int enabled_measurement_types, unsigned int _tick_ms)
 {
   tick_ms = _tick_ms;

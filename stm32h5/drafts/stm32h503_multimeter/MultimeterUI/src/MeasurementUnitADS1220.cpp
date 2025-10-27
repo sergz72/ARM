@@ -13,7 +13,8 @@ static Voltmeter voltmeter(10);
 static Ohmmeter ohmmeter;
 static Thermometer thermometer;
 
-MeasurementUnitADS1220::MeasurementUnitADS1220()
+MeasurementUnitADS1220::MeasurementUnitADS1220(void (*_setChannelCurrentSourceCallback)(int channel, CurrentSourceLevel current_level))
+  : MeasurementUint(_setChannelCurrentSourceCallback)
 {
   ampermeter.SetParameters(this, ADS1220_MUX_AIN2_AIN3);
   voltmeter.SetParameters(this, ADS1220_MUX_AIN1_AIN2);
@@ -54,6 +55,9 @@ MultimeterChannel *MeasurementUnitADS1220::GetChannel(int channel)
 
 int MeasurementUnitADS1220::SetChannelCurrentSource(int channel, CurrentSourceLevel current_level)
 {
+  if (setChannelCurrentSourceCallback)
+    setChannelCurrentSourceCallback(channel, current_level);
+
   if (channel != ADS1220_MUX_AIN0_AVSS)
     return 1;
   unsigned char current;
