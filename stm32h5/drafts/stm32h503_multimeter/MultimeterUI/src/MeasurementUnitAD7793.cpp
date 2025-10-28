@@ -30,8 +30,12 @@ int MeasurementUnitAD7793::GetNumChannels() const {return 4;}
 
 int MeasurementUnitAD7793::GetCurrentSourceValue(CurrentSourceLevel current_level)
 {
-  //todo
-  return 0;
+  switch (current_level)
+  {
+    case CURRENT_LEVEL_LO: return 10;
+    case CURRENT_LEVEL_MID: return 210;
+    default: return 1000;
+  }
 }
 
 MultimeterChannel *MeasurementUnitAD7793::GetChannel(int channel)
@@ -55,8 +59,17 @@ int MeasurementUnitAD7793::SetChannelCurrentSource(int channel, CurrentSourceLev
 {
   if (setChannelCurrentSourceCallback)
     setChannelCurrentSourceCallback(channel, current_level);
-  //todo
-  return 1;
+  if (channel != AD7793_CHANNEL_AIN3P_AIN3N)
+    return 1;
+  unsigned char current;
+  switch (current_level)
+  {
+    case CURRENT_LEVEL_LO: current = AD7793_IEXCEN_10;
+    case CURRENT_LEVEL_MID: current = AD7793_IEXCEN_210;
+    default: current = AD7793_IEXCEN_1000;
+  }
+  ad7793_set_io(0, AD7793_IEXCDIR_IEXC1_IOUT1_IEXC2_IOUT2, current);
+  return 0;
 }
 
 void MeasurementUnitAD7793::StartMeasurement(int channel)

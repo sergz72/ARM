@@ -2,6 +2,8 @@
 #include <lcd_sh1107.h>
 #include <limits.h>
 #include <string.h>
+#include <ad7793_emulator.h>
+#include <ads1220_emulator.h>
 #include "ui.h"
 
 #define SIZE (LCD_HEIGHT * LCD_WIDTH / 8)
@@ -14,6 +16,12 @@ static unsigned char lcd_buffer[SIZE], *lcd_buffer_p = lcd_buffer;
 
 volatile int capacitance_measurement_done;
 static int capacitance_measurement_channel;
+
+multimeter_result_t multimeter_result_hal = {
+  .resistance_mOhm = {0,0},
+  .capacitance = {0,0, 0},
+  .frequency_hz = 0
+};
 
 void discharge_off(void)
 {
@@ -121,12 +129,36 @@ unsigned int calculate_inductance(unsigned long long int frequency)
   return l * 100 / PI2;
 }
 
+static long long int ad7793_get_current_ua(CurrentSourceLevel current_level)
+{
+  switch (current_level)
+  {
+    case CURRENT_LEVEL_LO: return 10;
+    case CURRENT_LEVEL_MID: return 210;
+    default: return 1000;
+  }
+}
+
+static long long int ads1220_get_current_ua(CurrentSourceLevel current_level)
+{
+  switch (current_level)
+  {
+    case CURRENT_LEVEL_LO: return 10;
+    case CURRENT_LEVEL_MID: return 100;
+    default: return 1000;
+  }
+}
+
 void ad7793_change_current_source_callback(int channel, CurrentSourceLevel current_level)
 {
-
+  ad7793_emulator_config->ain_uv[2] = multimeter_result_hal.resistance_mOhm[0] < 0
+    ? 3300000
+    : (int)((long long int)multimeter_result_hal.resistance_mOhm[0] * ad7793_get_current_ua(current_level) / 1000LL);
 }
 
 void ads1220_change_current_source_callback(int channel, CurrentSourceLevel current_level)
 {
-
+  ads1220_emulator_config->ain_uv[0] = multimeter_result_hal.resistance_mOhm[0] < 0
+    ? 3300000
+    : (int)((long long int)multimeter_result_hal.resistance_mOhm[0] * ads1220_get_current_ua(current_level) / 1000LL);
 }

@@ -23,7 +23,6 @@ multimeter_result_t multimeter_result =
   .frequency_hz = 0,
   .diode_voltage_uV = {0,0},
   .resistance_mOhm = {0, 0},
-  .inductance_nH = 0,
   .temperature_Cx10 = 0,
   .vdda_uV = 0,
   .capacitance = {0, 0, 0},

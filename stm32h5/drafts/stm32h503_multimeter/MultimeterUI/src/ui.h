@@ -19,7 +19,6 @@ typedef struct
   unsigned int frequency_hz;
   unsigned int diode_voltage_uV[2];
   unsigned int resistance_mOhm[2];
-  unsigned int inductance_nH;
   unsigned int temperature_Cx10;
   unsigned int vdda_uV;
   capacitance_result capacitance;

@@ -7,6 +7,8 @@
 
 #define LED_SIZE 40
 
+extern multimeter_result_t multimeter_result_hal;
+
 int long_delay = 0;
 unsigned int long_press = 0;
 unsigned int key = 0;
@@ -181,7 +183,7 @@ f_changed (GtkWidget *widget,
               gpointer   data)
 {
   int value = update_label(widget, data);
-  //multimeter_result_hal.frequency_hz = value;
+  multimeter_result_hal.frequency_hz = value;
 }
 
 static void
@@ -189,7 +191,7 @@ c_changed (GtkWidget *widget,
               gpointer   data)
 {
   int value = update_label(widget, data);
-  //multimeter_result_hal.capacitance.pF = value;
+  multimeter_result_hal.capacitance.pF = value;
 }
 
 static void
@@ -197,7 +199,7 @@ r1_changed (GtkWidget *widget,
               gpointer   data)
 {
   int value = update_label(widget, data);
-  //multimeter_result_hal.resistance_mOhm[0] = value;
+  multimeter_result_hal.resistance_mOhm[0] = value;
 }
 
 static void
@@ -205,7 +207,7 @@ r2_changed (GtkWidget *widget,
               gpointer   data)
 {
   int value = update_label(widget, data);
-  //multimeter_result_hal.resistance_mOhm[1] = value;
+  multimeter_result_hal.resistance_mOhm[1] = value;
 }
 
 static void
