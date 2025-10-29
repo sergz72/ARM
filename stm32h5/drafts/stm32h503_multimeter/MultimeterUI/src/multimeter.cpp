@@ -172,10 +172,12 @@ int Ohmmeter::GetMeasurementResult()
 {
   if (result == INT_MAX)
     return INT_MAX;
-  int nV = static_cast<int>(static_cast<long long int>(result) * measurement_unit->GetVref() * 1000000 /
-                            measurement_unit->GetMaxValue(channel_no) / current_gain);
-  int uA = measurement_unit->GetCurrentSourceValue(current_level);
-  return nV / uA;
+  unsigned long long int nV = static_cast<unsigned long long int>(result) *
+                            static_cast<unsigned long long int>(measurement_unit->GetVref()) * 1000000ULL /
+                            static_cast<unsigned long long int>(measurement_unit->GetMaxValue(channel_no)) /
+                              static_cast<unsigned long long int>(current_gain);
+  unsigned int uA = static_cast<unsigned int>(measurement_unit->GetCurrentSourceValue(current_level));
+  return static_cast<int>(nV / uA);
 }
 
 unsigned int MeasurementUint::GetTicks(unsigned int ms) const

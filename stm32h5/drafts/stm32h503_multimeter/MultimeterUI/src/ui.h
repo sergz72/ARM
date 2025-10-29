@@ -17,10 +17,10 @@ typedef struct
 typedef struct
 {
   unsigned int frequency_hz;
-  unsigned int diode_voltage_uV[2];
-  unsigned int resistance_mOhm[2];
-  unsigned int temperature_Cx10;
-  unsigned int vdda_uV;
+  int diode_voltage_uV[2];
+  int resistance_mOhm[2];
+  int temperature_Cx10;
+  int vdda_uV;
   capacitance_result capacitance;
   voltage_current_result voltage_current[2];
 } multimeter_result_t;

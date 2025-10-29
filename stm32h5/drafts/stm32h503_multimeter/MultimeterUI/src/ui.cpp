@@ -141,14 +141,14 @@ static void DrawPower(const int line, int channel)
   }
 }
 
-static void DrawTemperature(unsigned int value)
+static void DrawTemperature(int value)
 {
   if (value > 999)
     value = 999;
   LcdPrintf("%2d.%d", 0, 0, &MAIN_FONT, 1, value / 10, value % 10);
 }
 
-static void DrawVdda(unsigned int value_uV)
+static void DrawVdda(int value_uV)
 {
   value_uV = value_uV / 1000;
   if (value_uV > 9999)
@@ -185,9 +185,9 @@ static void DrawCapacitance(const int line, const unsigned int value_pF)
               value_pF / 1000000, (value_pF/1000) % 1000);
 }
 
-static void DrawResistance(const int line, const unsigned int value_mOhm)
+static void DrawResistance(const int line, const int value_mOhm)
 {
-  if (value_mOhm == UINT_MAX)
+  if (value_mOhm == INT_MAX)
     LcdDrawText(VALUE_X, line*MAIN_FONT.char_height, "---------", &MAIN_FONT, WHITE_COLOR, BLACK_COLOR, nullptr);
   else if (value_mOhm < 10000000)
     LcdPrintf("%4d.%03d ", VALUE_X, line*MAIN_FONT.char_height, &MAIN_FONT, 1,

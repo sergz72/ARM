@@ -21,5 +21,6 @@ public:
   int GetGain(int channel, int gain) override;
 };
 
+extern Ohmmeter ohmmeter7793;
 
 #endif

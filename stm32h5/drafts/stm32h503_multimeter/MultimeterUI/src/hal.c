@@ -158,7 +158,7 @@ void ad7793_change_current_source_callback(int channel, CurrentSourceLevel curre
 
 void ads1220_change_current_source_callback(int channel, CurrentSourceLevel current_level)
 {
-  ads1220_emulator_config->ain_uv[0] = multimeter_result_hal.resistance_mOhm[0] < 0
+  ads1220_emulator_config->ain_uv[0] = multimeter_result_hal.resistance_mOhm[1] < 0
     ? 3300000
-    : (int)((long long int)multimeter_result_hal.resistance_mOhm[0] * ads1220_get_current_ua(current_level) / 1000LL);
+    : (int)((long long int)multimeter_result_hal.resistance_mOhm[1] * ads1220_get_current_ua(current_level) / 1000LL);
 }

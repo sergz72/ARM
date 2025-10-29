@@ -73,6 +73,7 @@ public:
   MultimeterChannelType GetChannelType() override;
   bool IsMeasurementFinished() override;
   int GetMeasurementResult() override;
+  CurrentSourceLevel GetCurrentSourceLevel() const { return current_level; }
 };
 
 class Multimeter;

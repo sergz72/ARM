@@ -3,6 +3,9 @@
 #include <gtk/gtk.h>
 #include <ad7793_emulator.h>
 #include <ads1220_emulator.h>
+
+#include "MeasurementUnitAD7793.h"
+#include "MeasurementUnitADS1220.h"
 #include "multimeter_init.h"
 
 #define LED_SIZE 40
@@ -200,6 +203,7 @@ r1_changed (GtkWidget *widget,
 {
   int value = update_label(widget, data);
   multimeter_result_hal.resistance_mOhm[0] = value;
+  ad7793_change_current_source_callback(0, ohmmeter7793.GetCurrentSourceLevel());
 }
 
 static void
@@ -208,6 +212,7 @@ r2_changed (GtkWidget *widget,
 {
   int value = update_label(widget, data);
   multimeter_result_hal.resistance_mOhm[1] = value;
+  ads1220_change_current_source_callback(0, ohmmeter1220.GetCurrentSourceLevel());
 }
 
 static void
@@ -330,8 +335,8 @@ create_sliders(GtkWidget *vbox)
   create_scale(vbox, "I2", "uA", -999999, 999999, G_CALLBACK(i2_changed));
   create_scale(vbox, "F", "Hz", 0, 199999999, G_CALLBACK(f_changed));
   create_scale(vbox, "C", "tick", 0, 1999999999, G_CALLBACK(c_changed));
-  create_scale(vbox, "R1", "mOhm", 0, 999999999, G_CALLBACK(r1_changed));
-  create_scale(vbox, "R2", "mOhm", 0, 999999999, G_CALLBACK(r2_changed));
+  create_scale(vbox, "R1", "mOhm", 0, 120999999, G_CALLBACK(r1_changed));
+  create_scale(vbox, "R2", "mOhm", 0, 120999999, G_CALLBACK(r2_changed));
 }
 
 static void
