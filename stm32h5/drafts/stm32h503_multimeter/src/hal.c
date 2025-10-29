@@ -6,8 +6,8 @@
 #include <spi_soft.h>
 #include <ad7793.h>
 #include <ads1220.h>
+#include <limits.h>
 #include <string.h>
-#include "multimeter.h"
 
 const RCCConfig rcc_config =
 {
@@ -438,21 +438,7 @@ void ads1220_spi_transfer(int channel, const unsigned char *wdata, unsigned int 
   hal_spi_transfer(ADS1220_CHANNEL, wdata, wlength, rdata, rlength);
 }
 
-int multimeter_init(void)
-{
-  ad7793_init();
-  ads1220_init();
-
-  ad7793_set_mode_and_update_rate(AD7793_CHANNEL, AD7793_MODE_IDLE, AD7793_UPDATE_RATE_16_80);
-  ad7793_set_configuration(AD7793_CHANNEL, &ad7793_config);
-  ad7793_set_io(AD7793_CHANNEL, AD7793_IEXCDIR_IEXC1_IOUT1_IEXC2_IOUT2, AD7793_IEXCEN_10);
-
-  ads1220_set_configuration(ADS1220_CHANNEL, &ads1220_config);
-
-  return 0;
-}
-
-unsigned int get_keyboard_status(void)
+unsigned char get_keyboard_status(void)
 {
   //todo
   return 0;
@@ -465,99 +451,12 @@ void power_off(void)
     delayms(1);
 }
 
-unsigned int check_measurements_statuses(void)
-{
-  //todo
-  return 0;
-}
-
-void start_voltage_measurements(void)
-{
-  current_ads1220_measurement = VOLTAGE1_MEASUREMENT;
-  current_ad7793_measurement = VOLTAGE2_MEASUREMENT;
-  ads1220_read_start(0, ADS1220_MUX_AIN0_AIN1, ADS1220_PGA_GAIN_1, 1);
-  ad7793_read_start(0, AD7793_CHANNEL_AIN1N_AIN1N, AD7793_GAIN_1, 0);
-}
-
 void start_frequency_measurement(void)
 {
   //todo
 }
 
-void start_resistance_measurement(int channel, enum resistance_measurements_modes mode)
-{
-  //todo
-}
-
-void start_current_measurement(int channel)
-{
-  if (channel)
-  {
-    current_ad7793_measurement = CURRENT2_MEASUREMENT;
-    ad7793_read_start(0, AD7793_CHANNEL_AIN1N_AIN1N, AD7793_GAIN_1, 0);
-  }
-  else
-  {
-    current_ads1220_measurement = CURRENT1_MEASUREMENT;
-    ads1220_read_start(0, ADS1220_MUX_AIN0_AIN1, ADS1220_PGA_GAIN_1, 1);
-  }
-}
-
-unsigned int start_extra_measurements(int channel, int extra_measurement_no)
-{
-  if (extra_measurement_no)
-    return 0;
-  if (channel)
-  {
-    ad7793_read_start(0, AD7793_CHANNEL_AVDD6, AD7793_GAIN_1, 0);
-    return VDDA_MEASUREMENT;
-  }
-  ads1220_read_start(0, ADS1220_MUX_AIN0_AIN1, ADS1220_PGA_GAIN_1, 1);
-  return TEMPERATURE_MEASUREMENT;
-}
-
-void start_diode_voltage_measurement(int channel)
-{
-  //todo
-}
-
-unsigned int finish_voltage_measurement(int channel)
-{
-  //todo
-  return 0;
-}
-
 unsigned int finish_frequency_measurement(void)
-{
-  //todo
-  return 0;
-}
-
-unsigned int finish_resistance_measurement(int channel, enum resistance_measurements_modes mode)
-{
-  //todo
-  return 0;
-}
-
-unsigned int finish_current_measurement(int channel)
-{
-  //todo
-  return 0;
-}
-
-unsigned int finish_temperature_measurement(void)
-{
-  //todo
-  return 0;
-}
-
-unsigned int finish_vdda_measurement(void)
-{
-  //todo
-  return 0;
-}
-
-unsigned int finish_diode_voltage_measurement(int channel)
 {
   //todo
   return 0;
@@ -567,4 +466,25 @@ int capacitor_is_discharged(void)
 {
   //todo
   return 1;
+}
+
+/*
+ * L = (NOM / F / F / C) * 100 / PI2
+ * C in pF
+ * L in uH
+ * F in HZ
+ */
+#define NOM (2500000000 * 100000000)
+#define PI2 987
+#define DEFAULT_L_CAP 3400 //pF
+unsigned int calculate_inductance(unsigned long long int frequency)
+{
+  unsigned long long int l;
+  unsigned long long int f2;
+  unsigned long long int c = DEFAULT_L_CAP / 100;
+  if (!frequency)
+    return UINT_MAX;
+  f2 = frequency * frequency;
+  l = NOM / f2 / c;
+  return l * 100 / PI2;
 }

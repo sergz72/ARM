@@ -4,7 +4,6 @@
 #include <stdio.h>
 #include <common_printf.h>
 #include "multimeter_commands.h"
-#include "multimeter.h"
 #include "ui.h"
 
 static int led_state;
@@ -33,13 +32,11 @@ int main(void)
 
   CDCInit();
 
-  multimeter_init();
-
-  UI_Init();
+  MultimeterInit();
 
   while (1)
   {
-    delayms(10);
+    delayms(100);
 
     if (!getstring_next())
     {
@@ -65,7 +62,7 @@ int main(void)
       }
     }
 
-    if (cnt_led == 99)
+    if (cnt_led == 9)
     {
       led_toggle();
       cnt_led = 0;
@@ -73,8 +70,6 @@ int main(void)
     else
       cnt_led++;
 
-    unsigned char keyboard_status = get_keyboard_status();
-    unsigned int multimeter_changes = multimeter_timer_event();
-    Process_Timer_Event(keyboard_status, multimeter_changes);
+    TimerEvent();
   }
 }

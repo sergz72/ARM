@@ -1,256 +1,328 @@
-#include "board.h"
 #include "multimeter.h"
+
+#include <cmath>
+#include <cstring>
 #include <limits.h>
 
-static unsigned int capacitance_coefficient[3] = {0, CAPACITANCE_COEFFICIENT_1K, CAPACITANCE_COEFFICIENT_100K};
-static unsigned int capacitance_offset[3] = {0, CAPACITANCE_OFFSET_1K, CAPACITANCE_OFFSET_100K};
-
-enum multimeter_modes multimeter_mode = FREQUENCY;
-
-static unsigned int started_measurements = 0;
-
-multimeter_result_t multimeter_result =
+void MultimeterChannel::SetParameters(MeasurementUint* _measurement_unit, int _channel_no)
 {
-  .frequency_hz = 0,
-  .inductance_nH = 0,
-  .diode_voltage_uV = {0,0},
-  .voltage_current = {{0, 0}, {0, 0}},
-  .resistance_mOhm = {0, 0},
-  .temperature_Cx10 = 0,
-  .vdda_mV = 0,
-  .capacitance = {0, 0, 0}
-};
-
-int planned_capacitance_measurement = 0;
-
-static void calculate_capacitance(int channel, unsigned int difference, capacitance_result *result)
-{
-  result->diff = difference;
-  unsigned int pf = (unsigned int)((unsigned long long int)difference * 100000UL / capacitance_coefficient[channel]);
-  if (pf <= capacitance_offset[channel])
-    result->pF = 0;
-  else
-    result->pF = pf - capacitance_offset[channel];
-  result->channel = channel;
+  measurement_unit = _measurement_unit;
+  channel_no = _channel_no;
 }
 
-static void start_capacitance_measurement(int channel)
+void MultimeterChannel::StartMeasurement()
 {
-  planned_capacitance_measurement = channel;
+  measurement_unit->StartMeasurement(channel_no);
 }
 
-static unsigned int check_capacitance_measurement_status(void)
+bool MultimeterChannel::IsMeasurementFinished()
 {
-  if (planned_capacitance_measurement && capacitor_is_discharged())
+  return measurement_unit->IsMeasurementFinished();
+}
+
+bool MultimeterChannel::IsReadyForNewMeasurement()
+{
+  return true;
+}
+
+bool Meter::IsMeasurementFinished()
+{
+  bool finished = measurement_unit->IsMeasurementFinished();
+  if (finished)
   {
-    capacitance_measurement_start(planned_capacitance_measurement);
-    planned_capacitance_measurement = 0;
-    return 0;
+    result = measurement_unit->GetMeasurementResult();
+    if (result == INT_MAX || result == INT_MIN)
+    {
+      if (current_gain != 1)
+      {
+        current_gain = 1;
+        measurement_unit->SetGain(channel_no, 1);
+        measurement_unit->StartMeasurement(channel_no);
+        return false;
+      }
+      return true;
+    }
+    int gain = result == 0 ? INT_MAX : measurement_unit->GetMaxValue(channel_no) * current_gain / abs(result);
+    gain = measurement_unit->SetGain(channel_no, gain);
+    if (gain != current_gain)
+    {
+      measurement_unit->StartMeasurement(channel_no);
+      current_gain = gain;
+      return false;
+    }
+    return true;
   }
-  if (capacitance_measurement_done)
+  return false;
+}
+
+Ampermeter::Ampermeter(long long int _R)
+{
+  multiplier = _R;
+}
+
+void Ampermeter::SetParameters(MeasurementUint *_measurement_unit, int _channel_no)
+{
+  Meter::SetParameters(_measurement_unit, _channel_no);
+  multiplier = static_cast<long long int>(measurement_unit->GetVref()) * 1000000000LL / multiplier;
+}
+
+MultimeterChannelType Ampermeter::GetChannelType()
+{
+  return CHANNEL_TYPE_CURRENT;
+}
+
+int Ampermeter::GetMeasurementResult()
+{
+  if (result == INT_MAX)
+    return INT_MAX;
+  if (result == INT_MIN)
+    return INT_MIN;
+  return static_cast<int>(static_cast<long long int>(result) * multiplier /
+              measurement_unit->GetMaxValue(channel_no) / current_gain);
+}
+
+Voltmeter::Voltmeter(long long int _coef)
+{
+  coef = _coef;
+}
+
+MultimeterChannelType Voltmeter::GetChannelType()
+{
+  return CHANNEL_TYPE_VOLTAGE;
+}
+
+int Voltmeter::GetMeasurementResult()
+{
+  if (result == INT_MAX)
+    return INT_MAX;
+  if (result == INT_MIN)
+    return INT_MIN;
+  return static_cast<int>(static_cast<long long int>(result) * measurement_unit->GetVref() * coef * 1000 /
+                            measurement_unit->GetMaxValue(channel_no) / current_gain);
+}
+
+Ohmmeter::Ohmmeter()
+{
+  current_level = CURRENT_LEVEL_LO;
+}
+
+MultimeterChannelType Ohmmeter::GetChannelType()
+{
+  return CHANNEL_TYPE_RESISTANCE;
+}
+
+void Ohmmeter::SetParameters(MeasurementUint *_measurement_unit, int _channel_no)
+{
+  Meter::SetParameters(_measurement_unit, _channel_no);
+  max_gain = measurement_unit->GetGain(channel_no, INT_MAX);
+  i_coef = measurement_unit->GetCurrentSourceValue(CURRENT_LEVEL_HI) /
+            measurement_unit->GetCurrentSourceValue(CURRENT_LEVEL_LO) + 1;
+}
+
+bool Ohmmeter::CurrentLevelHiHandler()
+{
+  if (current_gain == 1)
   {
-    charge_off();
-    discharge_on();
-    capacitance_measurement_done = 0;
-    return started_measurements & (CAPACITANCE_MEASUREMENT_100K | CAPACITANCE_MEASUREMENT_1K);
+    if (result >= measurement_unit->GetMaxValue(channel_no) / max_gain)
+      return true;
+    current_gain = max_gain;
+    measurement_unit->SetGain(channel_no, max_gain);
+    measurement_unit->StartMeasurement(channel_no);
+    return false;
   }
+  return true;
+}
+
+bool Ohmmeter::CurrentLevelLoHandler()
+{
+  if (result >= measurement_unit->GetMaxValue(channel_no) / i_coef)
+    return true;
+  measurement_unit->SetChannelCurrentSource(channel_no, CURRENT_LEVEL_HI);
+  current_level = CURRENT_LEVEL_HI;
+  measurement_unit->StartMeasurement(channel_no);
+  return false;
+}
+
+bool Ohmmeter::IsMeasurementFinished()
+{
+  if (measurement_unit->IsMeasurementFinished())
+  {
+    result = measurement_unit->GetMeasurementResult();
+    if (result == INT_MAX)
+    {
+      if (current_level == CURRENT_LEVEL_LO)
+        return true;
+      if (current_gain != 1)
+      {
+        current_gain = 1;
+        measurement_unit->SetGain(channel_no, 1);
+        measurement_unit->StartMeasurement(channel_no);
+        return false;
+      }
+      measurement_unit->SetChannelCurrentSource(channel_no, CURRENT_LEVEL_LO);
+      current_level = CURRENT_LEVEL_LO;
+      current_gain = 1;
+      measurement_unit->SetGain(channel_no, 1);
+      measurement_unit->StartMeasurement(channel_no);
+      return false;
+    }
+    if (result < 0)
+      result = 0;
+    if (current_level == CURRENT_LEVEL_LO)
+      return CurrentLevelLoHandler();
+    return CurrentLevelHiHandler();
+  }
+  return false;
+}
+
+int Ohmmeter::GetMeasurementResult()
+{
+  if (result == INT_MAX)
+    return INT_MAX;
+  unsigned long long int nV = static_cast<unsigned long long int>(result) *
+                            static_cast<unsigned long long int>(measurement_unit->GetVref()) * 1000000ULL /
+                            static_cast<unsigned long long int>(measurement_unit->GetMaxValue(channel_no)) /
+                              static_cast<unsigned long long int>(current_gain);
+  unsigned int uA = static_cast<unsigned int>(measurement_unit->GetCurrentSourceValue(current_level));
+  return static_cast<int>(nV / uA);
+}
+
+unsigned int MeasurementUint::GetTicks(unsigned int ms) const
+{
+  return multimeter->GetTicks(ms);
+}
+
+int MeasurementUint::SetGain(int channel, int gain)
+{
+  return 1;
+}
+
+int MeasurementUint::GetGain(int channel, int gain)
+{
+  return 1;
+}
+
+Multimeter::Multimeter(MeasurementUint **_units, unsigned int enabled_measurement_types, unsigned int _tick_ms)
+{
+  tick_ms = _tick_ms;
+  measurement_units = _units;
+  memset(current_channel, 0, sizeof(current_channel));
+  memset(measurement_is_in_progress, false, sizeof(measurement_is_in_progress));
+  memset(channel_mappings, -1, sizeof(channel_mappings));
+  memset(measurement_results, 0, sizeof(measurement_results));
+  int indexes[CHANNEL_TYPE_MAX+1];
+  memset(indexes, 0, sizeof(indexes));
+  for (int unit = 0; unit < MEASUREMENT_UNITS_COUNT; unit++)
+  {
+    MeasurementUint *current_unit = measurement_units[unit];
+    current_unit->SetParameters(this);
+    int channels = current_unit->GetNumChannels();
+    for (int channel = 0; channel < channels; channel++)
+    {
+      MultimeterChannel *c = current_unit->GetChannel(channel);
+      MultimeterChannelType t = c->GetChannelType();
+      channel_mappings[t][indexes[t]] = (unit << 16) | channel;
+      indexes[t]++;
+    }
+  }
+  EnableChannels(enabled_measurement_types);
+}
+
+void Multimeter::EnableChannels(unsigned int _enabled_measurement_types)
+{
+  enabled_measurement_types = _enabled_measurement_types;
+}
+
+int Multimeter::GetNextChannel(int unit) const
+{
+  int channel = current_channel[unit];
+  int n = measurement_units[unit]->GetNumChannels();
+  while (n--)
+  {
+    if (channel == measurement_units[unit]->GetNumChannels() - 1)
+      channel = 0;
+    else
+      channel++;
+    if (enabled_measurement_types & (1 << measurement_units[unit]->GetChannel(channel)->GetChannelType()))
+      return channel;
+  };
+  return -1;
+}
+
+void Multimeter::TimerEvent()
+{
+  for (int i = 0; i < MEASUREMENT_UNITS_COUNT; i++)
+  {
+    int channel = current_channel[i];
+    if (measurement_is_in_progress[i])
+    {
+      if (measurement_units[i]->GetChannel(channel)->IsMeasurementFinished())
+      {
+        MeasurementResult *result = &measurement_results[i][channel];
+        result->value = measurement_units[i]->GetChannel(channel)->GetMeasurementResult();
+        result->done = true;
+        measurement_is_in_progress[i] = false;
+      }
+    }
+    else
+    {
+      channel = GetNextChannel(i);
+      if (channel == -1)
+        continue;
+      current_channel[i] = channel;
+      if (measurement_units[i]->GetChannel(channel)->IsReadyForNewMeasurement())
+      {
+        measurement_units[i]->GetChannel(channel)->StartMeasurement();
+        measurement_is_in_progress[i] = true;
+      }
+    }
+  }
+}
+
+int Multimeter::GetMeasurementResult(MultimeterChannelType *channel_type, int *channel_no)
+{
+  for (int unit = 0; unit < MEASUREMENT_UNITS_COUNT; unit++)
+  {
+    for (int channel = 0; channel < MULTIMETER_MAX_CHANNELS_PER_UNIT; channel++)
+    {
+      MeasurementResult *result = &measurement_results[unit][channel];
+      if (result->done)
+      {
+        MultimeterChannelType ctype = measurement_units[unit]->GetChannel(channel)->GetChannelType();
+        *channel_type = ctype;
+        for (int ch = 0; ch < MULTIMETER_MAX_CHANNELS_PER_CHANNEL_TYPE; ch++)
+        {
+          int mapping = channel_mappings[ctype][ch];
+          if (mapping == ((unit << 16) | channel))
+          {
+            *channel_no = ch;
+            result->done = false;
+            return result->value;
+          }
+        }
+        goto exit;
+      }
+    }
+  }
+exit:
+  *channel_type = CHANNEL_TYPE_NONE;
   return 0;
 }
 
-static void finish_capacitance_measurement(void)
+int Multimeter::GetNumberOfChannels(MultimeterChannelType channel_type) const
 {
-  unsigned int start_time = get_capacitance_measurement_start_time();
-  unsigned int end_time = get_capacitance_measurement_end_time();
-  unsigned int difference = end_time - start_time;
-  calculate_capacitance(CAPACITANCE_CHANNEL_100K, difference, &multimeter_result.capacitance);
-}
-
-static unsigned int finish_capacitance_measurement_1k(void)
-{
-  unsigned int start_time = get_capacitance_measurement_start_time();
-  unsigned int end_time = get_capacitance_measurement_end_time();
-  unsigned int difference = end_time - start_time;
-  if (difference >= CAPACITANCE_MIN_VALUE_1K)
+  int result = 0;
+  for (int i = 0; i < MULTIMETER_MAX_CHANNELS_PER_CHANNEL_TYPE; i++)
   {
-    calculate_capacitance(CAPACITANCE_CHANNEL_1K, difference, &multimeter_result.capacitance);
-    return 0;
-  }
-
-  start_capacitance_measurement(CAPACITANCE_CHANNEL_100K);
-  return CAPACITANCE_MEASUREMENT_100K;
-}
-
-void multimeter_set_mode(enum multimeter_modes mode)
-{
-  multimeter_mode = mode;
-}
-
-static void start_measurements(void)
-{
-  start_voltage_measurements();
-  started_measurements = VOLTAGE1_MEASUREMENT | VOLTAGE2_MEASUREMENT;
-  switch (multimeter_mode)
-  {
-    case FREQUENCY:
-    case INDUCTANCE:
-      start_frequency_measurement();
-      started_measurements |= FREQUENCY_MEASUREMENT;
+    if (channel_mappings[channel_type][i] == -1)
       break;
-    case CAPACITANCE:
-      start_capacitance_measurement(CAPACITANCE_CHANNEL_1K);
-      started_measurements |= CAPACITANCE_MEASUREMENT_1K;
-      break;
-    default: break;
+    result++;
   }
+  return result;
 }
 
-/*
- * L = (NOM / F / F / C) * 100 / PI2
- * C in pF
- * L in uH
- * F in HZ
- */
-#define NOM (2500000000 * 100000000)
-#define PI2 987
-#define DEFAULT_L_CAP 3400 //pF
-static unsigned int calculate_inductance(void)
+unsigned int Multimeter::GetTicks(unsigned int ms) const
 {
-  unsigned long long int l;
-  unsigned long long int f2;
-  unsigned long long int c = DEFAULT_L_CAP / 100;
-  if (!c || !multimeter_result.frequency_hz)
-    return UINT_MAX;
-  f2 = (unsigned long long int)multimeter_result.frequency_hz * multimeter_result.frequency_hz;
-  l = NOM / f2 / c;
-  return l * 100 / PI2;
-}
-
-static unsigned int check_extra(int channel, unsigned int extra_measurements)
-{
-  if (!extra_measurements)
-    extra_measurements = start_extra_measurements(channel, 0);
-  return extra_measurements;
-}
-
-static unsigned int build_changes(unsigned int *value, unsigned int new_value, unsigned int change_flag)
-{
-  if (new_value != *value)
-  {
-    *value = new_value;
-    return change_flag;
-  }
-  return 0;
-}
-
-static unsigned int finish_measurements(unsigned int finished_measurements)
-{
-  unsigned int changes = 0;
-  if (finished_measurements & VOLTAGE1_MEASUREMENT)
-  {
-    changes |= build_changes((unsigned int*)&multimeter_result.voltage_current[0].voltage_uV, finish_voltage_measurement(0), VOLTAGE1_CHANGED);
-    start_current_measurement(0);
-    started_measurements |= CURRENT1_MEASUREMENT;
-  }
-  if (finished_measurements & VOLTAGE2_MEASUREMENT)
-  {
-    changes |= build_changes((unsigned int*)&multimeter_result.voltage_current[1].voltage_uV, finish_voltage_measurement(1), VOLTAGE2_CHANGED);
-    start_current_measurement(1);
-    started_measurements |= CURRENT2_MEASUREMENT;
-  }
-  if (finished_measurements & CURRENT1_MEASUREMENT)
-  {
-    changes |= build_changes((unsigned int*)&multimeter_result.voltage_current[0].current_nA, finish_current_measurement(0), CURRENT1_CHANGED);
-    if (multimeter_mode == RESISTANCE)
-    {
-      start_resistance_measurement(0, HIGH);
-      started_measurements |= RESISTANCE1_MEASUREMENT_HIGH;
-    }
-    else if (multimeter_mode == DIODE_TEST)
-      start_diode_voltage_measurement(0);
-    else
-      started_measurements |= start_extra_measurements(0, 0);
-  }
-  if (finished_measurements & CURRENT2_MEASUREMENT)
-  {
-    changes |= build_changes((unsigned int*)&multimeter_result.voltage_current[1].current_nA, finish_current_measurement(1), CURRENT2_CHANGED);
-    if (multimeter_mode == RESISTANCE)
-    {
-      start_resistance_measurement(1, HIGH);
-      started_measurements |= RESISTANCE2_MEASUREMENT_HIGH;
-    }
-    else if (multimeter_mode == DIODE_TEST)
-      start_diode_voltage_measurement(1);
-    else
-      started_measurements |= start_extra_measurements(1, 0);
-  }
-  if (finished_measurements & DIODE_VOLTAGE_MEASUREMENT1)
-  {
-    changes |= build_changes(&multimeter_result.diode_voltage_uV[0], finish_diode_voltage_measurement(0), DIODE_VOLTAGE1_CHANGED);
-    started_measurements |= start_extra_measurements(0, 0);
-  }
-  if (finished_measurements & DIODE_VOLTAGE_MEASUREMENT2)
-  {
-    changes |= build_changes(&multimeter_result.diode_voltage_uV[1], finish_diode_voltage_measurement(1), DIODE_VOLTAGE2_CHANGED);
-    started_measurements |= start_extra_measurements(1, 0);
-  }
-  if (finished_measurements & TEMPERATURE_MEASUREMENT)
-  {
-    changes |= build_changes(&multimeter_result.temperature_Cx10, finish_temperature_measurement(), TEMPERATURE_CHANGED);
-    started_measurements |= start_extra_measurements(0, 1) | start_extra_measurements(1, 1);
-  }
-  if (finished_measurements & VDDA_MEASUREMENT)
-  {
-    changes |= build_changes(&multimeter_result.vdda_mV, finish_vdda_measurement(), VDDA_CHANGED);
-    started_measurements |= start_extra_measurements(0, 2) | start_extra_measurements(1, 2);
-  }
-  if (finished_measurements & FREQUENCY_MEASUREMENT)
-  {
-    changes |= build_changes(&multimeter_result.frequency_hz, finish_frequency_measurement(), FREQUENCY_CHANGED);
-    if (multimeter_mode == INDUCTANCE)
-      changes |= build_changes(&multimeter_result.inductance_nH, calculate_inductance(), INDUCTANCE_CHANGED);
-  }
-  unsigned int prev_resistance[2];
-  prev_resistance[0] = multimeter_result.resistance_mOhm[0];
-  prev_resistance[1] = multimeter_result.resistance_mOhm[1];
-  if (finished_measurements & RESISTANCE1_MEASUREMENT_HIGH)
-    started_measurements |= check_extra(0, finish_resistance_measurement(0, HIGH));
-  if (finished_measurements & RESISTANCE2_MEASUREMENT_HIGH)
-    started_measurements |= check_extra(1, finish_resistance_measurement(1, HIGH));
-  if (finished_measurements & RESISTANCE1_MEASUREMENT_MEDIUM)
-    started_measurements |= check_extra(0, finish_resistance_measurement(0, MEDIUM));
-  if (finished_measurements & RESISTANCE2_MEASUREMENT_MEDIUM)
-    started_measurements |= check_extra(1, finish_resistance_measurement(1, MEDIUM));
-  if (finished_measurements & RESISTANCE1_MEASUREMENT_LOW)
-    started_measurements |= check_extra(0, finish_resistance_measurement(0, LOW));
-  if (finished_measurements & RESISTANCE2_MEASUREMENT_LOW)
-    started_measurements |= check_extra(1, finish_resistance_measurement(1, LOW));
-  if (prev_resistance[0] != multimeter_result.resistance_mOhm[0])
-    changes |= RESISTANCE1_CHANGED;
-  if (prev_resistance[1] != multimeter_result.resistance_mOhm[1])
-    changes |= RESISTANCE2_CHANGED;
-  unsigned int prev_capacitance = multimeter_result.capacitance.pF;
-  if (finished_measurements & CAPACITANCE_MEASUREMENT_1K)
-    started_measurements |= finish_capacitance_measurement_1k();
-  if (finished_measurements & CAPACITANCE_MEASUREMENT_100K)
-    finish_capacitance_measurement();
-  if (prev_capacitance != multimeter_result.capacitance.pF)
-    changes |= CAPACITANCE_CHANGED;
-  return changes;
-}
-
-unsigned int multimeter_timer_event(void)
-{
-  unsigned int changes = 0;
-  if (!started_measurements)
-    start_measurements();
-  else
-  {
-    unsigned int finished_measurements = check_measurements_statuses() | check_capacitance_measurement_status();
-    if (finished_measurements)
-    {
-      changes = finish_measurements(finished_measurements);
-      started_measurements &= ~finished_measurements;
-    }
-  }
-  return changes;
+  unsigned int result = ms / tick_ms;
+  return ms % tick_ms ? result + 1 : result;
 }

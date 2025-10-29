@@ -33,7 +33,7 @@ endif()
 
 SET(CMAKE_C_FLAGS_INIT "${COMMON_FLAGS}")
 SET(CMAKE_ASM_FLAGS_INIT "${COMMON_FLAGS}")
-SET(CMAKE_CXX_FLAGS_INIT "${COMMON_FLAGS}")
+SET(CMAKE_CXX_FLAGS_INIT "${COMMON_FLAGS} -fno-use-cxa-atexit")
 SET(CMAKE_EXE_LINKER_FLAGS_INIT "-Wl,-gc-sections,--print-memory-usage -T ${LINKER_SCRIPT}")
 
 if (CLANG)
@@ -47,9 +47,13 @@ file(GLOB SOURCES
         "src/main.cpp"
         "src/main.c"
         "src/hal.c"
-        "src/ui.c"
+        "src/ui.cpp"
         "src/multimeter_commands.c"
-        "src/multimeter.c"
+        "src/multimeter.cpp"
+        "src/MeasurementUnitAD7793.cpp"
+        "src/MeasurementUnitADS1220.cpp"
+        "src/MeasurementUnitInternal.cpp"
+        "src/multimeter_init.cpp"
         "../startup_stm32h503xx.s"
         "../stm32h5lib/pll.c"
         "../stm32h5lib/systick.c"

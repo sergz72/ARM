@@ -4,6 +4,8 @@
 #include <cstdlib>
 #include <cstring>
 #include <usb_device_drd.h>
+#include "multimeter_init.h"
+#include "ui.h"
 
 static const USBDeviceConfiguration configuration =
 {
@@ -48,8 +50,22 @@ extern "C" {
     }
   }
 
+  void MultimeterInit(void)
+  {
+    multimeter_init();
+
+    UI_Init();
+  }
+
   void USB_DRD_FS_IRQHandler(void)
   {
     usb_device.InterruptHandler();
+  }
+
+  void TimerEvent(void)
+  {
+    unsigned char keyboard_status = get_keyboard_status();
+    multimeter.TimerEvent();
+    Process_Timer_Event(keyboard_status);
   }
 }

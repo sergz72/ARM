@@ -1,94 +1,137 @@
-#ifndef STM32H503_MULTIMETER_MULTIMETER_H
-#define STM32H503_MULTIMETER_MULTIMETER_H
+#ifndef MULTIMETER_H
+#define MULTIMETER_H
 
-#define CAPACITANCE_CHANNEL_1K   1
-#define CAPACITANCE_CHANNEL_100K 2
+#include "board.h"
 
-#define VOLTAGE1_CHANGED 1
-#define CURRENT1_CHANGED 2
-#define VOLTAGE2_CHANGED 4
-#define CURRENT2_CHANGED 8
-#define TEMPERATURE_CHANGED 16
-#define VDDA_CHANGED 32
-#define FREQUENCY_CHANGED 64
-#define RESISTANCE1_CHANGED 128
-#define RESISTANCE2_CHANGED 256
-#define INDUCTANCE_CHANGED 512
-#define CAPACITANCE_CHANGED 1024
-#define DIODE_VOLTAGE1_CHANGED 2048
-#define DIODE_VOLTAGE2_CHANGED 4096
+#ifndef MULTIMETER_MAX_CHANNELS_PER_CHANNEL_TYPE
+#define MULTIMETER_MAX_CHANNELS_PER_CHANNEL_TYPE 2
+#endif
 
-#define VOLTAGE1_MEASUREMENT 1
-#define VOLTAGE2_MEASUREMENT 2
-#define CURRENT1_MEASUREMENT 4
-#define CURRENT2_MEASUREMENT 8
-#define FREQUENCY_MEASUREMENT 16
-#define CAPACITANCE_MEASUREMENT_1K 32
-#define CAPACITANCE_MEASUREMENT_100K 64
-#define RESISTANCE1_MEASUREMENT_HIGH 128
-#define RESISTANCE2_MEASUREMENT_HIGH 256
-#define RESISTANCE1_MEASUREMENT_MEDIUM 512
-#define RESISTANCE2_MEASUREMENT_MEDIUM 1024
-#define RESISTANCE1_MEASUREMENT_LOW 2048
-#define RESISTANCE2_MEASUREMENT_LOW 4096
-#define TEMPERATURE_MEASUREMENT 8192
-#define VDDA_MEASUREMENT 16384
-#define DIODE_VOLTAGE_MEASUREMENT1 32768
-#define DIODE_VOLTAGE_MEASUREMENT2 65536
+#ifndef MULTIMETER_MAX_CHANNELS_PER_UNIT
+#define MULTIMETER_MAX_CHANNELS_PER_UNIT 4
+#endif
 
-enum multimeter_modes {FREQUENCY, RESISTANCE, DIODE_TEST, CONTINUITY, CAPACITANCE, INDUCTANCE};
-#define MULTIMETER_MAX_MODE INDUCTANCE
-#define MULTIMETER_MIN_MODE FREQUENCY
+#include "multimeter_enums.h"
 
-enum resistance_measurements_modes {HIGH, MEDIUM, LOW};
+class MeasurementUint;
+
+class MultimeterChannel
+{
+protected:
+  MeasurementUint *measurement_unit;
+  int channel_no;
+public:
+  virtual void SetParameters(MeasurementUint *_measurement_unit, int _channel_no);
+  virtual ~MultimeterChannel() = default;
+  virtual MultimeterChannelType GetChannelType() = 0;
+  virtual void StartMeasurement();
+  virtual bool IsMeasurementFinished();
+  virtual int GetMeasurementResult() = 0;
+  virtual bool IsReadyForNewMeasurement();
+};
+
+class Meter: public MultimeterChannel
+{
+protected:
+  int current_gain;
+  int result;
+  Meter() { current_gain = 1; }
+  bool IsMeasurementFinished() override;
+  int GetMeasurementResult() override { return result; }
+};
+
+class Ampermeter: public Meter
+{
+  long long int multiplier;
+public:
+  explicit Ampermeter(long long int _R);
+  void SetParameters(MeasurementUint *_measurement_unit, int _channel_no) override;
+  MultimeterChannelType GetChannelType() override;
+  int GetMeasurementResult() override;
+};
+
+class Voltmeter: public Meter
+{
+  long long int coef;
+public:
+  explicit Voltmeter(long long int _coef);
+  MultimeterChannelType GetChannelType() override;
+  int GetMeasurementResult() override;
+};
+
+class Ohmmeter: public Meter
+{
+  CurrentSourceLevel current_level;
+  int max_gain;
+  int i_coef;
+
+  bool CurrentLevelHiHandler();
+  bool CurrentLevelLoHandler();
+public:
+  Ohmmeter();
+  void SetParameters(MeasurementUint *_measurement_unit, int _channel_no) override;
+  MultimeterChannelType GetChannelType() override;
+  bool IsMeasurementFinished() override;
+  int GetMeasurementResult() override;
+  CurrentSourceLevel GetCurrentSourceLevel() const { return current_level; }
+};
+
+class Multimeter;
+
+class MeasurementUint
+{
+protected:
+  Multimeter *multimeter;
+  void (*setChannelCurrentSourceCallback)(int channel, CurrentSourceLevel current_level);
+public:
+  MeasurementUint(void (*_setChannelCurrentSourceCallback)(int channel, CurrentSourceLevel current_level))
+  {
+    setChannelCurrentSourceCallback = _setChannelCurrentSourceCallback;
+  }
+  void SetParameters(Multimeter *_multimeter)
+  {
+    multimeter = _multimeter;
+  }
+  virtual ~MeasurementUint() = default;
+  virtual int GetNumChannels() const = 0;
+  virtual int GetCurrentSourceValue(CurrentSourceLevel current_level) = 0;
+  virtual MultimeterChannel *GetChannel(int channel) = 0;
+  virtual int SetChannelCurrentSource(int channel, CurrentSourceLevel current_level) = 0;
+  virtual void StartMeasurement(int channel) = 0;
+  virtual bool IsMeasurementFinished() = 0;
+  virtual int GetMeasurementResult() = 0;
+  virtual int GetVref() = 0;
+  virtual int GetMaxValue(int channel) = 0;
+  unsigned int GetTicks(unsigned int ms) const;
+  virtual int GetGain(int channel, int gain);
+  virtual int SetGain(int channel, int gain);
+};
 
 typedef struct
 {
-  unsigned int pF;
-  unsigned int diff;
-  int channel;
-} capacitance_result;
+  int value;
+  bool done;
+} MeasurementResult;
 
-typedef struct
+class Multimeter
 {
-  int voltage_uV;
-  int current_nA;
-} voltage_current_result;
+  MeasurementUint **measurement_units;
+  int current_channel[MEASUREMENT_UNITS_COUNT];
+  unsigned int enabled_channels[MEASUREMENT_UNITS_COUNT];
+  bool measurement_is_in_progress[MEASUREMENT_UNITS_COUNT];
+  int channel_mappings[CHANNEL_TYPE_MAX+1][MULTIMETER_MAX_CHANNELS_PER_CHANNEL_TYPE];
+  MeasurementResult measurement_results[MEASUREMENT_UNITS_COUNT][MULTIMETER_MAX_CHANNELS_PER_UNIT];
+  unsigned int enabled_measurement_types;
+  unsigned int tick_ms;
 
-typedef struct
-{
-  unsigned int frequency_hz;
-  unsigned int diode_voltage_uV[2];
-  unsigned int resistance_mOhm[2];
-  unsigned int inductance_nH;
-  unsigned int temperature_Cx10;
-  unsigned int vdda_mV;
-  capacitance_result capacitance;
-  voltage_current_result voltage_current[2];
-} multimeter_result_t;
-
-extern multimeter_result_t multimeter_result;
-extern enum multimeter_modes multimeter_mode;
-
-int multimeter_init(void);
-
-unsigned int multimeter_timer_event(void);
-void multimeter_set_mode(enum multimeter_modes mode);
-
-unsigned int check_measurements_statuses(void);
-void start_voltage_measurements(void);
-void start_frequency_measurement(void);
-void start_resistance_measurement(int channel, enum resistance_measurements_modes mode);
-void start_current_measurement(int channel);
-unsigned int start_extra_measurements(int channel, int extra_measurement_no);
-void start_diode_voltage_measurement(int channel);
-unsigned int finish_voltage_measurement(int channel);
-unsigned int finish_frequency_measurement(void);
-unsigned int finish_resistance_measurement(int channel, enum resistance_measurements_modes mode);
-unsigned int finish_current_measurement(int channel);
-unsigned int finish_temperature_measurement(void);
-unsigned int finish_vdda_measurement(void);
-unsigned int finish_diode_voltage_measurement(int channel);
-int capacitor_is_discharged(void);
+  int GetNextChannel(int unit) const;
+public:
+  explicit Multimeter(MeasurementUint **_units, unsigned int _enabled_measurement_types, unsigned int _tick_ms);
+  void TimerEvent();
+  unsigned int GetTicks(unsigned int ms) const;
+  int GetMeasurementResult(MultimeterChannelType *channel_type, int *channel_no);
+  int GetNumberOfChannels(MultimeterChannelType channel_type) const;
+  void EnableChannels(unsigned int enabled_measurement_types);
+};
 
 #endif

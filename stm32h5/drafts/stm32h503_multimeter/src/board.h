@@ -84,7 +84,7 @@
 #define ADS1220_MOSI_PIN  GPIO_Pin_10
 #define ADS1220_SCK_PIN   GPIO_Pin_9
 #define ADS1220_CS_PIN    GPIO_Pin_8
-#define ADS1220_MAX_CHANNELS 2
+#define ADS1220_MAX_CHANNELS 1
 #define ADS1220_TIMEOUT      1000
 #define ADS1220_CHANNEL 0
 
@@ -95,8 +95,8 @@
 #define AD7793_DOUT_PIN  GPIO_Pin_4
 #define AD7793_RDY_GET(channel) (GPIOB->IDR & AD7793_DOUT_PIN)
 #define AD7793_TIMEOUT      1000
-#define AD7793_MAX_CHANNELS 2
-#define AD7793_CHANNEL 1
+#define AD7793_MAX_CHANNELS 1
+#define AD7793_CHANNEL 0
 
 #define SPI_CHANNELS 2
 
@@ -131,6 +131,11 @@
 #define USE_MYVSPRINTF
 #define LCD_PRINTF_BUFFER_LENGTH 20
 
+#define MEASUREMENT_UNITS_COUNT 3
+
+#define AD7793_SET_CHANNEL_CURRENT_SOURCE_CALLBACK nullptr
+#define ADS1220_SET_CHANNEL_CURRENT_SOURCE_CALLBACK nullptr
+
 extern volatile int capacitance_measurement_done;
 
 #ifdef __cplusplus
@@ -146,6 +151,7 @@ void discharge_on(void);
 void capacitance_measurement_start(int channel);
 unsigned int get_capacitance_measurement_start_time(void);
 unsigned int get_capacitance_measurement_end_time(void);
+unsigned int calculate_inductance(unsigned long long int frequency);
 
 void SPI_MOSI_SET(int channel);
 void SPI_MOSI_CLR(int channel);
@@ -155,8 +161,10 @@ void SPI_CLK_ACTIVE(int channel);
 void SPI_CS_SET(int channel);
 void SPI_CS_CLR(int channel);
 
-unsigned int get_keyboard_status(void);
+unsigned char get_keyboard_status(void);
 void power_off(void);
+void MultimeterInit(void);
+void TimerEvent(void);
 
 #ifdef __cplusplus
 }

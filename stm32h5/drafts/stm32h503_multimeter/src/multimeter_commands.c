@@ -1,7 +1,7 @@
 #include "board.h"
 #include "multimeter_commands.h"
 #include <shell.h>
-#include "multimeter.h"
+//#include "multimeter.h"
 
 static int c_handler(printf_func pfunc, gets_func gfunc, int argc, char **argv, void *data);
 static const ShellCommandItem c_command_items[] = {
