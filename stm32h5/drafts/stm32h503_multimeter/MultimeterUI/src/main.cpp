@@ -147,6 +147,17 @@ static int update_label(GtkWidget *widget, gpointer data)
   return value;
 }
 
+static int update_log_label(GtkWidget *widget, gpointer data)
+{
+  char text[10];
+  GtkWidget *value_label = (GtkWidget *)data;
+  int value = (int)gtk_range_get_value(GTK_RANGE(widget));
+  value = (int)pow(10.0, (double)value/100.0);
+  sprintf(text, "%d", value);
+  gtk_label_set_label(GTK_LABEL(value_label), text);
+  return value;
+}
+
 static void
 v1_changed (GtkWidget *widget,
               gpointer   data)
@@ -201,7 +212,7 @@ static void
 r1_changed (GtkWidget *widget,
               gpointer   data)
 {
-  int value = update_label(widget, data);
+  int value = update_log_label(widget, data);
   multimeter_result_hal.resistance_mOhm[0] = value;
   ad7793_change_current_source_callback(0, ohmmeter7793.GetCurrentSourceLevel());
 }
@@ -210,7 +221,7 @@ static void
 r2_changed (GtkWidget *widget,
               gpointer   data)
 {
-  int value = update_label(widget, data);
+  int value = update_log_label(widget, data);
   multimeter_result_hal.resistance_mOhm[1] = value;
   ads1220_change_current_source_callback(0, ohmmeter1220.GetCurrentSourceLevel());
 }
@@ -335,8 +346,8 @@ create_sliders(GtkWidget *vbox)
   create_scale(vbox, "I2", "uA", -999999, 999999, G_CALLBACK(i2_changed));
   create_scale(vbox, "F", "Hz", 0, 199999999, G_CALLBACK(f_changed));
   create_scale(vbox, "C", "tick", 0, 1999999999, G_CALLBACK(c_changed));
-  create_scale(vbox, "R1", "mOhm", 0, 120999999, G_CALLBACK(r1_changed));
-  create_scale(vbox, "R2", "mOhm", 0, 120999999, G_CALLBACK(r2_changed));
+  create_scale(vbox, "R1", "mOhm", 0, 900, G_CALLBACK(r1_changed));
+  create_scale(vbox, "R2", "mOhm", 0, 900, G_CALLBACK(r2_changed));
 }
 
 static void

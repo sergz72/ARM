@@ -152,6 +152,13 @@ bool Ohmmeter::IsMeasurementFinished()
     {
       if (current_level == CURRENT_LEVEL_LO)
         return true;
+      if (current_gain != 1)
+      {
+        current_gain = 1;
+        measurement_unit->SetGain(channel_no, 1);
+        measurement_unit->StartMeasurement(channel_no);
+        return false;
+      }
       measurement_unit->SetChannelCurrentSource(channel_no, CURRENT_LEVEL_LO);
       current_level = CURRENT_LEVEL_LO;
       current_gain = 1;
