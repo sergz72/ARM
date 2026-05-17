@@ -2,20 +2,33 @@
 #include <spi_soft.h>
 
 #ifndef SPI_SOFT_ONLY_SPI_COMMAND
-void spi_delay(int channel)
+static int cpha_values[SPI_CHANNELS];
+
+void spi_channel_init(int channel, int cpha)
+{
+  cpha_values[channel] = cpha;
+}
+
+void __weak spi_delay(int channel)
 {
   int i = SPI_DELAY(channel);
   while (i--);
 }
 
-unsigned char spi_byte(int channel, unsigned char data, int count)
+unsigned char spi_byte(int channel, unsigned char data)
 {
   int i;
   unsigned char out_data = 0;
+  int cpha = cpha_values[channel];
 
   for (i = 0; i < 8; i++)
   {
     out_data <<= 1;
+    if (cpha)
+    {
+      spi_delay(channel);
+      SPI_CLK_ACTIVE(channel);
+    }
     if (data & 0x80)
       SPI_MOSI_SET(channel); //set MOSI
     else
@@ -23,17 +36,15 @@ unsigned char spi_byte(int channel, unsigned char data, int count)
     spi_delay(channel);
     if (SPI_CHECK_MISO(channel)) //check MISO
       out_data |= 1;
-    SPI_CLK_SET(channel); // set CLK
-#ifndef SPI_SOFT_CLK_IDLE_LOW
-    if (count || i != 7)
+    if (cpha)
+      SPI_CLK_IDLE(channel);
+    else
     {
-#endif
+      SPI_CLK_ACTIVE(channel);
       spi_delay(channel);
-      SPI_CLK_CLR(channel); // clr CLK
-      data <<= 1;
-#ifndef SPI_SOFT_CLK_IDLE_LOW
+      SPI_CLK_IDLE(channel);
     }
-#endif
+    data <<= 1;
   }
 
   return out_data;
@@ -44,15 +55,30 @@ void spi_command(int channel, unsigned char cmd, unsigned char *data_in, unsigne
 {
   char data;
 
-  SPI_CLK_CLR(channel);
   SPI_CS_CLR(channel); // clear CS
-  data = spi_byte(channel, cmd, count);
+  data = spi_byte(channel, cmd);
   if (data_out)
     *data_out++ = data;
   while (count)
   {
     count--;
-    data = spi_byte(channel, data_in ? *data_in++ : 0, count);
+    data = spi_byte(channel, data_in ? *data_in++ : 0);
+    if (data_out)
+      *data_out++ = data;
+  }
+  if (set_cs)
+    SPI_CS_SET(channel); // set CS
+}
+
+void spi_transfer(int channel, unsigned char *data_in, unsigned char *data_out, int count, int set_cs)
+{
+  char data;
+
+  SPI_CS_CLR(channel); // clear CS
+  while (count)
+  {
+    count--;
+    data = spi_byte(channel, data_in ? *data_in++ : 0);
     if (data_out)
       *data_out++ = data;
   }

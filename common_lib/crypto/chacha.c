@@ -2,7 +2,7 @@
 
 // modified version of https://github.com/nixberg/chacha-rng-c
 
-static void chacha_init(ChaCha *rng, unsigned int rounds, const uint32_t seed[8], uint64_t stream) {
+static void chacha_init(ChaCha *rng, unsigned int rounds, const uint32_t seed[8], const uint32_t iv[3]) {
     rng->state[ 0] = 0x61707865;
     rng->state[ 1] = 0x3320646e;
     rng->state[ 2] = 0x79622d32;
@@ -18,40 +18,40 @@ static void chacha_init(ChaCha *rng, unsigned int rounds, const uint32_t seed[8]
     rng->state[11] = seed[7];
 
     rng->state[12] = 0;
-    rng->state[13] = 0;
-    rng->state[14] = stream;
-    rng->state[15] = stream >> 32;
+    rng->state[13] = iv[0];
+    rng->state[14] = iv[1];
+    rng->state[15] = iv[2];
 
     rng->rounds = rounds;
 
     rng->word_index = 16;
 }
 
-void chacha8_init(ChaCha *rng, const uint32_t seed[8], uint64_t stream) {
-    chacha_init(rng, 8, seed, stream);
+void chacha8_init(ChaCha *rng, const uint32_t seed[8], const uint32_t iv[3]) {
+    chacha_init(rng, 8, seed, iv);
 }
 
-void chacha8_zero(ChaCha *rng, uint64_t stream) {
+void chacha8_zero(ChaCha *rng, const uint32_t iv[3]) {
     uint32_t seed[8] = { 0 };
-    chacha_init(rng, 8, seed, stream);
+    chacha_init(rng, 8, seed, iv);
 }
 
-void chacha12_init(ChaCha *rng, const uint32_t seed[8], uint64_t stream) {
-    chacha_init(rng, 12, seed, stream);
+void chacha12_init(ChaCha *rng, const uint32_t seed[8], const uint32_t iv[3]) {
+    chacha_init(rng, 12, seed, iv);
 }
 
-void chacha12_zero(ChaCha *rng, uint64_t stream) {
+void chacha12_zero(ChaCha *rng, const uint32_t iv[3]) {
     uint32_t seed[8] = { 0 };
-    chacha_init(rng, 12, seed, stream);
+    chacha_init(rng, 12, seed, iv);
 }
 
-void chacha20_init(ChaCha *rng, const uint32_t seed[8], uint64_t stream) {
-    chacha_init(rng, 20, seed, stream);
+void chacha20_init(ChaCha *rng, const uint32_t seed[8], const uint32_t iv[3]) {
+    chacha_init(rng, 20, seed, iv);
 }
 
-void chacha20_zero(ChaCha *rng, uint64_t stream) {
+void chacha20_zero(ChaCha *rng, const uint32_t iv[3]) {
     uint32_t seed[8] = { 0 };
-    chacha_init(rng, 20, seed, stream);
+    chacha_init(rng, 20, seed, iv);
 }
 
 uint8_t chacha_u8(ChaCha *rng) {

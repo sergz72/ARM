@@ -118,14 +118,13 @@ void LcdOn(void)
 
 unsigned int LcdUpdate(void)
 {
-	int i;
 	unsigned char *buffer = sh1107_buffer;
 	unsigned char data[3];
 
 #ifdef SH1107_ROTATE90
 	data[1] = SH1107_COLUMNADDR_LO;
 	data[2] = SH1107_COLUMNADDR_HI;
-	for (i = 0; i< LCD_HEIGHT/8; i++)
+	for (int i = 0; i< LCD_HEIGHT/8; i++)
 	{
 		data[0] = SH1107_SET_PAGE_ADDRESS + i;
 		SH1107_Write(3, 0, data);

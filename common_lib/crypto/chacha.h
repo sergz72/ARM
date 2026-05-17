@@ -10,17 +10,17 @@ typedef struct {
     unsigned int word_index;
 } ChaCha;
 
-void chacha8_init(ChaCha *rng, const uint32_t seed[8], uint64_t stream);
+void chacha8_init(ChaCha *rng, const uint32_t seed[8], const uint32_t iv[3]);
 
-void chacha8_zero(ChaCha *rng, uint64_t stream);
+void chacha8_zero(ChaCha *rng, const uint32_t iv[3]);
 
-void chacha12_init(ChaCha *rng, const uint32_t seed[8], uint64_t stream);
+void chacha12_init(ChaCha *rng, const uint32_t seed[8], const uint32_t iv[3]);
 
-void chacha12_zero(ChaCha *rng, uint64_t stream);
+void chacha12_zero(ChaCha *rng, const uint32_t iv[3]);
 
-void chacha20_init(ChaCha *rng, const uint32_t seed[8], uint64_t stream);
+void chacha20_init(ChaCha *rng, const uint32_t seed[8], const uint32_t iv[3]);
 
-void chacha20_zero(ChaCha *rng, uint64_t stream);
+void chacha20_zero(ChaCha *rng, const uint32_t iv[3]);
 
 uint8_t chacha_u8(ChaCha *rng);
 
