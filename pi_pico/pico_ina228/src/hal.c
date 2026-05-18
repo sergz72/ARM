@@ -28,7 +28,39 @@ void SystemInit(void)
   I2CInit();
 }
 
-int ina226ReadRegister(int channel, unsigned char address, unsigned char reg, unsigned short *data)
+int ina228ReadRegister16(int channel, unsigned char address, const unsigned char reg, unsigned short *data)
+{
+  return ina226ReadRegister(channel, address, reg, data);
+}
+int ina228WriteRegister16(int channel, unsigned char address, const unsigned char reg, const unsigned short data)
+{
+  return ina226WriteRegister(channel, address, reg, data);
+}
+
+int ina228ReadRegister24(int channel, unsigned char address, unsigned char reg, unsigned int *data)
+{
+  unsigned char d[3];
+  int rc = i2c_write_timeout_us(I2C_INST, address, &reg, 1, true, I2C_TIMEOUT);
+  if (rc < 0)
+    return -rc;
+  rc = i2c_read_timeout_us(I2C_INST, address, d, 3, false, I2C_TIMEOUT);
+  if (rc >= 0)
+    *data = (d[0] << 16) | (d[1] << 8) | d[2];
+  return rc >= 0 ? 0 : -rc;
+}
+
+int ina228WriteRegister24(int channel, unsigned char address, unsigned char reg, unsigned int data)
+{
+  unsigned char d[4];
+  d[0] = reg;
+  d[1] = data >> 16;
+  d[2] = data >> 8;
+  d[3] = data;
+  const int rc = i2c_write_timeout_us(I2C_INST, address, d, 4, false, I2C_TIMEOUT);
+  return rc >= 0 ? 0 : -rc;
+}
+
+int ina226ReadRegister(int channel, unsigned char address, const unsigned char reg, unsigned short *data)
 {
   unsigned char d[2];
   int rc = i2c_write_timeout_us(I2C_INST, address, &reg, 1, true, I2C_TIMEOUT);
@@ -40,7 +72,7 @@ int ina226ReadRegister(int channel, unsigned char address, unsigned char reg, un
   return rc >= 0 ? 0 : -rc;
 }
 
-int ina226WriteRegister(int channel, unsigned char address, unsigned char reg, unsigned short data)
+int ina226WriteRegister(int channel, unsigned char address, const unsigned char reg, const unsigned short data)
 {
   unsigned char d[3];
   d[0] = reg;

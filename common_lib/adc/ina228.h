@@ -1,21 +1,29 @@
 #ifndef _INA228_H
 #define _INA228_H
 
-typedef struct {
-  unsigned short reserved:4;
-  unsigned short adcrange:1;
-  unsigned short tempcomp:1;
-  unsigned short convdly:8;
-  unsigned short rstacc:1;
-  unsigned short rst:1;
+typedef union {
+  unsigned short raw;
+  struct
+  {
+    unsigned short reserved:4;
+    unsigned short adcrange:1;
+    unsigned short tempcomp:1;
+    unsigned short convdly:8;
+    unsigned short rstacc:1;
+    unsigned short rst:1;
+  } bits;
 } INA228Config;
 
-typedef struct {
-  unsigned short awg:3;
-  unsigned short vtct:3;
-  unsigned short vshct:3;
-  unsigned short vbusct:3;
-  unsigned short mode:4;
+typedef union {
+  unsigned short raw;
+  struct
+  {
+    unsigned short awg:3;
+    unsigned short vtct:3;
+    unsigned short vshct:3;
+    unsigned short vbusct:3;
+    unsigned short mode:4;
+  } bits;
 } INA228AdcConfig;
 
 #define INA228_MODE_POWERDOWN 0
@@ -34,23 +42,14 @@ typedef struct {
 #define INA228_MODE_TEMP_SHUNT_CONT 14
 #define INA228_MODE_TEMP_SHUNT_BUS_CONT 15
 
-#define INA228_VSHCT_140 0
-#define INA228_VSHCT_204 (1 << 3)
-#define INA228_VSHCT_332 (2 << 3)
-#define INA228_VSHCT_588 (3 << 3)
-#define INA228_VSHCT_1100 (4 << 3)
-#define INA228_VSHCT_2216 (5 << 3)
-#define INA228_VSHCT_4156 (6 << 3)
-#define INA228_VSHCT_8244 (7 << 3)
-
-#define INA228_VBUSCT_140 0
-#define INA228_VBUSCT_204 (1 << 6)
-#define INA228_VBUSCT_332 (2 << 6)
-#define INA228_VBUSCT_588 (3 << 6)
-#define INA228_VBUSCT_1100 (4 << 6)
-#define INA228_VBUSCT_2216 (5 << 6)
-#define INA228_VBUSCT_4156 (6 << 6)
-#define INA228_VBUSCT_8244 (7 << 6)
+#define INA228_CT_50 0
+#define INA228_CT_84 1
+#define INA228_CT_150 2
+#define INA228_CT_280 3
+#define INA228_CT_540 4
+#define INA228_CT_1052 5
+#define INA228_CT_2074 6
+#define INA228_CT_4120 7
 
 #define INA228_AVG_1 0
 #define INA228_AVG_4 1
@@ -83,8 +82,10 @@ typedef struct {
 #define INA228_REG_DEVICE_ID 0x3F
 
 
-int ina228ReadRegister(int channel, unsigned char address, unsigned char reg, void *data, int length);
-int ina228WriteRegister(int channel, unsigned char address, unsigned char reg, const void *data, int length);
+int ina228ReadRegister16(int channel, unsigned char address, unsigned char reg, unsigned short *data);
+int ina228WriteRegister16(int channel, unsigned char address, unsigned char reg, unsigned short data);
+int ina228ReadRegister24(int channel, unsigned char address, unsigned char reg, unsigned int *data);
+int ina228WriteRegister24(int channel, unsigned char address, unsigned char reg, unsigned int data);
 int ina228SetConfig(int channel, unsigned char address, INA228Config cfg);
 int ina228SetAdcConfig(int channel, unsigned char address, INA228AdcConfig cfg);
 // bus voltage is in uV

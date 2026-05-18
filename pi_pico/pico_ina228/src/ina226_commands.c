@@ -3,7 +3,7 @@
 #include <shell.h>
 #include <ina226.h>
 
-const INA226Config cfg = {
+static const INA226Config cfg = {
   .awg = INA226_AVG_1,
   .vbusct = INA226_VBUSCT_1100,
   .vshct = INA226_VSHCT_1100,
