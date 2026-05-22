@@ -1951,7 +1951,7 @@ __STATIC_INLINE void DL_GPIO_setDigitalInternalResistor(
     uint32_t pincmIndex, DL_GPIO_RESISTOR internalResistor)
 {
     IOMUX->SECCFG.PINCM[pincmIndex] &=
-        ~(DL_GPIO_RESISTOR_PULL_UP | DL_GPIO_RESISTOR_PULL_DOWN);
+        ~((uint32_t)(DL_GPIO_RESISTOR_PULL_UP | DL_GPIO_RESISTOR_PULL_DOWN));
     IOMUX->SECCFG.PINCM[pincmIndex] |=
         IOMUX_PINCM_PC_CONNECTED | (uint32_t) internalResistor;
 }
@@ -2013,7 +2013,9 @@ __STATIC_INLINE void DL_GPIO_initDigitalInputFeatures(uint32_t pincmIndex,
         IOMUX_PINCM_INENA_ENABLE | IOMUX_PINCM_PC_CONNECTED |
         ((uint32_t) 0x00000001) | (uint32_t) inversion |
         (uint32_t) internalResistor | (uint32_t) hysteresis |
-        (uint32_t) wakeup;
+        ((uint32_t) wakeup & IOMUX_PINCM_WCOMP_MASK);
+    IOMUX->SECCFG.PINCM[pincmIndex] |=
+        ((uint32_t) wakeup & IOMUX_PINCM_WUEN_MASK);
 }
 
 /**
@@ -2111,7 +2113,9 @@ __STATIC_INLINE void DL_GPIO_initPeripheralInputFunctionFeatures(
     IOMUX->SECCFG.PINCM[pincmIndex] =
         function | IOMUX_PINCM_PC_CONNECTED | IOMUX_PINCM_INENA_ENABLE |
         (uint32_t) inversion | (uint32_t) internalResistor |
-        (uint32_t) hysteresis | (uint32_t) wakeup;
+        (uint32_t) hysteresis | ((uint32_t) wakeup & IOMUX_PINCM_WCOMP_MASK);
+    IOMUX->SECCFG.PINCM[pincmIndex] |=
+        ((uint32_t) wakeup & IOMUX_PINCM_WUEN_MASK);
 }
 
 /**
@@ -2132,6 +2136,8 @@ __STATIC_INLINE void DL_GPIO_initPeripheralAnalogFunction(uint32_t pincmIndex)
  *  @param[in]  pincmIndex  The PINCM register index that maps to the target
  *                          GPIO pin.
  *
+ *  @note Before enabling wakeup, the wakeup compare value should be configured first
+ *        in @ref DL_GPIO_setWakeupCompareValue.
  */
 __STATIC_INLINE void DL_GPIO_enableWakeUp(uint32_t pincmIndex)
 {
@@ -2236,7 +2242,12 @@ __STATIC_INLINE uint32_t DL_GPIO_readPins(GPIO_Regs* gpio, uint32_t pins)
  */
 __STATIC_INLINE void DL_GPIO_writePins(GPIO_Regs* gpio, uint32_t pins)
 {
-    gpio->DOUT31_0 = pins;
+#ifdef __GPIO_ERR_06__
+    gpio->DOUTTGL31_0 = ~(gpio->DOUT31_0) & pins;
+    gpio->DOUTTGL31_0 = gpio->DOUT31_0 & (~pins);
+#else
+    gpio->DOUT31_0    = pins;
+#endif
 }
 
 /**
@@ -2255,7 +2266,12 @@ __STATIC_INLINE void DL_GPIO_writePinsVal(
     uint32_t doutVal = gpio->DOUT31_0;
     doutVal &= ~pinsMask;
     doutVal |= (pinsVal & pinsMask);
-    gpio->DOUT31_0 = doutVal;
+#ifdef __GPIO_ERR_06__
+    gpio->DOUTTGL31_0 = ~(gpio->DOUT31_0) & doutVal;
+    gpio->DOUTTGL31_0 = gpio->DOUT31_0 & (~doutVal);
+#else
+    gpio->DOUT31_0    = doutVal;
+#endif
 }
 
 /**
@@ -2266,7 +2282,11 @@ __STATIC_INLINE void DL_GPIO_writePinsVal(
  */
 __STATIC_INLINE void DL_GPIO_setPins(GPIO_Regs* gpio, uint32_t pins)
 {
+#ifdef __GPIO_ERR_06__
+    gpio->DOUTTGL31_0 = ~(gpio->DOUT31_0) & pins;
+#else
     gpio->DOUTSET31_0 = pins;
+#endif
 }
 
 /**
@@ -2277,7 +2297,11 @@ __STATIC_INLINE void DL_GPIO_setPins(GPIO_Regs* gpio, uint32_t pins)
  */
 __STATIC_INLINE void DL_GPIO_clearPins(GPIO_Regs* gpio, uint32_t pins)
 {
+#ifdef __GPIO_ERR_06__
+    gpio->DOUTTGL31_0 = gpio->DOUT31_0 & pins;
+#else
     gpio->DOUTCLR31_0 = pins;
+#endif
 }
 
 /**

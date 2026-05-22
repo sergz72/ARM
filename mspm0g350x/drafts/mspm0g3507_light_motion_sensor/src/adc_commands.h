@@ -1,0 +1,6 @@
+#ifndef MSPM0G3507_LIGHT_MOTION_SENSOR_ADC_COMMANDS_H
+#define MSPM0G3507_LIGHT_MOTION_SENSOR_ADC_COMMANDS_H
+
+void register_adc_commands(void);
+
+#endif
