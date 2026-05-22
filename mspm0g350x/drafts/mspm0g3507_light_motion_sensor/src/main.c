@@ -10,6 +10,7 @@
 #include <string.h>
 #include "adc_commands.h"
 #include "dac_commands.h"
+#include "pwm_commands.h"
 #include <pir_sensor.h>
 
 static char usart_buffer[UART_BUFFER_SIZE];
@@ -32,7 +33,7 @@ void UART_IRQHandler(void)
   }
 }
 
-void TIMG12_IRQHandler(void)
+void PERIODIC_TIMER_IRQHandler(void)
 {
   timer_event = 1;
 }
@@ -126,11 +127,12 @@ int main(void)
   shell_init(common_printf, nullptr);
   register_adc_commands();
   register_dac_commands();
+  register_pwm_commands();
 
   getstring_init(command_line, sizeof(command_line), getch_, puts_);
 
   timer_event = 0;
-  DL_TimerG_startCounter(TIMG12);
+  DL_TimerG_startCounter(PERIODIC_TIMER_INSTANCE);
 
   filter_crs = 5;
   motion_timer = 0;

@@ -3,6 +3,7 @@
 #include <m0p/dl_sysctl.h>
 #include <dl_uart_main.h>
 #include <dl_timerg.h>
+#include <dl_timera.h>
 #include <dl_comp.h>
 #include <dl_adc12.h>
 #include <dl_dac12.h>
@@ -23,13 +24,13 @@ static const DL_UART_Main_Config gUART_0Config = {
   .stopBits    = DL_UART_MAIN_STOP_BITS_ONE
 };
 
-static const DL_TimerG_ClockConfig gPWM_0ClockConfig = {
+static const DL_TimerA_ClockConfig gPWM_ClockConfig = {
   .clockSel = DL_TIMER_CLOCK_BUSCLK,
   .divideRatio = DL_TIMER_CLOCK_DIVIDE_1,
   .prescale = 0U
 };
 
-static const DL_TimerG_PWMConfig gPWM_0Config = {
+static const DL_TimerA_PWMConfig gPWM_Config = {
   .pwmMode = DL_TIMER_PWM_MODE_EDGE_ALIGN_UP,
   .period = 1000,
   .isTimerWithFourCC = false,
@@ -37,13 +38,13 @@ static const DL_TimerG_PWMConfig gPWM_0Config = {
 };
 
 static const DL_TimerG_ClockConfig gPERIODIC_TIMER_ClockConfig = {
-  .clockSel = DL_TIMER_CLOCK_BUSCLK,
-  .divideRatio = DL_TIMER_CLOCK_DIVIDE_8,
+  .clockSel = DL_TIMER_CLOCK_LFCLK,
+  .divideRatio = DL_TIMER_CLOCK_DIVIDE_1,
   .prescale = 0U
 };
 
 static const DL_Timer_TimerConfig gPERIODIC_TIMER_Config = {
-  .period = CPUCLK_FREQ / 8 / TIMER_EVENT_FREQUENCY,
+  .period = LFCLK_FREQ / TIMER_EVENT_FREQUENCY,
   .startTimer = DL_TIMER_STOP,
   .counterVal = 0,
   .genIntermInt = false,
@@ -157,6 +158,7 @@ static void UARTInit(void)
 
   DL_UART_Main_enable(UART_INSTANCE);
 
+  NVIC_SetPriority(UART_IRQN, UART_INTERRUPT_PRIORITY);
   NVIC_ClearPendingIRQ(UART_IRQN);
   NVIC_EnableIRQ(UART_IRQN);
 }
@@ -165,8 +167,8 @@ static void InitPower(void)
 {
   DL_GPIO_reset(GPIOA);
   DL_UART_Main_reset(UART_INSTANCE);
-  //DL_TimerG_reset(PWM_INSTANCE);
-  DL_TimerG_reset(TIMG12);
+  DL_TimerA_reset(PWM_INSTANCE);
+  DL_TimerG_reset(PERIODIC_TIMER_INSTANCE);
   DL_ADC12_reset(ADC_INST);
   DL_VREF_reset(VREF);
   DL_DAC12_reset(DAC0);
@@ -174,8 +176,7 @@ static void InitPower(void)
 
   DL_GPIO_enablePower(GPIOA);
   DL_UART_Main_enablePower(UART_INSTANCE);
-  //DL_TimerG_enablePower(PWM_INSTANCE);
-  DL_TimerG_enablePower(TIMG12);
+  DL_TimerG_enablePower(PERIODIC_TIMER_INSTANCE);
   DL_VREF_enablePower(VREF);
   DL_ADC12_enablePower(ADC_INST);
   DL_DAC12_enablePower(DAC0);
@@ -207,54 +208,55 @@ static void SYSCTLInit(void)
               DL_SYSCTL_CLK_OUT_DIVIDE_DISABLE);*/
 }
 
-static void PWMInit(void)
+void pwm_on(void)
 {
+  DL_TimerA_enablePower(PWM_INSTANCE);
+  delay_cycles(POWER_STARTUP_DELAY);
   DL_GPIO_initPeripheralOutputFunction(PWM_IOMUX,PWM_IOMUX_FUNC);
   DL_GPIO_enableOutput(PWM_PORT, PWM_PIN);
 
-  DL_TimerG_setClockConfig(PWM_INSTANCE, (DL_TimerG_ClockConfig *) &gPWM_0ClockConfig);
+  DL_TimerA_setClockConfig(PWM_INSTANCE, (DL_TimerA_ClockConfig *) &gPWM_ClockConfig);
 
-  DL_TimerG_initPWMMode(PWM_INSTANCE, (DL_TimerG_PWMConfig *) &gPWM_0Config);
+  DL_TimerA_initPWMMode(PWM_INSTANCE, (DL_TimerA_PWMConfig *) &gPWM_Config);
 
   // Set Counter control to the smallest CC index being used
-  DL_TimerG_setCounterControl(PWM_INSTANCE,DL_TIMER_CZC_CCCTL0_ZCOND,DL_TIMER_CAC_CCCTL0_ACOND,DL_TIMER_CLC_CCCTL0_LCOND);
+  DL_TimerA_setCounterControl(PWM_INSTANCE,PWM_ZCOND,PWM_ACOND,PWM_LCOND);
 
-  DL_TimerG_setCaptureCompareOutCtl(PWM_INSTANCE, DL_TIMER_CC_OCTL_INIT_VAL_LOW,
+  DL_TimerA_setCaptureCompareOutCtl(PWM_INSTANCE, DL_TIMER_CC_OCTL_INIT_VAL_LOW,
               DL_TIMER_CC_OCTL_INV_OUT_DISABLED, DL_TIMER_CC_OCTL_SRC_FUNCVAL,
-              DL_TIMERG_CAPTURE_COMPARE_0_INDEX);
+              PWM_COMPARE_INDEX);
 
-  DL_TimerG_setCaptCompUpdateMethod(PWM_INSTANCE, DL_TIMER_CC_UPDATE_METHOD_IMMEDIATE, DL_TIMERG_CAPTURE_COMPARE_0_INDEX);
-  DL_TimerG_setCaptureCompareValue(PWM_INSTANCE, 500, DL_TIMER_CC_0_INDEX);
+  DL_TimerA_setCaptCompUpdateMethod(PWM_INSTANCE, DL_TIMER_CC_UPDATE_METHOD_IMMEDIATE, DL_TIMERA_CAPTURE_COMPARE_0_INDEX);
+  DL_TimerA_setCaptureCompareValue(PWM_INSTANCE, 0, PWM_CC_INDEX);
 
-  DL_TimerG_enableClock(PWM_INSTANCE);
+  DL_TimerA_enableClock(PWM_INSTANCE);
 
-  DL_TimerG_setCCPDirection(PWM_INSTANCE, DL_TIMER_CC0_OUTPUT );
+  DL_TimerA_setCCPDirection(PWM_INSTANCE, PWM_CC_OUTPUT );
 }
 
-static void COMPInit(void)
+void pwm_off(void)
 {
-  DL_COMP_init(COMP_INSTANCE, (DL_COMP_Config *) &gCOMP_Config);
-  DL_COMP_refVoltageInit(COMP_INSTANCE, (DL_COMP_RefVoltageConfig *) &gCOMPVRefConfig);
-  //DL_COMP_setDACCode0(COMP_INSTANCE, COMP_DACCODE0);
-  DL_COMP_enableEvent(COMP_INSTANCE, DL_COMP_EVENT_OUTPUT_READY);
-  DL_COMP_setPublisherChanID(COMP_INSTANCE, COMP_INSTANCE_PUB_CH);
-  DL_COMP_enable(COMP_INSTANCE);
+  DL_TimerA_setCaptureCompareValue(PWM_INSTANCE, 0, PWM_CC_INDEX);
+  DL_GPIO_disableOutput(PWM_PORT, PWM_PIN);
+  DL_TimerA_disablePower(PWM_INSTANCE);
 }
 
 static void PERIODIC_TIMER_Init()
 {
-  DL_TimerG_setClockConfig(TIMG12, (DL_TimerG_ClockConfig *) &gPERIODIC_TIMER_ClockConfig);
+  DL_TimerG_setClockConfig(PERIODIC_TIMER_INSTANCE, (DL_TimerG_ClockConfig *) &gPERIODIC_TIMER_ClockConfig);
 
-  DL_TimerG_initTimerMode(TIMG12, (DL_TimerG_TimerConfig *) &gPERIODIC_TIMER_Config);
+  DL_TimerG_initTimerMode(PERIODIC_TIMER_INSTANCE, (DL_TimerG_TimerConfig *) &gPERIODIC_TIMER_Config);
 
-  DL_TimerG_enableInterrupt(TIMG12 , DL_TIMERG_INTERRUPT_ZERO_EVENT);
-  DL_TimerG_enableClock(TIMG12);
+  DL_TimerG_enableInterrupt(PERIODIC_TIMER_INSTANCE, DL_TIMERG_INTERRUPT_ZERO_EVENT);
+  DL_TimerG_enableClock(PERIODIC_TIMER_INSTANCE);
 
-  NVIC_ClearPendingIRQ(TIMG12_INT_IRQn);
-  NVIC_EnableIRQ(TIMG12_INT_IRQn);
+  NVIC_SetPriority(PERIODIC_TIMER_IRQn, PERIODIC_TIMER_INTERRUPT_PRIORITY);
+  NVIC_ClearPendingIRQ(PERIODIC_TIMER_IRQn);
+  NVIC_EnableIRQ(PERIODIC_TIMER_IRQn);
 }
 
-static void VREFInit(void) {
+static void VREFInit(void)
+{
   DL_VREF_setClockConfig(VREF, (DL_VREF_ClockConfig *) &gVREFClockConfig);
   DL_VREF_configReference(VREF, (DL_VREF_Config *) &gVREFConfig);
   delay_cycles(VREF_READY_DELAY);
@@ -277,6 +279,8 @@ static void ADCInit(void)
   DL_ADC12_enableInterrupt(ADC_INST,(DL_ADC12_INTERRUPT_MEM0_RESULT_LOADED));
   DL_ADC12_enableConversions(ADC_INST);
   /* Setup interrupts on device */
+  NVIC_SetPriority(ADC_INST_INT_IRQN, ADC_INTERRUPT_PRIORITY);
+  NVIC_ClearPendingIRQ(ADC_INST_INT_IRQN);
   NVIC_EnableIRQ(ADC_INST_INT_IRQN);
 }
 
@@ -307,8 +311,6 @@ void SystemInit(void)
   ADCInit();
   DACInit();
   OPA1Init();
-  //PWMInit();
-  //COMPInit();
   PERIODIC_TIMER_Init();
 }
 
@@ -334,8 +336,8 @@ void pwm_set_frequency_and_duty(unsigned int frequency, unsigned int duty)
   else if (duty > 99)
     duty = 99;
   //todo
-  DL_TimerG_setLoadValue(PWM_INSTANCE, arr - 1);
-  DL_TimerG_setCaptureCompareValue(PWM_INSTANCE, arr * duty / 100, DL_TIMER_CC_0_INDEX);
+  DL_TimerA_setLoadValue(PWM_INSTANCE, arr - 1);
+  DL_TimerA_setCaptureCompareValue(PWM_INSTANCE, arr * duty / 100, PWM_CC_INDEX);
 }
 
 void puts_(const char *s)
