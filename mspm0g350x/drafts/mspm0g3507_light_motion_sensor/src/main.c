@@ -11,6 +11,7 @@
 #include "adc_commands.h"
 #include "dac_commands.h"
 #include "pwm_commands.h"
+#include "veml_commands.h"
 #include <pir_sensor.h>
 
 #ifdef UART_ENABLE
@@ -24,6 +25,7 @@ static volatile bool motion_detected;
 
 volatile unsigned int filter_crs;
 volatile unsigned short filter_threshold;
+volatile int delay_counter;
 
 #ifdef UART_ENABLE
 void UART_IRQHandler(void)
@@ -41,6 +43,8 @@ void UART_IRQHandler(void)
 void PERIODIC_TIMER_IRQHandler(void)
 {
   timer_event = 1;
+  if (delay_counter > 0)
+    delay_counter -= 1000 / TIMER_EVENT_FREQUENCY;
 }
 
 void ADC_INST_IRQHandler(void)
@@ -157,6 +161,8 @@ int main(void)
   usart_buffer_write_p = usart_buffer_read_p = usart_buffer;
 #endif
 
+  delay_counter = 0;
+
   SystemInit();
 
 #ifdef UART_ENABLE
@@ -164,6 +170,7 @@ int main(void)
   register_adc_commands();
   register_dac_commands();
   register_pwm_commands();
+  register_veml_commands();
 
   getstring_init(command_line, sizeof(command_line), getch_, puts_);
 #endif

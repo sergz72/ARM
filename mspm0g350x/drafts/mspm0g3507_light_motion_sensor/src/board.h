@@ -1,13 +1,13 @@
 #ifndef _BOARD_H
 #define _BOARD_H
 
-#define LED_MOTION_GPIO GPIOA
-#define LED_MOTION_PIN DL_GPIO_PIN_0
+#define LED_MOTION_GPIO  GPIOA
+#define LED_MOTION_PIN   DL_GPIO_PIN_0
 #define LED_MOTION_IOMUX IOMUX_PINCM1
 
-#define LED_TIMER_GPIO GPIOA
-#define LED_TIMER_PIN DL_GPIO_PIN_3
-#define LED_TIMER_IOMUX IOMUX_PINCM8
+#define LED_TIMER_GPIO  GPIOA
+#define LED_TIMER_PIN   DL_GPIO_PIN_5
+#define LED_TIMER_IOMUX IOMUX_PINCM10
 
 #define CPUCLK_FREQ_LOW                                           4000000
 #define CPUCLK_FREQ_HIGH                                         32000000
@@ -91,7 +91,19 @@
 #define DAC_DEFAULT_VALUE                         1680
 #define MOTION_DETECTOR_ON_TIME                   2
 
-//#define UART_ENABLE
+#define I2C_INST                                                            I2C1
+#define I2C_BUS_SPEED_HZ                                                  100000
+#define GPIO_I2C_SDA_PORT                                                  GPIOA
+#define GPIO_I2C_SDA_PIN                                           DL_GPIO_PIN_3
+#define GPIO_I2C_IOMUX_SDA                                          IOMUX_PINCM8
+#define GPIO_I2C_IOMUX_SDA_FUNC                         IOMUX_PINCM8_PF_I2C1_SDA
+#define GPIO_I2C_SCL_PORT                                                  GPIOA
+#define GPIO_I2C_SCL_PIN                                           DL_GPIO_PIN_4
+#define GPIO_I2C_IOMUX_SCL                                          IOMUX_PINCM9
+#define GPIO_I2C_IOMUX_SCL_FUNC                         IOMUX_PINCM9_PF_I2C1_SCL
+#define I2C_TIMEOUT                                                        10000
+
+#define UART_ENABLE
 
 void SystemInit(void);
 #ifdef UART_ENABLE
@@ -107,8 +119,10 @@ unsigned int dac_get(void);
 #endif
 void dac_set(unsigned int value);
 unsigned short get_vbat(void);
+void delayms(int ms);
 
 extern volatile unsigned int filter_crs;
 extern volatile unsigned short filter_threshold;
+extern volatile int delay_counter;
 
 #endif

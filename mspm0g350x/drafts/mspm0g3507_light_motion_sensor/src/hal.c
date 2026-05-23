@@ -9,6 +9,8 @@
 #include <dl_dac12.h>
 #include <dl_opa.h>
 #include <dl_vref.h>
+#include <dl_i2c.h>
+#include <veml7700.h>
 
 static const DL_UART_Main_ClockConfig gUART_0ClockConfig = {
   .clockSel    = DL_UART_MAIN_CLOCK_LFCLK,
@@ -117,6 +119,11 @@ static const DL_OPA_Config gOPA1Config = {
   .choppingMode   = DL_OPA_CHOPPING_MODE_DISABLE
 };
 
+static const DL_I2C_ClockConfig gI2CClockConfig = {
+  .clockSel = DL_I2C_CLOCK_MFCLK,
+  .divideRatio = DL_I2C_CLOCK_DIVIDE_1,
+};
+
 #ifdef UART_ENABLE
 static void GPIOInit(void)
 {
@@ -170,9 +177,42 @@ static void UARTInit(void)
 }
 #endif
 
+/*
+ *SCL=PA4
+ *SDA=PA3
+ */
+static void I2C1Init(void)
+{
+  DL_GPIO_initPeripheralInputFunctionFeatures(GPIO_I2C_IOMUX_SDA,
+      GPIO_I2C_IOMUX_SDA_FUNC, DL_GPIO_INVERSION_DISABLE,
+      DL_GPIO_RESISTOR_PULL_UP, DL_GPIO_HYSTERESIS_DISABLE,
+      DL_GPIO_WAKEUP_DISABLE);
+  DL_GPIO_initPeripheralInputFunctionFeatures(GPIO_I2C_IOMUX_SCL,
+      GPIO_I2C_IOMUX_SCL_FUNC, DL_GPIO_INVERSION_DISABLE,
+      DL_GPIO_RESISTOR_PULL_UP, DL_GPIO_HYSTERESIS_DISABLE,
+      DL_GPIO_WAKEUP_DISABLE);
+  DL_GPIO_enableHiZ(GPIO_I2C_IOMUX_SDA);
+  DL_GPIO_enableHiZ(GPIO_I2C_IOMUX_SCL);
+
+  DL_I2C_setClockConfig(I2C_INST, (DL_I2C_ClockConfig *) &gI2CClockConfig);
+  DL_I2C_disableAnalogGlitchFilter(I2C_INST);
+
+  /* Configure Controller Mode */
+  DL_I2C_resetControllerTransfer(I2C_INST);
+  /* Set frequency to 100000 Hz*/
+  DL_I2C_setTimerPeriod(I2C_INST, 3);
+  DL_I2C_setControllerTXFIFOThreshold(I2C_INST, DL_I2C_TX_FIFO_LEVEL_EMPTY);
+  DL_I2C_setControllerRXFIFOThreshold(I2C_INST, DL_I2C_RX_FIFO_LEVEL_BYTES_1);
+  DL_I2C_enableControllerClockStretching(I2C_INST);
+
+  /* Enable module */
+  DL_I2C_enableController(I2C_INST);
+}
+
 static void InitPower(void)
 {
   DL_GPIO_reset(GPIOA);
+  DL_I2C_reset(I2C_INST);
 #ifdef UART_ENABLE
   DL_UART_Main_reset(UART_INSTANCE);
 #endif
@@ -185,6 +225,7 @@ static void InitPower(void)
   DL_OPA_reset(OPA_INST);
 
   DL_GPIO_enablePower(GPIOA);
+  DL_I2C_enablePower(I2C_INST);
 #ifdef UART_ENABLE
   DL_UART_Main_enablePower(UART_INSTANCE);
 #endif
@@ -208,8 +249,9 @@ static void SYSCTLInit(void)
   DL_SYSCTL_disableHFXT();
   DL_SYSCTL_disableSYSPLL();
   DL_SYSCTL_setMCLKDivider(DL_SYSCTL_MCLK_DIVIDER_DISABLE);
-  //DL_SYSCTL_enableMFCLK();
-  DL_SYSCTL_setFlashWaitState(DL_SYSCTL_FLASH_WAIT_STATE_0);
+  DL_SYSCTL_enableMFCLK();
+  // SYSOSC can be 32 MHz = 1 wait state
+  DL_SYSCTL_setFlashWaitState(DL_SYSCTL_FLASH_WAIT_STATE_1);
 
   /*DL_GPIO_initPeripheralOutputFunctionFeatures(CLKOUT_IOMUX,
       CLKOUT_IOMUX_FUNC, DL_GPIO_INVERSION_DISABLE,
@@ -347,6 +389,7 @@ void SystemInit(void)
   GPIOInit();
   UARTInit();
 #endif
+  I2C1Init();
   VREFInit();
   ADCInit();
   DACInit();
@@ -391,6 +434,137 @@ unsigned short get_vbat(void)
   unsigned short vbat = DL_ADC12_getMemResult(ADC_INST_BATTERY_MONITOR, DL_ADC12_MEM_IDX_0);
   ADCDeInitBatteryMonitor();
   return vbat;
+}
+
+void delayms(int ms)
+{
+  delay_counter = ms;
+  while (delay_counter > 0)
+    __WFI();
+}
+
+static int i2c_wait_idle(void)
+{
+  unsigned int timeout = I2C_TIMEOUT;
+  /* Wait for I2C to be Idle */
+  while (timeout)
+  {
+    if (DL_I2C_getControllerStatus(I2C_INST) & DL_I2C_CONTROLLER_STATUS_IDLE)
+      break;
+    timeout--;
+  }
+  return timeout == 0 ? 1 : 0;
+}
+
+static int i2c_wait_flag(uint32_t flag)
+{
+  int timeout = I2C_TIMEOUT;
+  /* Poll until the Controller writes all bytes */
+  while (timeout)
+  {
+    if (!(DL_I2C_getControllerStatus(I2C_INST) & (flag | DL_I2C_CONTROLLER_STATUS_ERROR)))
+      break;
+    timeout--;
+  }
+  if (!timeout)
+  {
+    DL_I2C_enableStopCondition(I2C_INST);
+    return 2;
+  }
+
+  /* Trap if there was an error */
+  if (DL_I2C_getControllerStatus(I2C_INST) & DL_I2C_CONTROLLER_STATUS_ERROR)
+  {
+    DL_I2C_enableStopCondition(I2C_INST);
+    return 3;
+  }
+
+  return 0;
+}
+
+int veml7700_read(unsigned char reg, unsigned short *data)
+{
+  DL_I2C_fillControllerTXFIFO(I2C_INST, &reg, 1);
+
+  int rc = i2c_wait_idle();
+  if (rc)
+    return rc;
+
+  DL_I2C_startControllerTransferAdvanced(
+    I2C_INST,
+    VEML7700_I2C_ADDRESS,
+    DL_I2C_CONTROLLER_DIRECTION_TX,
+    1, // 1 byte to write
+    DL_I2C_CONTROLLER_START_ENABLE, // Send START condition
+    DL_I2C_CONTROLLER_STOP_DISABLE,  // DO NOT send STOP (keeps bus busy)
+    DL_I2C_CONTROLLER_ACK_DISABLE
+  );
+
+  rc = i2c_wait_flag(DL_I2C_CONTROLLER_STATUS_BUSY);
+  if (rc)
+    return rc;
+
+  DL_I2C_startControllerTransferAdvanced(
+    I2C_INST,
+    VEML7700_I2C_ADDRESS,
+    DL_I2C_CONTROLLER_DIRECTION_RX,
+    2, // 2 bytes to read
+    DL_I2C_CONTROLLER_START_ENABLE, // Send REPEATED START condition
+    DL_I2C_CONTROLLER_STOP_ENABLE,   // Send STOP condition after finishing
+    DL_I2C_CONTROLLER_ACK_ENABLE
+  );
+
+  /*
+   * Receive all bytes from target.
+   * are received
+   */
+  unsigned char *d = (unsigned char *)data;
+  for (unsigned int i = 0; i < 2; i++)
+  {
+    int timeout = I2C_TIMEOUT;
+    while (timeout)
+    {
+      if (!DL_I2C_isControllerRXFIFOEmpty(I2C_INST))
+        break;
+      timeout--;
+    }
+    if (!timeout)
+    {
+      DL_I2C_enableStopCondition(I2C_INST);
+      return 6;
+    }
+    *d++ = DL_I2C_receiveControllerData(I2C_INST);
+  }
+
+  return 0;
+}
+
+int veml7700_write(unsigned char reg, unsigned short value)
+{
+  unsigned char data[3] = {reg, (unsigned char)value, (unsigned char)(value >> 8)};
+  DL_I2C_fillControllerTXFIFO(I2C_INST, data, 3);
+
+  int rc = i2c_wait_idle();
+  if (rc)
+    return rc;
+
+  /* Send the packet to the controller.
+   * This function will send Start + Stop automatically.
+   */
+  DL_I2C_startControllerTransfer(I2C_INST, VEML7700_I2C_ADDRESS, DL_I2C_CONTROLLER_DIRECTION_TX, 3);
+
+  rc = i2c_wait_flag(DL_I2C_CONTROLLER_STATUS_BUSY_BUS);
+  if (rc)
+    return rc;
+
+  rc = i2c_wait_idle();
+  if (rc)
+  {
+    DL_I2C_enableStopCondition(I2C_INST);
+    return rc;
+  }
+
+  return 0;
 }
 
 #ifdef UART_ENABLE
