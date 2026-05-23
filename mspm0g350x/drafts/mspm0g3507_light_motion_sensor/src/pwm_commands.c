@@ -21,7 +21,9 @@ static int pwm_handler(printf_func pfunc, gets_func gfunc, int argc, char **argv
 {
   int frequency = atoi(argv[0]);
   int duty = atoi(argv[1]);
+#ifdef UART_ENABLE
   pwm_set_frequency_and_duty(frequency * 1000, duty);
+#endif
   return 0;
 }
 
@@ -29,7 +31,7 @@ static int pwm2_handler(printf_func pfunc, gets_func gfunc, int argc, char **arg
 {
   if (!strcmp(argv[0], "on"))
   {
-    pwm_on();
+    pwm_on(0);
     pfunc("PWM is on\n");
   }
   else if (!strcmp(argv[0], "off"))

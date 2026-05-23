@@ -13,15 +13,19 @@
 #include "pwm_commands.h"
 #include <pir_sensor.h>
 
+#ifdef UART_ENABLE
 static char usart_buffer[UART_BUFFER_SIZE];
 static char *usart_buffer_write_p, *usart_buffer_read_p;
 static char command_line[200];
+#endif
 static volatile int timer_event;
 static volatile int motion_timer;
+static volatile bool motion_detected;
 
 volatile unsigned int filter_crs;
 volatile unsigned short filter_threshold;
 
+#ifdef UART_ENABLE
 void UART_IRQHandler(void)
 {
   if (DL_UART_Main_getPendingInterrupt(UART_INSTANCE) == DL_UART_MAIN_IIDX_RX)
@@ -32,6 +36,7 @@ void UART_IRQHandler(void)
       usart_buffer_write_p = usart_buffer;
   }
 }
+#endif
 
 void PERIODIC_TIMER_IRQHandler(void)
 {
@@ -49,6 +54,7 @@ void ADC_INST_IRQHandler(void)
   }
 }
 
+#ifdef UART_ENABLE
 static int getch_(void)
 {
   if (usart_buffer_write_p != usart_buffer_read_p)
@@ -60,11 +66,11 @@ static int getch_(void)
   }
   return EOF;
 }
+#endif
 
 void pir_motion_detected(void)
 {
-  set_motion_led();
-  motion_timer = MOTION_DETECTOR_ON_TIME;
+  motion_detected = true;
 }
 
 static void main_loop(void)
@@ -79,6 +85,7 @@ static void main_loop(void)
       continue;
     timer_event = 0;
 
+#ifdef UART_ENABLE
     if (!getstring_next())
     {
       switch (command_line[0])
@@ -102,17 +109,43 @@ static void main_loop(void)
           break;
       }
     }
+#endif
 
     cnt_led++;
     if (cnt_led == TIMER_EVENT_FREQUENCY)
     {
+#ifdef UART_ENABLE
       toggle_timer_led();
+#endif
       cnt_led = 0;
       if (motion_timer)
       {
         motion_timer--;
         if (!motion_timer)
+        {
+#ifdef UART_ENABLE
           clear_motion_led();
+#endif
+          pwm_off();
+        }
+      }
+    }
+
+    if (motion_detected)
+    {
+      motion_detected = false;
+      if (motion_timer)
+        motion_timer = MOTION_DETECTOR_ON_TIME;
+      else
+      {
+#ifdef UART_ENABLE
+        set_motion_led();
+#endif
+        motion_timer = MOTION_DETECTOR_ON_TIME;
+        unsigned int vbat = get_vbat();
+        if (vbat < MIN_VBAT)
+          vbat = MIN_VBAT;
+        pwm_on(VBAT_TO_DUTY(vbat));
       }
     }
   }
@@ -120,23 +153,28 @@ static void main_loop(void)
 
 int main(void)
 {
+#ifdef UART_ENABLE
   usart_buffer_write_p = usart_buffer_read_p = usart_buffer;
+#endif
 
   SystemInit();
 
+#ifdef UART_ENABLE
   shell_init(common_printf, nullptr);
   register_adc_commands();
   register_dac_commands();
   register_pwm_commands();
 
   getstring_init(command_line, sizeof(command_line), getch_, puts_);
+#endif
 
   timer_event = 0;
   DL_TimerG_startCounter(PERIODIC_TIMER_INSTANCE);
 
-  filter_crs = 5;
+  filter_crs = PIR_SENSOR_DEFAULT_FILTER_CRS;
   motion_timer = 0;
-  filter_threshold = 8;
+  motion_detected = false;
+  filter_threshold = PIR_SENSOR_DEFAULT_FILTER_THRESHOLD;
   dac_set(DAC_DEFAULT_VALUE);
   DL_ADC12_startConversion(ADC_INST);
 

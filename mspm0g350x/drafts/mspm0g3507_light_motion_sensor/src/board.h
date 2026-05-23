@@ -1,10 +1,6 @@
 #ifndef _BOARD_H
 #define _BOARD_H
 
-#ifndef NULL
-#define NULL 0
-#endif
-
 #define LED_MOTION_GPIO GPIOA
 #define LED_MOTION_PIN DL_GPIO_PIN_0
 #define LED_MOTION_IOMUX IOMUX_PINCM1
@@ -13,10 +9,9 @@
 #define LED_TIMER_PIN DL_GPIO_PIN_3
 #define LED_TIMER_IOMUX IOMUX_PINCM8
 
-#define CPUCLK_FREQ                                               4000000
+#define CPUCLK_FREQ_LOW                                           4000000
+#define CPUCLK_FREQ_HIGH                                         32000000
 #define LFCLK_FREQ                                                  32768
-
-#define SYSTICK_MULTIPLIER 80
 
 #define UART_INSTANCE                                               UART0
 #define UART_IRQHandler                                  UART0_IRQHandler
@@ -29,9 +24,11 @@
 #define UART_IOMUX_TX                                       IOMUX_PINCM21
 #define UART_IOMUX_RX_FUNC                      IOMUX_PINCM22_PF_UART0_RX
 #define UART_IOMUX_TX_FUNC                      IOMUX_PINCM21_PF_UART0_TX
-#define UART_BAUD_RATE                                             115200
+#define UART_BAUD_RATE                                               9600
 #define UART_IBRD_4_MHZ_115200_BAUD                                     2
 #define UART_FBRD_4_MHZ_115200_BAUD                                    11
+#define UART_IBRD_32768_9600_BAUD                                       1
+#define UART_FBRD_32768_9600_BAUD                                      45
 #define UART_BUFFER_SIZE                                             1024
 
 #define PWM_INSTANCE                                                TIMA0
@@ -39,12 +36,16 @@
 #define PWM_PIN                                             DL_GPIO_PIN_8
 #define PWM_IOMUX                                           IOMUX_PINCM19
 #define PWM_IOMUX_FUNC                        IOMUX_PINCM19_PF_TIMA0_CCP0
+#define PWM_IOMUX_FUNC_OFF                   IOMUX_PINCM19_PF_UNCONNECTED
 #define PWM_ZCOND                               DL_TIMER_CZC_CCCTL0_ZCOND
 #define PWM_ACOND                               DL_TIMER_CAC_CCCTL0_ACOND
 #define PWM_LCOND                               DL_TIMER_CLC_CCCTL0_LCOND
 #define PWM_COMPARE_INDEX               DL_TIMERA_CAPTURE_COMPARE_0_INDEX
 #define PWM_CC_INDEX                                  DL_TIMER_CC_0_INDEX
 #define PWM_CC_OUTPUT                                 DL_TIMER_CC0_OUTPUT
+#define PWM_FREQUENCY                                              100000
+#define VBAT_TO_DUTY(v) (497-v/14)
+#define MIN_VBAT 2926 // 3000 mv
 
 #define CLKOUT_PORT                                                 GPIOA
 #define CLKOUT_PIN                                         DL_GPIO_PIN_14
@@ -58,6 +59,8 @@
 #define ADC_ADCMEM_0        DL_ADC12_MEM_IDX_0
 #define ADC_INST_IRQHandler ADC1_IRQHandler
 #define ADC_INST_INT_IRQN   ADC1_INT_IRQn
+
+#define ADC_INST_BATTERY_MONITOR ADC0
 
 #define OPA_INST OPA1
 
@@ -80,22 +83,30 @@
 #define PERIODIC_TIMER_INTERRUPT_PRIORITY 1
 #define ADC_INTERRUPT_PRIORITY            0
 
+#define PIR_SENSOR_DEFAULT_FILTER_CRS             5
 #define PIR_SENSOR_FILTER_CRS                     filter_crs
 #define PIR_SENSOR_AVERAGING_FILTER_SAMPLES_COUNT 4096
+#define PIR_SENSOR_DEFAULT_FILTER_THRESHOLD       8
 #define PIR_SENSOR_FILTER_THRESHOLD               filter_threshold
 #define DAC_DEFAULT_VALUE                         1680
 #define MOTION_DETECTOR_ON_TIME                   2
 
+//#define UART_ENABLE
+
 void SystemInit(void);
-unsigned int mv_to_8(unsigned int mv);
+#ifdef UART_ENABLE
 void pwm_set_frequency_and_duty(unsigned int frequency, unsigned int duty);
-void pwm_on(void);
+#endif
+void pwm_on(unsigned int duty);
 void pwm_off(void);
+#ifdef UART_ENABLE
 void toggle_timer_led(void);
 void set_motion_led(void);
 void clear_motion_led(void);
 unsigned int dac_get(void);
+#endif
 void dac_set(unsigned int value);
+unsigned short get_vbat(void);
 
 extern volatile unsigned int filter_crs;
 extern volatile unsigned short filter_threshold;

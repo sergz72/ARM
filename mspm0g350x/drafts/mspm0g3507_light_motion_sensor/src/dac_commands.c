@@ -19,7 +19,9 @@ static const ShellCommand dac_command = {
 
 static int dac_handler1(printf_func pfunc, gets_func gfunc, int argc, char **argv, void *data)
 {
+#ifdef UART_ENABLE
   pfunc("%d\n", dac_get());
+#endif
   return 0;
 }
 

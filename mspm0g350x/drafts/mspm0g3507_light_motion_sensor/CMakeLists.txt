@@ -29,7 +29,6 @@ file(GLOB SOURCES
         "src/dac_commands.c"
         "src/pwm_commands.c"
         "../startup_mspm0g350x_gcc.c"
-        "../systick.c"
         "../ti/driverlib/dl_common.c"
         "../ti/driverlib/dl_gpio.c"
         "../ti/driverlib/dl_timerg.c"
