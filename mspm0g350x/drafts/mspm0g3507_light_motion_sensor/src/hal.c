@@ -237,8 +237,8 @@ static void InitPower(void)
 
 static void SYSCTLInit(void)
 {
-  //Low Power Mode is configured to be STANDBY0
-  DL_SYSCTL_setPowerPolicyRUN0SLEEP0();
+//  DL_SYSCTL_setPowerPolicyRUN0SLEEP0();
+  DL_SYSCTL_setPowerPolicySTANDBY0();
   DL_SYSCTL_setBORThreshold(DL_SYSCTL_BOR_THRESHOLD_LEVEL_3);
 
   DL_SYSCTL_setSYSOSCFreq(DL_SYSCTL_SYSOSC_FREQ_4M);
@@ -262,6 +262,7 @@ static void SYSCTLInit(void)
 
 void pwm_on(unsigned int duty)
 {
+  DL_SYSCTL_setPowerPolicyRUN0SLEEP0();
   DL_ADC12_setClockConfig(ADC_INST, (DL_ADC12_ClockConfig *) &gADC_ClockConfig_highFreq);
   DL_SYSCTL_setSYSOSCFreq(DL_SYSCTL_SYSOSC_FREQ_BASE);
   DL_TimerA_enablePower(PWM_INSTANCE);
@@ -296,7 +297,9 @@ void pwm_off(void)
   DL_TimerA_setCaptureCompareValue(PWM_INSTANCE, 0, PWM_CC_INDEX);
   DL_GPIO_initPeripheralOutputFunction(PWM_IOMUX,PWM_IOMUX_FUNC_OFF);
   DL_GPIO_disableOutput(PWM_PORT, PWM_PIN);
+  DL_TimerA_reset(PWM_INSTANCE);
   DL_TimerA_disablePower(PWM_INSTANCE);
+  DL_SYSCTL_setPowerPolicySTANDBY0();
 }
 
 static void PERIODIC_TIMER_Init()
@@ -359,6 +362,7 @@ static void ADCInitBatteryMonitor(void)
 
 static void ADCDeInitBatteryMonitor(void)
 {
+  DL_ADC12_reset(ADC_INST_BATTERY_MONITOR);
   DL_ADC12_disablePower(ADC_INST_BATTERY_MONITOR);
 }
 
@@ -408,9 +412,13 @@ void motion_sensor_shutdown(void)
 {
   NVIC_DisableIRQ(ADC_INST_INT_IRQN);
   NVIC_ClearPendingIRQ(ADC_INST_INT_IRQN);
+  DL_ADC12_reset(ADC_INST);
   DL_ADC12_disablePower(ADC_INST);
+  DL_VREF_reset(VREF);
   DL_VREF_disablePower(VREF);
+  DL_DAC12_reset(DAC0);
   DL_DAC12_disablePower(DAC0);
+  DL_OPA_reset(OPA_INST);
   DL_OPA_disablePower(OPA_INST);
 }
 
