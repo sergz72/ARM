@@ -124,21 +124,17 @@ static const DL_I2C_ClockConfig gI2CClockConfig = {
   .divideRatio = DL_I2C_CLOCK_DIVIDE_1,
 };
 
-#ifdef UART_ENABLE
 static void GPIOInit(void)
 {
+#ifdef UART_ENABLE
   DL_GPIO_initDigitalOutput(LED_TIMER_IOMUX);
   DL_GPIO_clearPins(LED_TIMER_GPIO, LED_TIMER_PIN);
   DL_GPIO_enableOutput(LED_TIMER_GPIO, LED_TIMER_PIN);
+#endif
 
   DL_GPIO_initDigitalOutput(LED_MOTION_IOMUX);
   clear_motion_led();
   DL_GPIO_enableOutput(LED_TIMER_GPIO, LED_MOTION_PIN);
-}
-
-void toggle_timer_led(void)
-{
-  DL_GPIO_togglePins(LED_TIMER_GPIO, LED_TIMER_PIN);
 }
 
 void set_motion_led(void)
@@ -149,6 +145,12 @@ void set_motion_led(void)
 void clear_motion_led(void)
 {
   DL_GPIO_setPins(LED_MOTION_GPIO, LED_MOTION_PIN);
+}
+
+#ifdef UART_ENABLE
+void toggle_timer_led(void)
+{
+  DL_GPIO_togglePins(LED_TIMER_GPIO, LED_TIMER_PIN);
 }
 
 static void UARTInit(void)
@@ -230,10 +232,6 @@ static void InitPower(void)
   DL_UART_Main_enablePower(UART_INSTANCE);
 #endif
   DL_TimerG_enablePower(PERIODIC_TIMER_INSTANCE);
-  DL_VREF_enablePower(VREF);
-  DL_ADC12_enablePower(ADC_INST);
-  DL_DAC12_enablePower(DAC0);
-  DL_OPA_enablePower(OPA_INST);
   delay_cycles(POWER_STARTUP_DELAY);
 }
 
@@ -385,16 +383,35 @@ void SystemInit(void)
 {
   SYSCTLInit();
   InitPower();
-#ifdef UART_ENABLE
   GPIOInit();
+#ifdef UART_ENABLE
   UARTInit();
 #endif
   I2C1Init();
+  PERIODIC_TIMER_Init();
+}
+
+void motion_sensor_powerup(void)
+{
+  DL_VREF_enablePower(VREF);
+  DL_ADC12_enablePower(ADC_INST);
+  DL_DAC12_enablePower(DAC0);
+  DL_OPA_enablePower(OPA_INST);
+  delay_cycles(POWER_STARTUP_DELAY);
   VREFInit();
   ADCInit();
   DACInit();
   OPA1Init();
-  PERIODIC_TIMER_Init();
+}
+
+void motion_sensor_shutdown(void)
+{
+  NVIC_DisableIRQ(ADC_INST_INT_IRQN);
+  NVIC_ClearPendingIRQ(ADC_INST_INT_IRQN);
+  DL_ADC12_disablePower(ADC_INST);
+  DL_VREF_disablePower(VREF);
+  DL_DAC12_disablePower(DAC0);
+  DL_OPA_disablePower(OPA_INST);
 }
 
 #ifdef UART_ENABLE
@@ -438,9 +455,6 @@ unsigned short get_vbat(void)
 
 void delayms(int ms)
 {
-  delay_counter = ms;
-  while (delay_counter > 0)
-    __WFI();
 }
 
 static int i2c_wait_idle(void)

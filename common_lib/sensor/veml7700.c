@@ -1,45 +1,60 @@
 #include "board.h"
 #include <veml7700.h>
 
-#define REG_CONFIG     0
-#define REG_POWER_SAVE 3
-#define REG_ALS        4
-#define REG_ID         7
-
 static int veml7700_set_config(unsigned int gainx8)
 {
-  unsigned short config = 3 << 6; // integration time is 800 ms
+  unsigned short config = VEML7700_IT_800ms; // integration time is 800 ms
 
   switch (gainx8)
   {
     case 1: //gain is 1/8
-      config |= 2 << 11;
+      config |= VEML7700_GAIN_1d8;
       break;
     case 2: //gain is 1/4
-      config |= 3 << 11;
+      config |= VEML7700_GAIN_1d4;
       break;
     case 16: //gain is 2
-      config |= 1 << 11;
+      config |= VEML7700_GAIN_2;
       break;
     default:
       break;
   }
-  return veml7700_write(REG_CONFIG, config);
+
+  return veml7700_write(VEML7700_REG_CONFIG, config);
 }
 
-int veml7700_init(void)
+static int veml7700_check_id(void)
 {
   unsigned short value;
 
-  int rc = veml7700_read(REG_ID, &value);
+  int rc = veml7700_read(VEML7700_REG_ID, &value);
   if (rc)
     return rc;
   if (value != 0xC481)
     return value == 0 ? -1 : value;
+  return 0;
+}
+
+int veml7700_init(void)
+{
+  int rc = veml7700_check_id();
+  if (rc)
+    return rc;
   rc = veml7700_set_config(1);
   if (rc)
     return rc;
-  return veml7700_write(REG_POWER_SAVE, 0); // disable power save
+  return veml7700_write(VEML7700_REG_POWER_SAVE, 0); // disable power save
+}
+
+int veml7700_ex_init(const unsigned short config, const unsigned short power_save)
+{
+  int rc = veml7700_check_id();
+  if (rc)
+    return rc;
+  rc = veml7700_write(VEML7700_REG_CONFIG, config);
+  if (rc)
+    return rc;
+  return veml7700_write(VEML7700_REG_POWER_SAVE, power_save);
 }
 
 static float calculate_lux(unsigned short value, unsigned int gainx8)
@@ -65,7 +80,7 @@ int veml7700_measure(veml7700_result *result)
   result->tries = 1;
   for (;;)
   {
-    int rc = veml7700_read(REG_ALS, &value);
+    int rc = veml7700_read(VEML7700_REG_ALS, &value);
     if (rc)
       return rc;
     if (value >= 0x7000)
@@ -84,7 +99,7 @@ int veml7700_measure(veml7700_result *result)
     if (rc)
       return rc;
     delayms(1500);
-    rc = veml7700_read(REG_ALS, &value);
+    rc = veml7700_read(VEML7700_REG_ALS, &value);
     if (rc)
       return rc;
     rc = veml7700_set_config(1);

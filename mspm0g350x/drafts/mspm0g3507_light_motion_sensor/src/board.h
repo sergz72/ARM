@@ -85,11 +85,10 @@
 
 #define PIR_SENSOR_DEFAULT_FILTER_CRS             5
 #define PIR_SENSOR_FILTER_CRS                     filter_crs
-#define PIR_SENSOR_AVERAGING_FILTER_SAMPLES_COUNT 4096
-#define PIR_SENSOR_DEFAULT_FILTER_THRESHOLD       8
+#define PIR_SENSOR_DEFAULT_FILTER_THRESHOLD       9
 #define PIR_SENSOR_FILTER_THRESHOLD               filter_threshold
+#define PIR_SENSOR_AVERAGING_FILTER_SAMPLES_COUNT 4096
 #define DAC_DEFAULT_VALUE                         1680
-#define MOTION_DETECTOR_ON_TIME                   2
 
 #define I2C_INST                                                            I2C1
 #define I2C_BUS_SPEED_HZ                                                  100000
@@ -103,7 +102,18 @@
 #define GPIO_I2C_IOMUX_SCL_FUNC                         IOMUX_PINCM9_PF_I2C1_SCL
 #define I2C_TIMEOUT                                                        10000
 
-#define UART_ENABLE
+//#define UART_ENABLE
+
+#ifdef UART_ENABLE
+#define MOTION_DETECTOR_ON_TIME 2
+#else
+#define MOTION_DETECTOR_ON_TIME 10
+#endif
+
+#define VEML7700_LUX_X100(v) ((unsigned int)v * 336 / 100)
+#define VEML7700_LUX_TO_V(l) (l * 30)
+#define VEML7700_HIGH_THRESHOLD VEML7700_LUX_TO_V(300) // 3 lux / 0.0336
+#define VEML7700_LOW_THRESHOLD  VEML7700_LUX_TO_V(100) // 1 lux / 0.0336
 
 void SystemInit(void);
 #ifdef UART_ENABLE
@@ -111,18 +121,19 @@ void pwm_set_frequency_and_duty(unsigned int frequency, unsigned int duty);
 #endif
 void pwm_on(unsigned int duty);
 void pwm_off(void);
-#ifdef UART_ENABLE
-void toggle_timer_led(void);
 void set_motion_led(void);
 void clear_motion_led(void);
+#ifdef UART_ENABLE
+void toggle_timer_led(void);
 unsigned int dac_get(void);
 #endif
 void dac_set(unsigned int value);
 unsigned short get_vbat(void);
 void delayms(int ms);
+void motion_sensor_shutdown(void);
+void motion_sensor_powerup(void);
 
 extern volatile unsigned int filter_crs;
 extern volatile unsigned short filter_threshold;
-extern volatile int delay_counter;
 
 #endif

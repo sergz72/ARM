@@ -13,6 +13,7 @@
 #include "pwm_commands.h"
 #include "veml_commands.h"
 #include <pir_sensor.h>
+#include <veml7700.h>
 
 #ifdef UART_ENABLE
 static char usart_buffer[UART_BUFFER_SIZE];
@@ -25,7 +26,10 @@ static volatile bool motion_detected;
 
 volatile unsigned int filter_crs;
 volatile unsigned short filter_threshold;
-volatile int delay_counter;
+
+static bool motion_sensor_active;
+static unsigned int veml7700_disable_time;
+static unsigned int motion_sensor_disable_time;
 
 #ifdef UART_ENABLE
 void UART_IRQHandler(void)
@@ -43,8 +47,6 @@ void UART_IRQHandler(void)
 void PERIODIC_TIMER_IRQHandler(void)
 {
   timer_event = 1;
-  if (delay_counter > 0)
-    delay_counter -= 1000 / TIMER_EVENT_FREQUENCY;
 }
 
 void ADC_INST_IRQHandler(void)
@@ -131,11 +133,45 @@ static void main_loop(void)
           clear_motion_led();
 #endif
           pwm_off();
+          veml7700_disable_time = 5;
+        }
+      }
+      else if (veml7700_disable_time)
+        veml7700_disable_time--;
+      else
+      {
+        unsigned short result;
+        bool active;
+        rc = veml7700_read(VEML7700_REG_ALS, &result);
+        if (rc || result < VEML7700_LOW_THRESHOLD)
+        {
+          if (!motion_sensor_active)
+          {
+            motion_sensor_active = true;
+            motion_sensor_powerup();
+            dac_set(DAC_DEFAULT_VALUE);
+            DL_ADC12_startConversion(ADC_INST);
+            motion_sensor_disable_time = 20;
+          }
+        }
+        else if (result > VEML7700_HIGH_THRESHOLD)
+        {
+          if (motion_sensor_active)
+          {
+            motion_sensor_active = false;
+            motion_sensor_shutdown();
+            motion_detected = false;
+          }
         }
       }
     }
 
-    if (motion_detected)
+    if (motion_sensor_disable_time)
+    {
+      motion_sensor_disable_time--;
+      motion_detected = false;
+    }
+    else if (motion_sensor_active & motion_detected)
     {
       motion_detected = false;
       if (motion_timer)
@@ -161,9 +197,15 @@ int main(void)
   usart_buffer_write_p = usart_buffer_read_p = usart_buffer;
 #endif
 
-  delay_counter = 0;
-
   SystemInit();
+
+  int rc = veml7700_ex_init(VEML7700_GAIN_2|VEML7700_IT_100ms, VEML7700_PSM_MODE4|VEML7700_PSM_ENABLE);
+  if (rc)
+  {
+    set_motion_led();
+    while (1)
+      __WFI();
+  }
 
 #ifdef UART_ENABLE
   shell_init(common_printf, nullptr);
@@ -175,6 +217,10 @@ int main(void)
   getstring_init(command_line, sizeof(command_line), getch_, puts_);
 #endif
 
+  motion_sensor_active = false;
+  veml7700_disable_time = 0;
+  motion_sensor_disable_time = 0;
+
   timer_event = 0;
   DL_TimerG_startCounter(PERIODIC_TIMER_INSTANCE);
 
@@ -182,8 +228,6 @@ int main(void)
   motion_timer = 0;
   motion_detected = false;
   filter_threshold = PIR_SENSOR_DEFAULT_FILTER_THRESHOLD;
-  dac_set(DAC_DEFAULT_VALUE);
-  DL_ADC12_startConversion(ADC_INST);
 
   main_loop();
 }
