@@ -1,7 +1,9 @@
 #include <board.h>
 #include <pir_sensor.h>
 
+#ifdef PIR_SENSOR_FILTER_CRS
 volatile unsigned short pir_filter_output;
+#endif
 static unsigned short pir_adc_samples[PIR_SENSOR_AVERAGING_FILTER_SAMPLES_COUNT];
 static unsigned int pir_adc_samples_sum;
 volatile unsigned short pir_adc_samples_avg;
@@ -14,10 +16,14 @@ void pir_sensor_init(void)
 
 void pir_sensor_adc_handler(unsigned short value)
 {
+#ifdef PIR_SENSOR_FILTER_CRS
   if (value > pir_filter_output)
     pir_filter_output = pir_filter_output + ((value - pir_filter_output) >> PIR_SENSOR_FILTER_CRS);
   else
     pir_filter_output = pir_filter_output - ((pir_filter_output - value) >> PIR_SENSOR_FILTER_CRS);
+#else
+  unsigned short pir_filter_output = value;
+#endif
 
   pir_adc_samples_sum -= pir_adc_samples[pir_adc_samples_idx];
   pir_adc_samples[pir_adc_samples_idx] = pir_filter_output;
