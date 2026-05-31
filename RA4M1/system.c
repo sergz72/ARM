@@ -4,8 +4,12 @@
 #define BSP_LINKER_C
 #include <bsp_linker_info.h>
 
+extern void  * __VECTOR_TABLE[];
+
 void SystemRuntimeInit (const unsigned int external)
 {
+  SCB->VTOR = (uint32_t) &__VECTOR_TABLE;
+
   /* Initialize C runtime environment. */
   for (unsigned int i = 0; i < g_init_info.zero_count; i++)
   {

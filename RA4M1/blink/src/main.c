@@ -3,9 +3,14 @@
 
 int main(void)
 {
+  __asm volatile ("cpsie i" ::: "memory");
   while (1)
   {
-    delayms(1000);
-    LED_TOGGLE;
+    __WFI();
+    if (timer_interrupt)
+    {
+      timer_interrupt = false;
+      LED_TOGGLE;
+    }
   }
 }

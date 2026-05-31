@@ -38,6 +38,7 @@ file(GLOB SOURCES
         "src/hal.c"
         "../../common_lib/delay_systick.c"
         "../lib/systick.c"
+        "../lib/interrupts.c"
         "../startup.c"
         "../system.c"
 )
