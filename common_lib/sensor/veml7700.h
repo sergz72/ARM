@@ -48,6 +48,6 @@ int veml7700_write(unsigned char reg, unsigned short data); // should be defined
 
 int veml7700_init(void);
 int veml7700_ex_init(unsigned short config, unsigned short power_save);
-int veml7700_measure(veml7700_result *result);
+int veml7700_measure(veml7700_result *result, int wait);
 
 #endif

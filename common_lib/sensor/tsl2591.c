@@ -20,7 +20,7 @@
 #define REG_C1DATAL 0xB6
 #define REG_C1DATAH 0xB7
 
-#define TSL2591_LUX_DF    408.0f   ///< Lux cooefficient
+#define TSL2591_LUX_DF    816.0f   ///< Lux coefficient
 
 static const unsigned int gain_scaling[4] = {1, 25, 428, 9876};
 static const tsl2591_config *config;

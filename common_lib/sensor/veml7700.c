@@ -72,7 +72,7 @@ static float calculate_lux(unsigned short value, unsigned int gainx8)
   }
 }
 
-int veml7700_measure(veml7700_result *result)
+int veml7700_measure(veml7700_result *result, int wait)
 {
   unsigned short value;
 
@@ -80,6 +80,8 @@ int veml7700_measure(veml7700_result *result)
   result->tries = 1;
   for (;;)
   {
+    if (wait)
+      delayms(1500);
     int rc = veml7700_read(VEML7700_REG_ALS, &value);
     if (rc)
       return rc;
