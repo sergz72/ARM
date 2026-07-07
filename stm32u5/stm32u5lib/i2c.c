@@ -4,7 +4,8 @@
 void I2C_Master_Init(I2C_TypeDef *instance, unsigned int timings)
 {
   instance->TIMINGR = timings;
-  instance->CR2 = I2C_CR2_NACK;
+  //instance->CR1 = I2C_CR1_SBC;
+  //instance->CR2 = I2C_CR2_NACK;
 }
 
 void I2C_Enable(I2C_TypeDef *instance)
@@ -31,7 +32,7 @@ int I2C_GenerateStop(I2C_TypeDef *instance, int rc, unsigned int timeout)
   return rc;
 }
 
-int I2C_Write(I2C_TypeDef *instance, unsigned short address, unsigned char *wdata, unsigned int wsize, unsigned int timeout)
+int I2C_Write(I2C_TypeDef *instance, unsigned short address, const unsigned char *wdata, unsigned int wsize, unsigned int timeout, bool generate_stop)
 {
   unsigned int t = timeout;
   while (instance->ISR & I2C_ISR_BUSY && t)
@@ -41,15 +42,15 @@ int I2C_Write(I2C_TypeDef *instance, unsigned short address, unsigned char *wdat
 
   instance->ICR = 0x3F38; // clear all error flags
 
-  unsigned int temp = instance->CR2 & ~(I2C_CR2_NBYTES | I2C_CR2_SADD);
-  instance->CR2 = temp | (wsize << 16) | I2C_CR2_AUTOEND | address;
+  unsigned int temp = instance->CR2 & ~(I2C_CR2_NBYTES | I2C_CR2_SADD | I2C_CR2_AUTOEND | I2C_CR2_RD_WRN);
+  instance->CR2 = temp | (wsize << 16) | address | (generate_stop ? I2C_CR2_AUTOEND : 0);
 
   instance->CR2 |= I2C_CR2_START; // generate start
 
   if (!I2C_WaitFlag(instance, I2C_ISR_NACKF | I2C_ISR_TXIS, timeout))
-    return 1;
+    return I2C_GenerateStop(instance, 2, timeout);
   if (instance->ISR & I2C_ISR_NACKF)
-    return 2;
+    return I2C_GenerateStop(instance, 3, timeout);
 
   while (wsize--)
   {
@@ -57,11 +58,44 @@ int I2C_Write(I2C_TypeDef *instance, unsigned short address, unsigned char *wdat
     if (wsize)
     {
       if (!I2C_WaitFlag(instance, I2C_ISR_NACKF | I2C_ISR_TXIS, timeout))
-        return 3;
+        return I2C_GenerateStop(instance, 4, timeout);
       if (instance->ISR & I2C_ISR_NACKF)
-        return 4;
+        return I2C_GenerateStop(instance, 5, timeout);
     }
   }
 
-  return I2C_WaitFlag(instance, I2C_ISR_STOPF, timeout) ? 0 : 3;
+
+  if (generate_stop)
+  {
+    if (!I2C_WaitFlag(instance, I2C_ISR_STOPF, timeout))
+      return 6;
+  }
+  else
+  {
+    if (!I2C_WaitFlag(instance, I2C_ISR_TC | I2C_ISR_NACKF, timeout))
+      return 6;
+  }
+  return instance->ISR & I2C_ISR_NACKF ? 7 : 0;
+}
+
+int I2C_Read(I2C_TypeDef *instance, unsigned char *rdata, unsigned int rsize, unsigned int timeout)
+{
+  unsigned int temp = (instance->CR2 &= ~I2C_CR2_NACK) | (rsize << 16) | I2C_CR2_RD_WRN;
+  instance->CR2 = temp;
+
+  instance->CR2 |= I2C_CR2_START; // generate start
+
+  while (rsize)
+  {
+    rsize--;
+    if (!rsize)
+      instance->CR2 |= I2C_CR2_NACK;
+    if (!I2C_WaitFlag(instance, I2C_ISR_RXNE, timeout))
+      return I2C_GenerateStop(instance, 5, timeout);
+    *rdata++ = instance->RXDR;
+  }
+
+  instance->CR2 |= I2C_CR2_STOP;
+
+  return I2C_WaitFlag(instance, I2C_ISR_STOPF, timeout) ? 0 : 7;
 }

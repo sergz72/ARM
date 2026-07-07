@@ -4,6 +4,8 @@
 static unsigned int calculate_br(unsigned int spi_clock, unsigned int baud_rate)
 {
   unsigned int coef = spi_clock / baud_rate;
+  if (coef <= 1)
+    return 8; // bypass prescaler
   if (coef <= 2)
     return 0;
   if (coef <= 4)
@@ -98,4 +100,51 @@ int SPI_Send16(SPI_TypeDef *instance, unsigned short data, unsigned int timeout)
     return 1;
   instance->TXDR = data;
   return 0;
+}
+
+int SPI_TransmitReceive(SPI_TypeDef *instance, const unsigned char *txdata, unsigned char *rxdata, unsigned int size, unsigned int timeout)
+{
+  instance->CR2 = size;
+  unsigned int t = timeout;
+  while (t && (instance->CR1 & SPI_CR1_CSTART))
+    t--;
+  if (!t)
+    return 1;
+
+  unsigned int txsize = size, rxsize = size;
+  bool start = true;
+  t = timeout;
+  while (txsize || rxsize)
+  {
+    while (txsize && (instance->SR & SPI_SR_TXP))
+    {
+      *((unsigned char*)&instance->TXDR) = *txdata++;
+      txsize--;
+    }
+
+    if (start)
+    {
+      // Start communication channel transaction trigger (CSTART)
+      instance->CR1 |= SPI_CR1_CSTART;
+      start = false;
+    }
+
+    while (instance->SR & SPI_SR_RXP)
+    {
+      *rxdata++ = *((unsigned char*)&instance->RXDR);
+      rxsize--;
+    }
+
+    t--;
+    if (!t)
+      return 2;
+  }
+
+  while (timeout && !(instance->SR & SPI_SR_TXC))
+    timeout--;
+  while (timeout && !(instance->SR & SPI_SR_EOT))
+    timeout--;
+  instance->IFCR = SPI_IFCR_EOTC;
+
+  return timeout ? 0 : 3;
 }

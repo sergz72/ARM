@@ -46,9 +46,10 @@
 
 #define GPIO_AF1_TIM1 1  // TIM1 Alternate Function mapping
 #define GPIO_AF1_TIM2 1  // TIM2 Alternate Function mapping
+#define GPIO_AF1_LPTIM1 1  // LPTIM1 Alternate Function mapping
 #define GPIO_AF2_TIM3 2  // TIM3 Alternate Function mapping
 #define GPIO_AF2_LPTIM2 2  // LPTIM2 Alternate Function mapping
-#define GPIO_AF1_LPTIM1 1  // LPTIM1 Alternate Function mapping
+#define GPIO_AF4_I2C1 4  // I2C1 Alternate Function mapping
 #define GPIO_AF5_SPI1 5  // SPI1 Alternate Function mapping
 #define GPIO_AF5_SPI2 5  // SPI2 Alternate Function mapping
 #define GPIO_AF6_SPI3 6  // SPI3 Alternate Function mapping
