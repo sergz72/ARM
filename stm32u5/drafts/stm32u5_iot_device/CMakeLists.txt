@@ -58,7 +58,6 @@ file(GLOB SOURCES
         "../stm32u5lib/gpio.c"
         "../../../common_lib/delay_systick.c"
 #        "../../../common_lib/spi_soft.c"
-#        "../../../common_lib/i2c_soft.c"
         "../../../common_lib/rtc/rtc_func.c"
         "../../../common_lib/shell/shell.c"
         "../../../common_lib/getstring.c"

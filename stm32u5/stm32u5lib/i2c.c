@@ -32,7 +32,8 @@ int I2C_GenerateStop(I2C_TypeDef *instance, int rc, unsigned int timeout)
   return rc;
 }
 
-int I2C_Write(I2C_TypeDef *instance, unsigned short address, const unsigned char *wdata, unsigned int wsize, unsigned int timeout, bool generate_stop)
+int I2C_Write(I2C_TypeDef *instance, unsigned short address, const unsigned char *wdata, unsigned int wsize,
+              unsigned int timeout, bool generate_stop)
 {
   unsigned int t = timeout;
   while (instance->ISR & I2C_ISR_BUSY && t)

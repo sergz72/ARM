@@ -64,22 +64,10 @@
 #define CC1101_RXOFF_MODE CC1101_RXOFF_MODE_IDLE
 #define CC1101_TXOFF_MODE CC1101_TXOFF_MODE_IDLE
 
-//#define I2C_SOFT
-
-#ifdef I2C_SOFT
-#define i2c_dly delay(5)
-#define SCL_HIGH(ch) SCL_PORT->BSRR = SCL_PIN
-#define SCL_LOW(ch)  SCL_PORT->BSRR = SCL_PIN << 16
-#define SCL_IN(ch)   (SCL_PORT->IDR & SCL_PIN)
-#define SDA_HIGH(ch) SDA_PORT->BSRR = SDA_PIN
-#define SDA_LOW(ch)  SDA_PORT->BSRR = SDA_PIN << 16
-#define SDA_IN(ch)   (SDA_PORT->IDR & SDA_PIN)
-#else
 #define I2C_ENABLE      RCC->APB1ENR1 |= RCC_APB1ENR1_I2C1EN
 #define I2C_AF          GPIO_AF4_I2C1
 #define I2C_TIMINGS     0x00503D58
 #define I2C_INST        I2C1
-#endif
 #define I2C_PORT_ENABLE RCC->AHB2ENR1 |= RCC_AHB2ENR1_GPIOBEN;
 #define I2C_TIMEOUT     100000
 #define SCL_PORT        GPIOB

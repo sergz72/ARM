@@ -134,7 +134,6 @@ static void SPIInit(void)
 }
 #endif
 
-#ifndef I2C_SOFT
 static void I2CInit(void)
 {
   GPIO_InitTypeDef init;
@@ -155,25 +154,6 @@ static void I2CInit(void)
   I2C_Master_Init(I2C_INST, I2C_TIMINGS); // calculated by stm32cubemx
   I2C_Enable(I2C_INST);
 }
-#else
-static void I2CInit(void)
-{
-  GPIO_InitTypeDef init;
-
-  I2C_PORT_ENABLE;
-
-  i2c_soft_init(0);
-
-  init.Pin = SCL_PIN;
-  init.Mode = GPIO_MODE_OUTPUT_OD;
-  init.Speed = GPIO_SPEED_FREQ_LOW;
-  init.Pull = GPIO_PULLUP;
-  GPIO_Init(SCL_PORT, &init);
-
-  init.Pin = SDA_PIN;
-  GPIO_Init(SDA_PORT, &init);
-}
-#endif
 
 void CC1101Init(void)
 {
@@ -312,30 +292,12 @@ int cc1101_strobe(unsigned int device_num, unsigned char data, unsigned char *st
 
 int scd4x_write(const unsigned char *data, unsigned int len, bool no_ack_expected)
 {
-#ifdef I2C_SOFT
-  return i2c_soft_write(0, SCD4X_SENSOR_ADDR << 1, data, len, no_ack_expected, I2C_TIMEOUT);
-#else
-  return I2C_Write(I2C_INST, SCD4X_SENSOR_ADDR << 1, data, len, I2C_TIMEOUT, true);
-#endif
+  int rc = I2C_Write(I2C_INST, SCD4X_SENSOR_ADDR << 1, data, len, I2C_TIMEOUT, true);
+  if (rc == 5)
+    return I2C_Write(I2C_INST, SCD4X_SENSOR_ADDR << 1, data, len, I2C_TIMEOUT, true);
 }
 
 int scd4x_read(unsigned char *data, unsigned int len)
 {
-#ifdef I2C_SOFT
-  return i2c_soft_read(0, SCD4X_SENSOR_ADDR << 1, data, len, I2C_TIMEOUT);
-#else
   return I2C_Read(I2C_INST, data, len, I2C_TIMEOUT);
-#endif
-}
-
-int scd4x_command(const unsigned char *wdata, unsigned int wlen, unsigned char *rdata, unsigned int rlen)
-{
-#ifdef I2C_SOFT
-  return i2c_soft_command(0, SCD4X_SENSOR_ADDR << 1, nullptr, 0, wdata, wlen, rdata, rlen, I2C_TIMEOUT);
-#else
-  const int rc = I2C_Write(I2C_INST, SCD4X_SENSOR_ADDR << 1, wdata, wlen, I2C_TIMEOUT, false);
-  if (rc)
-    return rc;
-  return I2C_Read(I2C_INST, rdata, rlen, I2C_TIMEOUT);
-#endif
 }
