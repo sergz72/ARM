@@ -185,7 +185,11 @@ static void USB_CoreInit(void)
   */
 static void USB_EnableGlobalInt(void)
 {
+#ifndef STM32U5
   USBHandle.Instance->GAHBCFG |= USB_OTG_GAHBCFG_GINT;
+#else
+  USBHandle.Instance->GAHBCFG |= USB_OTG_GAHBCFG_GINTMSK;
+#endif
 }
 
 
@@ -195,7 +199,11 @@ static void USB_EnableGlobalInt(void)
 */
 static void USB_DisableGlobalInt(void)
 {
+#ifndef STM32U5
   USBHandle.Instance->GAHBCFG &= ~USB_OTG_GAHBCFG_GINT;
+#else
+  USBHandle.Instance->GAHBCFG &= ~USB_OTG_GAHBCFG_GINTMSK;
+#endif
 }
 
 /**
@@ -237,7 +245,7 @@ static void USB_DevInit(void)
 {
   unsigned int i;
 
-#ifdef STM32F7
+#if defined(STM32F7) || defined(STM32U5)
   /*Activate VBUS Sensing B */
   USBHandle.Instance->GCCFG |= USB_OTG_GCCFG_VBDEN;
   
@@ -277,15 +285,27 @@ static void USB_DevInit(void)
      * at VBUS-Valid level (5V).
      */
     USBx_DEVICE->DCTL |= USB_OTG_DCTL_SDIS;
+#ifdef USB_OTG_GCCFG_NOVBUSSENS
     USBHandle.Instance->GCCFG |= USB_OTG_GCCFG_NOVBUSSENS;
     USBHandle.Instance->GCCFG &= ~USB_OTG_GCCFG_VBUSBSEN;
     USBHandle.Instance->GCCFG &= ~USB_OTG_GCCFG_VBUSASEN;
+#else
+    USBHandle.Instance->GCCFG &= ~USB_OTG_GCCFG_VBDEN;
+
+    /* B-peripheral session valid override enable */
+    USBHandle.Instance->GOTGCTL |= USB_OTG_GOTGCTL_BVALOEN;
+    USBHandle.Instance->GOTGCTL |= USB_OTG_GOTGCTL_BVALOVAL;
+#endif
   }
   else
   {
+#ifdef USB_OTG_GCCFG_NOVBUSSENS
     /* Enable HW VBUS sensing */
     USBHandle.Instance->GCCFG &= ~USB_OTG_GCCFG_NOVBUSSENS;
     USBHandle.Instance->GCCFG |= USB_OTG_GCCFG_VBUSBSEN;
+#else
+    USBHandle.Instance->GCCFG |= USB_OTG_GCCFG_VBDEN;
+#endif
   }
 #else
   #error PLEASE DEFINE CPU FAMILY
@@ -378,10 +398,15 @@ static void USB_DevInit(void)
   }
   
   /* Enable interrupts matching to the Device mode ONLY */
-  USBHandle.Instance->GINTMSK |= (USB_OTG_GINTMSK_USBSUSPM | USB_OTG_GINTMSK_USBRST |\
-                    USB_OTG_GINTMSK_ENUMDNEM | USB_OTG_GINTMSK_IEPINT |\
-                    USB_OTG_GINTMSK_OEPINT   | USB_OTG_GINTMSK_IISOIXFRM|\
-                    USB_OTG_GINTMSK_PXFRM_IISOOXFRM | USB_OTG_GINTMSK_WUIM);
+  USBHandle.Instance->GINTMSK |= (USB_OTG_GINTMSK_USBSUSPM | USB_OTG_GINTMSK_USBRST |
+                    USB_OTG_GINTMSK_ENUMDNEM | USB_OTG_GINTMSK_IEPINT |
+                    USB_OTG_GINTMSK_OEPINT   | USB_OTG_GINTMSK_IISOIXFRM | USB_OTG_GINTMSK_WUIM |
+#ifndef STM32U5
+                    USB_OTG_GINTMSK_PXFRM_IISOOXFRM
+#else
+                    USB_OTG_GINTMSK_IPXFRM_IISOOXFRM
+#endif
+                    );
   
   if(USBHandle.Cfg->Sof_enable)
   {
@@ -505,7 +530,11 @@ void USB_EP0_OutStart(void)
   USBx_OUTEP(0)->DOEPTSIZ = 0;
   USBx_OUTEP(0)->DOEPTSIZ |= (USB_OTG_DOEPTSIZ_PKTCNT & (1 << 19)) ;
   USBx_OUTEP(0)->DOEPTSIZ |= (3 * 8);
+#ifndef STM32U5
   USBx_OUTEP(0)->DOEPTSIZ |=  USB_OTG_DOEPTSIZ_STUPCNT;
+#else
+  USBx_OUTEP(0)->DOEPTSIZ |=  3 << 29;
+#endif
 
   if (USBHandle.Cfg->dma_enable)
   {
@@ -964,8 +993,13 @@ void USB_EPStartXfer(unsigned int is_in, unsigned int num)
 
       if (ep->type == USB_EP_TYPE_ISOC)
       {
+#ifndef STM32U5
         USBx_INEP(num)->DIEPTSIZ &= ~(USB_OTG_DIEPTSIZ_MULCNT);
         USBx_INEP(num)->DIEPTSIZ |= (USB_OTG_DIEPTSIZ_MULCNT & (1 << 29));
+#else
+        USBx_INEP(num)->DIEPTSIZ &= ~(USB_OTG_DIEPTSIZ_MCNT);
+        USBx_INEP(num)->DIEPTSIZ |= (USB_OTG_DIEPTSIZ_MCNT & (1 << 29));
+#endif
       }
     }
 
@@ -989,7 +1023,11 @@ void USB_EPStartXfer(unsigned int is_in, unsigned int num)
     {
       if ((USBx_DEVICE->DSTS & ( 1 << 8 )) == 0)
       {
+#ifndef STM32U5
         USBx_INEP(num)->DIEPCTL |= USB_OTG_DIEPCTL_SODDFRM;
+#else
+        USBx_INEP(num)->DIEPCTL |= USB_OTG_DIEPCTL_SD1PID_SODDFRM;
+#endif
       }
       else
       {
@@ -1036,7 +1074,11 @@ void USB_EPStartXfer(unsigned int is_in, unsigned int num)
     {
       if ((USBx_DEVICE->DSTS & ( 1 << 8 )) == 0)
       {
+#ifndef STM32U5
         USBx_OUTEP(num)->DOEPCTL |= USB_OTG_DOEPCTL_SODDFRM;
+#else
+        USBx_OUTEP(num)->DOEPCTL |= USB_OTG_DOEPCTL_SD1PID_SODDFRM;
+#endif
       }
       else
       {

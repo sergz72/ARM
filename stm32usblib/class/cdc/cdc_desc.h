@@ -45,7 +45,7 @@
     0x05,   /* bFunctionLength */ \
     0x24,   /* bDescriptorType: CS_INTERFACE */ \
     0x06,   /* bDescriptorSubtype: Union func desc */ \
-    0x00,   /* bMasterInterface: Communication class interface */ \
+    interface_control_no,   /* bMasterInterface: Communication class interface */ \
     interface_data_no,   /* bSlaveInterface0: Data Class Interface */ \
     /*Endpoint 2 Descriptor*/ \
     0x07,                           /* bLength: Endpoint Descriptor size */ \

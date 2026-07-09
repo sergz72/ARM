@@ -38,6 +38,7 @@ typedef struct
   void *pEpClassData[USB_EP_MAX];
   void *pItfClassData[USB_EP_MAX];
   void *pCDCClassData[USB_EP_MAX];
+  void *pAUDIOClassData[USB_EP_MAX];
 } USB_OTG_CfgTypeDef;
 
 typedef struct

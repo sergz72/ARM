@@ -331,10 +331,10 @@ int InitRCC(const RCCConfig *config)
       vosr |= PWR_VOSR_VOS_0 | PWR_VOSR_VOS_1;
       flash_latency = calculate_flash_latency_vos1(hclk_frequency);
     }
-    PWR->VOSR = vosr;
   }
   else
     flash_latency = calculate_flash_latency_vos4(hclk_frequency);
+  PWR->VOSR = vosr;
 
   RCC->CFGR2 = rcc_cfgr2;
   RCC->CFGR3 = rcc_cfgr3;

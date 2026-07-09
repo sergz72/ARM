@@ -12,6 +12,10 @@
 #define USB_MASK_INTERRUPT(__INTERRUPT__)     (USBHandle.Instance->GINTMSK &= ~(__INTERRUPT__))
 #define USB_UNMASK_INTERRUPT(__INTERRUPT__)   (USBHandle.Instance->GINTMSK |= (__INTERRUPT__))
 
+#ifndef USB_OTG_GRXSTSP_EPNUM
+#define USB_OTG_GRXSTSP_EPNUM 0x0F
+#endif
+
 static void OEPINTHandler(void);
 static void IEPINTHandler(void);
 static void USBRSTHandler(void);
@@ -42,14 +46,22 @@ void USBInterruptHandler(void)
 	}
 	
   /* Handle Resume Interrupt */
+#ifndef STM32U5
 	if (status & USB_OTG_GINTSTS_WKUINT)
+#else
+	if (status & USB_OTG_GINTSTS_WKUPINT)
+#endif
 	{
 		/* Clear the Remote Wake-up Signaling */
 		USBx_DEVICE->DCTL &= ~USB_OTG_DCTL_RWUSIG;
 
     USBHandle.Callbacks->Resume_Callback();
 
+#ifndef STM32U5
     USBHandle.Instance->GINTSTS = USB_OTG_GINTSTS_WKUINT;
+#else
+    USBHandle.Instance->GINTSTS = USB_OTG_GINTSTS_WKUPINT;
+#endif
 	}
 
   /* Handle Suspend Interrupt */
@@ -207,9 +219,17 @@ static void OEPINTHandler(void)
         CLEAR_OUT_EP_INTR(epnum, USB_OTG_DOEPINT_OTEPDIS);
       }
       // Clear Status Phase Received interrupt
-      if(( epint & USB_OTG_DOEPINT_OTEPSPR) == USB_OTG_DOEPINT_OTEPSPR)
+#ifndef STM32U5
+    	if(( epint & USB_OTG_DOEPINT_OTEPSPR) == USB_OTG_DOEPINT_OTEPSPR)
+#else
+    	if(( epint & USB_OTG_DOEPINT_STSPHSRX) == USB_OTG_DOEPINT_STSPHSRX)
+#endif
       {
+#ifndef STM32U5
         CLEAR_OUT_EP_INTR(epnum, USB_OTG_DOEPINT_OTEPSPR);
+#else
+        CLEAR_OUT_EP_INTR(epnum, USB_OTG_DOEPINT_STSPHSRX);
+#endif
       }
     }
     epnum++;
@@ -304,7 +324,11 @@ static void USBRSTHandler(void)
   }
   else
   {
-    USBx_DEVICE->DOEPMSK |= (USB_OTG_DOEPMSK_STUPM | USB_OTG_DOEPMSK_XFRCM | USB_OTG_DOEPMSK_EPDM | USB_OTG_DOEPMSK_OTEPSPRM);
+#ifndef STM32U5
+  	USBx_DEVICE->DOEPMSK |= (USB_OTG_DOEPMSK_STUPM | USB_OTG_DOEPMSK_XFRCM | USB_OTG_DOEPMSK_EPDM | USB_OTG_DOEPMSK_OTEPSPRM);
+#else
+  	USBx_DEVICE->DOEPMSK |= (USB_OTG_DOEPMSK_STUPM | USB_OTG_DOEPMSK_XFRCM | USB_OTG_DOEPMSK_EPDM | USB_OTG_DOEPMSK_STSPHSRXM);
+#endif
     USBx_DEVICE->DIEPMSK |= (USB_OTG_DIEPMSK_TOM | USB_OTG_DIEPMSK_XFRCM | USB_OTG_DIEPMSK_EPDM);
   }
 
