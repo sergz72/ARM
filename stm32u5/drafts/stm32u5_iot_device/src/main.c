@@ -9,14 +9,30 @@
 
 static bool led_state;
 static char command_line[200];
+Queue usb_q;
+static unsigned char usb_queue_buffer[SERIAL_QUEUE_SIZE];
+
+static int getch_(void)
+{
+  __disable_irq();
+  unsigned char *v = queue_peek(&usb_q);
+  if (v)
+  {
+    queue_pop(&usb_q);
+    __enable_irq();
+    return *v;
+  }
+  __enable_irq();
+  return EOF;
+}
 
 static void led_toggle(void)
 {
   led_state = !led_state;
   if (led_state)
-    LED_GREEN_ON;
+    LED_ON;
   else
-    LED_GREEN_OFF;
+    LED_OFF;
 }
 
 int main(void)
@@ -26,14 +42,16 @@ int main(void)
 
   led_state = false;
 
-  shell_init(common_printf, nullptr);
+  USBStart();
+
+  queue_init(&usb_q, SERIAL_QUEUE_SIZE, 1, (char*)usb_queue_buffer);
+
+  shell_init(usb_printf, nullptr);
   register_cc1101_commands();
   register_scd41_commands();
   register_date_commands();
 
   getstring_init(command_line, sizeof(command_line), getch_, puts_);
-
-  usart_start();
 
   while (1)
   {
@@ -64,7 +82,7 @@ int main(void)
         else if (rc < 0)
           puts_("Invalid command line\r\n$ ");
         else
-          common_printf("shell_execute returned %d\n$ ", rc);
+          usb_printf("shell_execute returned %d\n$ ", rc);
         break;
       }
     }

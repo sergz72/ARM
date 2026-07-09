@@ -3,18 +3,20 @@
 #include <rtc.h>
 #include <spi_soft.h>
 #include <i2c_soft.h>
-#include <usart.h>
+#include <spi.h>
+#include <i2c.h>
 #include <nvic.h>
 #include <stdio.h>
 #include <cc1101.h>
 #include <scd4x.h>
+#include <usb.h>
 
 const RCCConfig rcc_config =
 {
-  .hse_frequency = 8000000,
-  .hsebypass = 1,
+  .hse_frequency = 25000000,
+  .hsebypass = 0,
   .pll = {
-    {.m = 1, .p_frequency = 0, .q_frequency = 0, .r_frequency = 0},
+    {.m = 5, .p_frequency = 0, .q_frequency = 48000000, .r_frequency = 48000000},
     {.m = 1, .p_frequency = 0, .q_frequency = 0, .r_frequency = 0},
     {.m = 1, .p_frequency = 0, .q_frequency = 0, .r_frequency = 0},
   },
@@ -23,7 +25,7 @@ const RCCConfig rcc_config =
   .ppre2 = 1,
   .ppre3 = 1,
   .dpre = 1,
-  .main_clock_source = 0, // MSIS
+  .main_clock_source = RCC_CFGR1_SW_0 | RCC_CFGR1_SW_1, // PLL1P
   .ahb1dis = false,
   .ahb2dis1 = false,
   .ahb2dis2 = false,
@@ -40,41 +42,74 @@ const RCCConfig rcc_config =
   .vdd11usbdis = false
 };
 
-static char usart_buffer[USART_BUFFER_SIZE];
-static char *usart_buffer_write_p, *usart_buffer_read_p;
-
-void LPUART1_IRQHandler(void)
-{
-  while (LPUART1->ISR & USART_ISR_RXNE_RXFNE)
-  {
-    unsigned char c = LPUART1->RDR;
-    *usart_buffer_write_p++ = c;
-    if (usart_buffer_write_p == usart_buffer + USART_BUFFER_SIZE)
-      usart_buffer_write_p = usart_buffer;
-  }
-}
+static const SPI_InitStruct spi_init = {
+  .fifo_threshold = 0,
+  .io_swap = 0,
+  .alternate_function_gpio_control = 0,
+  .comm_mode = SPI_COMM_MODE_FULLDUPLEX,
+  .master = 1,
+  .clock_phase = 0,
+  .clock_polarity = 0,
+  .data_size = 8,
+  .dxp_interrupt_enable = 0,
+  .rxp_interrupt_enable = 0,
+  .txp_interrupt_enable = 0,
+  .eot_interrupt_enable = 0,
+  .txtf_interrupt_enable = 0,
+  .lsb_first = 0,
+  .ss_output_enable = 1,
+  .ti_mode = 0,
+  .tx_dma_enable = 0,
+  .rx_dma_enable = 0,
+  .software_slave_management = 0,
+  .internal_slave_select = 1,
+  .baud_rate = 100000,
+  .spi_clock = 48000000
+};
 
 static void GPIOInit(void)
 {
   GPIO_InitTypeDef init;
 
-  RCC->AHB2ENR1 |= RCC_AHB2ENR1_GPIOCEN | RCC_AHB2ENR1_GPIOBEN | RCC_AHB2ENR1_GPIOGEN;
+  RCC->AHB2ENR1 |= RCC_AHB2ENR1_GPIOCEN;
 
-  PWR->SVMCR |= PWR_SVMCR_IO2SV; // enable portg[15:2]
-
-  LED_GREEN_OFF;
-  init.Pin = GPIO_Pin_7;
+  LED_OFF;
+  init.Pin = GPIO_Pin_13;
   init.Mode = GPIO_MODE_OUTPUT_PP;
   init.Speed = GPIO_SPEED_FREQ_LOW;
   init.Pull = GPIO_NOPULL;
   GPIO_Init(GPIOC, &init);
-  LED_BLUE_OFF;
-  GPIO_Init(GPIOB, &init);
-  LED_RED_OFF;
-  init.Pin = GPIO_Pin_2;
-  GPIO_Init(GPIOG, &init);
 }
 
+#ifndef SPI_SOFT
+static void SPIInit(void)
+{
+  GPIO_InitTypeDef init;
+
+  SPI_PORT_ENABLE;
+  SPI_ENABLE;
+
+  init.Pin = SPI_SCK_PIN;
+  init.Mode = GPIO_MODE_AF_PP;
+  init.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+  init.Pull = GPIO_NOPULL;
+  init.Alternate = SPI_AF;
+  GPIO_Init(SPI_SCK_PORT, &init);
+
+  init.Pin = SPI_MOSI_PIN;
+  GPIO_Init(SPI_MOSI_PORT, &init);
+
+  init.Pin = CC1101_CS_PIN;
+  GPIO_Init(CC1101_CS_PORT, &init);
+
+  init.Pin = SPI_MISO_PIN;
+  init.Pull = GPIO_PULLUP; // should be pulldown
+  GPIO_Init(SPI_MISO_PORT, &init);
+
+  SPI_Init(SPI_INST, &spi_init);
+  SPI_Enable(SPI_INST);
+}
+#else
 static void SPIInit(void)
 {
   GPIO_InitTypeDef init;
@@ -97,7 +132,30 @@ static void SPIInit(void)
   init.Pull = GPIO_PULLDOWN;
   GPIO_Init(SPI_MISO_PORT, &init);
 }
+#endif
 
+#ifndef I2C_SOFT
+static void I2CInit(void)
+{
+  GPIO_InitTypeDef init;
+
+  I2C_PORT_ENABLE;
+  I2C_ENABLE;
+
+  init.Pin = SCL_PIN;
+  init.Mode = GPIO_MODE_AF_OD;
+  init.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+  init.Pull = GPIO_PULLUP;
+  init.Alternate = I2C_AF;
+  GPIO_Init(SCL_PORT, &init);
+
+  init.Pin = SDA_PIN;
+  GPIO_Init(SDA_PORT, &init);
+
+  I2C_Master_Init(I2C_INST, I2C_TIMINGS); // calculated by stm32cubemx
+  I2C_Enable(I2C_INST);
+}
+#else
 static void I2CInit(void)
 {
   GPIO_InitTypeDef init;
@@ -115,34 +173,13 @@ static void I2CInit(void)
   init.Pin = SDA_PIN;
   GPIO_Init(SDA_PORT, &init);
 }
-
-static void LPUARTInit(void)
-{
-  GPIO_InitTypeDef init;
-
-  RCC->CCIPR3 = 4; // MSIK as clock
-
-  RCC->APB3ENR |= RCC_APB3ENR_LPUART1EN;
-
-  // Configure RX TX Pins
-  init.Pin = GPIO_Pin_7 | GPIO_Pin_8;
-  init.Mode = GPIO_MODE_AF_PP;
-  init.Pull = GPIO_NOPULL;
-  init.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
-  init.Alternate = GPIO_AF8_LPUART1;
-  GPIO_Init(GPIOG, &init);
-
-  LPUART1->BRR = 0x1A0AA; // 9600 baud, 4MHz clock
-  LPUART1->CR1 = USART_CR1_RE | USART_CR1_UESM | USART_CR1_TE | USART_CR1_RXNEIE_RXFNEIE | USART_CR1_FIFOEN;
-
-  LPUART1->ICR = 0x2025F;
-
-  NVIC_Init(LPUART1_IRQn, 1, 3, ENABLE);
-}
+#endif
 
 void CC1101Init(void)
 {
   GPIO_InitTypeDef init;
+
+  CC1101_PORT_ENABLE;
 
   init.Pin = CC1101_GD0_PIN;
   init.Mode = GPIO_MODE_INPUT;
@@ -154,34 +191,16 @@ void CC1101Init(void)
   init.Pull = GPIO_PULLDOWN; // should be pullup
   GPIO_Init(CC1101_GD2_PORT, &init);
 
+#ifdef SPI_SOFT
   cc1101_CSN_SET(0);
   init.Pin = CC1101_CS_PIN;
   init.Mode = GPIO_MODE_OUTPUT_PP;
   init.Pull = GPIO_NOPULL;
   GPIO_Init(CC1101_CS_PORT, &init);
+#endif
 }
 
-/*static void InitMSIK(void)
-{
-  RCC->CR &= ~RCC_CR_MSIKON;
-  RCC->ICSCR1 &= ~RCC_ICSCR1_MSIKRANGE; // Clear current range bits
-
-  unsigned int temp = RCC->CR;
-  // Set MSIPLLSEL to 0 (Select MSIK as the primary target for LSE)
-  temp &= ~RCC_CR_MSIPLLSEL;
-  // Turn on the hardware auto-calibration PLL-mode
-  RCC->CR = temp | RCC_CR_MSIPLLEN;
-
-  RCC->CR |= RCC_CR_MSIKON;
-
-  // Wait for the MSIS clock branch to become stable and ready
-  while (!(RCC->CR & RCC_CR_MSIKRDY))
-    ;
-  while (!(RCC->CR & RCC_CR_MSIPLLEN))
-    ;
-}*/
-
-/*static void USBInit(void)
+static void USB_Init(void)
 {
   GPIO_InitTypeDef init;
 
@@ -200,7 +219,8 @@ void CC1101Init(void)
   RCC->CCIPR1 |= RCC_CCIPR1_ICLKSEL_1; // pll1_q as usb clock
   // Enable USB FS Clock
   RCC->AHB2ENR1 |= RCC_AHB2ENR1_OTGEN;
-}*/
+  NVIC_Init(OTG_FS_IRQn, 7, 0, ENABLE);
+}
 
 void SystemInit(void)
 {
@@ -216,8 +236,7 @@ void SystemInit(void)
   RTCInit(RCC_BDCR_LSEDRV_1 | RCC_BDCR_LSEDRV_0);
   SPIInit();
   I2CInit();
-  LPUARTInit();
-  //USBInit();
+  USB_Init();
   CC1101Init();
 }
 
@@ -226,34 +245,9 @@ void _init(void)
 
 }
 
-void puts_(const char *s)
+void OTG_FS_IRQHandler(void)
 {
-  for (;;)
-  {
-    char c = *s++;
-    if (!c)
-      return;
-    usart_send_char(LPUART1, c);
-  }
-}
-
-int getch_(void)
-{
-  if (usart_buffer_write_p != usart_buffer_read_p)
-  {
-    char c = *usart_buffer_read_p++;
-    if (usart_buffer_read_p == usart_buffer + USART_BUFFER_SIZE)
-      usart_buffer_read_p = usart_buffer;
-    return c;
-  }
-  return EOF;
-}
-
-void usart_start(void)
-{
-  usart_buffer_write_p = usart_buffer_read_p = usart_buffer;
-
-  LPUART1->CR1 |= USART_CR1_UE;
+  USBInterruptHandler();
 }
 
 int cc1101_RW(unsigned int device_num, unsigned char *txdata, unsigned char *rxdata, unsigned int size)
@@ -274,11 +268,19 @@ int cc1101_RW(unsigned int device_num, unsigned char *txdata, unsigned char *rxd
 
   cc1101_CSN_CLR(device_num);
 
+#ifdef SPI_SOFT
   spi_transfer(0, txdata, rxdata, (int)size, 1);
+#else
+  rc = SPI_TransmitReceive(SPI_INST, txdata, rxdata, size, SPI_TIMEOUT);
+#endif
 
   cc1101_CSN_SET(device_num);
 
+#ifdef SPI_SOFT
   return 0;
+#else
+  return rc;
+#endif
 }
 
 int cc1101_strobe(unsigned int device_num, unsigned char data, unsigned char *status)
@@ -293,24 +295,47 @@ int cc1101_strobe(unsigned int device_num, unsigned char data, unsigned char *st
 
   cc1101_CSN_CLR(device_num);
 
+#ifdef SPI_SOFT
   spi_transfer(0, &data, status, 1, 1);
+#else
+  rc = SPI_TransmitReceive(SPI_INST, &data, status, 1, SPI_TIMEOUT);
+#endif
 
   cc1101_CSN_SET(device_num);
 
+#ifdef SPI_SOFT
   return 0;
+#else
+  return rc;
+#endif
 }
 
 int scd4x_write(const unsigned char *data, unsigned int len, bool no_ack_expected)
 {
+#ifdef I2C_SOFT
   return i2c_soft_write(0, SCD4X_SENSOR_ADDR << 1, data, len, no_ack_expected, I2C_TIMEOUT);
+#else
+  return I2C_Write(I2C_INST, SCD4X_SENSOR_ADDR << 1, data, len, I2C_TIMEOUT, true);
+#endif
 }
 
 int scd4x_read(unsigned char *data, unsigned int len)
 {
+#ifdef I2C_SOFT
   return i2c_soft_read(0, SCD4X_SENSOR_ADDR << 1, data, len, I2C_TIMEOUT);
+#else
+  return I2C_Read(I2C_INST, data, len, I2C_TIMEOUT);
+#endif
 }
 
 int scd4x_command(const unsigned char *wdata, unsigned int wlen, unsigned char *rdata, unsigned int rlen)
 {
+#ifdef I2C_SOFT
   return i2c_soft_command(0, SCD4X_SENSOR_ADDR << 1, nullptr, 0, wdata, wlen, rdata, rlen, I2C_TIMEOUT);
+#else
+  const int rc = I2C_Write(I2C_INST, SCD4X_SENSOR_ADDR << 1, wdata, wlen, I2C_TIMEOUT, false);
+  if (rc)
+    return rc;
+  return I2C_Read(I2C_INST, rdata, rlen, I2C_TIMEOUT);
+#endif
 }

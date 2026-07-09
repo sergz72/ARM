@@ -12,9 +12,9 @@ SET(CMAKE_CXX_COMPILER_WORKS 1)
 SET(CMAKE_VERBOSE_MAKEFILE ON)
 
 if (CLANG)
-    SET(LINKER_SCRIPT ../../STM32U575xx_FLASH_clang.ld)
+    SET(LINKER_SCRIPT ../../STM32U585xx_FLASH_clang.ld)
 else()
-    SET(LINKER_SCRIPT ../../STM32U575xx_FLASH.ld)
+    SET(LINKER_SCRIPT ../../STM32U585xx_FLASH.ld)
 endif()
 
 SET(FPU_FLAGS "-mfloat-abi=hard -mfpu=fpv4-sp-d16")
@@ -26,7 +26,7 @@ if (CLANG)
     SET(COMMON_FLAGS "${COMMON_FLAGS} --target=arm-none-eabi")
 endif()
 
-add_definitions(-D__weak=__attribute__\(\(weak\)\) -D__packed=__attribute__\(\(__packed__\)\) -DSTM32U575xx)
+add_definitions(-D__weak=__attribute__\(\(weak\)\) -D__packed=__attribute__\(\(__packed__\)\) -DSTM32U585xx)
 
 SET(CMAKE_C_FLAGS_INIT "${COMMON_FLAGS}")
 SET(CMAKE_CXX_FLAGS_INIT "${COMMON_FLAGS}")
@@ -44,46 +44,46 @@ project(stm32u5_iot_device C CXX ASM)
 
 file(GLOB SOURCES
         "src/main.c"
-#        "src/main.cpp"
         "src/hal.c"
+        "src/usb_func.c"
         "src/scd41_commands.c"
         "src/date_commands.c"
-        "../startup_stm32u575xx.s"
+        "../startup_stm32u585xx.s"
         "../stm32u5lib/rcc.c"
         "../stm32u5lib/rtc.c"
-        "../stm32u5lib/usart.c"
+        "../stm32u5lib/spi.c"
+        "../stm32u5lib/i2c.c"
         "../stm32u5lib/nvic.c"
         "../stm32u5lib/systick.c"
         "../stm32u5lib/gpio.c"
         "../../../common_lib/delay_systick.c"
-        "../../../common_lib/spi_soft.c"
-        "../../../common_lib/i2c_soft.c"
+#        "../../../common_lib/spi_soft.c"
+#        "../../../common_lib/i2c_soft.c"
         "../../../common_lib/rtc/rtc_func.c"
-#        "../../../usblib/usb_device.cpp"
-#        "../../../usblib/usb_device_stm32f.cpp"
-#        "../../../usblib/cdc_class.cpp"
         "../../../common_lib/shell/shell.c"
         "../../../common_lib/getstring.c"
         "../../../common_lib/fixed_queue.c"
-        "../../../common_lib/common_printf.c"
         "../../../common_lib/read_hex_string.c"
-        "../../../common_lib/myprintf.c"
         "../../../common_lib/rf/cc1101/cc1101.c"
         "../../../common_lib/rf/cc1101/cc1101_func.c"
         "../../../common_lib/rf/cc1101/cc1101_commands.c"
         "../../../common_lib/sensor/scd4x.c"
         "../../../common_lib/crc8.c"
+        "../../stm32usblib/*.c"
+        "../../stm32usblib/class/cdc/*.c"
 )
 
 if (CLANG)
     include_directories(src ../cmsis ../cmsis/device ../stm32u5lib ../../../common_lib ../../../common_lib/shell
             ../../../common_lib/rf/cc1101 ../../../common_lib/sensor ../../../common_lib/rtc
+            ../../stm32usblib ../../stm32usblib/class/cdc
             /opt/arm/arm-none-eabi/include/c++/15.3.1 /opt/arm/arm-none-eabi/include
             /opt/arm/arm-none-eabi/include/c++/15.3.1/arm-none-eabi
     )
 else()
 include_directories(src ../cmsis ../cmsis/device ../stm32u5lib ../../../common_lib ../../../common_lib/shell
         ../../../common_lib/rf/cc1101 ../../../common_lib/sensor ../../../common_lib/rtc
+        ../../stm32usblib ../../stm32usblib/class/cdc
     )
 endif()
 
