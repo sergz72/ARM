@@ -19,7 +19,6 @@
 #define USBx_DFIFO(i)   *(__IO unsigned int*)((unsigned int)USBHandle.Instance + USB_OTG_FIFO_BASE + (i) * USB_OTG_FIFO_SIZE)
 
 static void USB_EnableGlobalInt(void);
-static void USB_DisableGlobalInt(void);
 static void USB_CoreInit(void);
 static void USB_DevInit(void);
 static void USB_DevConnect(void);
@@ -197,7 +196,7 @@ static void USB_EnableGlobalInt(void)
   * @brief  USB_DisableGlobalInt
   *         Disable the controller's Global Int in the AHB Config reg
 */
-static void USB_DisableGlobalInt(void)
+void USB_DisableGlobalInt(void)
 {
 #ifndef STM32U5
   USBHandle.Instance->GAHBCFG &= ~USB_OTG_GAHBCFG_GINT;

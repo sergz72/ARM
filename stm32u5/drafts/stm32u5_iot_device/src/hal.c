@@ -2,7 +2,6 @@
 #include <rcc.h>
 #include <rtc.h>
 #include <spi_soft.h>
-#include <i2c_soft.h>
 #include <spi.h>
 #include <i2c.h>
 #include <nvic.h>
@@ -10,13 +9,14 @@
 #include <cc1101.h>
 #include <scd4x.h>
 #include <usb.h>
+#include <adc.h>
 
 const RCCConfig rcc_config =
 {
   .hse_frequency = 25000000,
   .hsebypass = 0,
   .pll = {
-    {.m = 5, .p_frequency = 0, .q_frequency = 48000000, .r_frequency = 48000000},
+    {.m = 5, .p_frequency = 0, .q_frequency = 48000000, .r_frequency = 30000000},
     {.m = 1, .p_frequency = 0, .q_frequency = 0, .r_frequency = 0},
     {.m = 1, .p_frequency = 0, .q_frequency = 0, .r_frequency = 0},
   },
@@ -42,6 +42,7 @@ const RCCConfig rcc_config =
   .vdd11usbdis = false
 };
 
+#ifndef SPI_SOFT
 static const SPI_InitStruct spi_init = {
   .fifo_threshold = 0,
   .io_swap = 0,
@@ -66,6 +67,7 @@ static const SPI_InitStruct spi_init = {
   .baud_rate = 100000,
   .spi_clock = 48000000
 };
+#endif
 
 static void GPIOInit(void)
 {
@@ -85,6 +87,8 @@ static void GPIOInit(void)
 static void SPIInit(void)
 {
   GPIO_InitTypeDef init;
+
+  SPI_CLOCK_SELECT;
 
   SPI_PORT_ENABLE;
   SPI_ENABLE;
@@ -129,7 +133,7 @@ static void SPIInit(void)
 
   init.Pin = SPI_MISO_PIN;
   init.Mode = GPIO_MODE_INPUT;
-  init.Pull = GPIO_PULLDOWN;
+  init.Pull = GPIO_PULLUP; // should be pulldown
   GPIO_Init(SPI_MISO_PORT, &init);
 }
 #endif
@@ -137,6 +141,8 @@ static void SPIInit(void)
 static void I2CInit(void)
 {
   GPIO_InitTypeDef init;
+
+  I2C_CLOCK_SELECT;
 
   I2C_PORT_ENABLE;
   I2C_ENABLE;
@@ -180,44 +186,97 @@ void CC1101Init(void)
 #endif
 }
 
-static void USB_Init(void)
+void USB_BaseInit(void)
 {
   GPIO_InitTypeDef init;
 
   RCC->AHB2ENR1 |= RCC_AHB2ENR1_GPIOAEN;
 
   // Configure DM DP Pins
-  init.Pin = (GPIO_Pin_11 | GPIO_Pin_12);
+  init.Pin = GPIO_Pin_11 | GPIO_Pin_12;
   init.Mode = GPIO_MODE_AF_PP;
   init.Pull = GPIO_NOPULL;
   init.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
   init.Alternate = GPIO_AF10_OTG_FS;
   GPIO_Init(GPIOA, &init);
 
+  RCC->CCIPR1 |= RCC_CCIPR1_ICLKSEL_1; // pll1_q as usb clock
+}
+
+void USB_Init(void)
+{
+  RCC->CR |= RCC_CR_HSEON;
+  while (!(RCC->CR & RCC_CR_HSERDY))
+    ;
+  /* Enable the main PLL */
+  RCC->CR |= RCC_CR_PLL1ON;
+  /* Wait till the main PLL is ready */
+  while((RCC->CR & RCC_CR_PLL1RDY) == 0)
+    ;
+
+  RCC->CFGR1 |= RCC_CFGR1_SW; // PLL1P as clock source
+  /* Wait till the main PLL is used as system clock source */
+  while ((RCC->CFGR1 & RCC_CFGR1_SWS) != RCC_CFGR1_SWS)
+    ;
+
   PWR->SVMCR |= PWR_SVMCR_USV;
 
-  RCC->CCIPR1 |= RCC_CCIPR1_ICLKSEL_1; // pll1_q as usb clock
   // Enable USB FS Clock
   RCC->AHB2ENR1 |= RCC_AHB2ENR1_OTGEN;
   NVIC_Init(OTG_FS_IRQn, 7, 0, ENABLE);
 }
 
+void USB_Deinit(void)
+{
+  NVIC_Init(OTG_FS_IRQn, 7, 0, DISABLE);
+  RCC->AHB2ENR1 &= ~RCC_AHB2ENR1_OTGEN;
+  PWR->SVMCR &= ~PWR_SVMCR_USV;
+
+  RCC->CFGR1 &= ~RCC_CFGR1_SW; // msis as clock source
+  /* Wait till the main PLL is used as system clock source */
+  while ((RCC->CFGR1 & RCC_CFGR1_SWS) != 0)
+    ;
+
+  RCC->CR &= ~RCC_CR_PLL1ON;
+  RCC->CR &= ~RCC_CR_HSEON;
+}
+
+static void ADCInit(void)
+{
+  GPIO_InitTypeDef init;
+
+  // Configure VBUS pin
+  init.Pin = GPIO_Pin_7;
+  init.Mode = GPIO_MODE_ANALOG;
+  init.Pull = GPIO_NOPULL;
+  init.Speed = GPIO_SPEED_FREQ_LOW;
+  GPIO_Init(GPIOA, &init);
+
+  RCC->CCIPR3 |= RCC_CCIPR3_ADCDACSEL_2 | RCC_CCIPR3_ADCDACSEL_0; //MSIK as ADC clock
+  RCC->AHB3ENR |= RCC_AHB3ENR_ADC4EN;
+  ADC_Init(ADC4, ADC4_COMMON, 1, 1);
+  ADC_Enable(ADC4);
+}
+
 void SystemInit(void)
 {
+  GPIOInit();
+
   if (InitRCC(&rcc_config))
   {
+    LED_ON;
     while (1)
-      ;
+      __WFI();
   }
 
-  //InitMSIK();
+  USB_BaseInit();
+  USB_Deinit();
 
-  GPIOInit();
   RTCInit(RCC_BDCR_LSEDRV_1 | RCC_BDCR_LSEDRV_0);
   SPIInit();
   I2CInit();
-  USB_Init();
   CC1101Init();
+  ADCInit();
 }
 
 void _init(void)
@@ -295,9 +354,20 @@ int scd4x_write(const unsigned char *data, unsigned int len, bool no_ack_expecte
   int rc = I2C_Write(I2C_INST, SCD4X_SENSOR_ADDR << 1, data, len, I2C_TIMEOUT, true);
   if (rc == 5)
     return I2C_Write(I2C_INST, SCD4X_SENSOR_ADDR << 1, data, len, I2C_TIMEOUT, true);
+  return rc;
 }
 
 int scd4x_read(unsigned char *data, unsigned int len)
 {
   return I2C_Read(I2C_INST, data, len, I2C_TIMEOUT);
+}
+
+unsigned int adc_getvbus(void)
+{
+  return ADC_GetValue(ADC4, 20, ADC_SampleTime_160_5Cycles);
+}
+
+unsigned int adc_getvbat(void)
+{
+  return ADC_GetValue(ADC4, 14, ADC_SampleTime_160_5Cycles);
 }

@@ -24,30 +24,35 @@ static void RTCInitLeave(void)
 
 void RTCInit(unsigned int lsedrv)
 {
-  // Disable Backup Domain write protection
-  PWR->DBPR = PWR_DBPR_DBP;
-
-  // Enable LSE and wait for it to be ready
-  RCC->BDCR |= RCC_BDCR_LSEON | lsedrv;
-  while (!(RCC->BDCR & RCC_BDCR_LSERDY))
-    ;
-
-  // Select LSE as the RTC clock source (01: LSE oscillator clock used as RTC clock)
-  RCC->BDCR |= RCC_BDCR_RTCSEL_0;
-
-  // Enable the RTC peripheral clock
-  RCC->BDCR |= RCC_BDCR_RTCEN;
   RCC->APB3ENR |= RCC_APB3ENR_RTCAPBEN;
   RCC->SRDAMR |= RCC_SRDAMR_RTCAPBAMEN;
+  if (TAMP->BKP0R != 0x44883399)
+  {
+    TAMP->BKP0R = 0x44883399;
 
-  RTCInitEnter();
+    // Disable Backup Domain write protection
+    PWR->DBPR = PWR_DBPR_DBP;
 
-  // Set BCD Only Mode (BIN = 00)
+    // Enable LSE and wait for it to be ready
+    RCC->BDCR |= RCC_BDCR_LSEON | lsedrv;
+    while (!(RCC->BDCR & RCC_BDCR_LSERDY))
+      ;
 
-  // Set Prescalers (e.g., LSE at 32.768kHz, PREDIV_S=256, PREVDIV_A = 128 for 1Hz)
-  RTC->PRER = 0x007F00FF;
+    // Select LSE as the RTC clock source (01: LSE oscillator clock used as RTC clock)
+    RCC->BDCR |= RCC_BDCR_RTCSEL_0;
 
-  RTCInitLeave();
+    // Enable the RTC peripheral clock
+    RCC->BDCR |= RCC_BDCR_RTCEN;
+
+    RTCInitEnter();
+
+    // Set BCD Only Mode (BIN = 00)
+
+    // Set Prescalers (e.g., LSE at 32.768kHz, PREDIV_S=256, PREVDIV_A = 128 for 1Hz)
+    RTC->PRER = 0x007F00FF;
+
+    RTCInitLeave();
+  }
 }
 
 void RTC_WakeUpConfig(unsigned int seconds)

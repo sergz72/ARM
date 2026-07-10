@@ -287,6 +287,7 @@ unsigned int USB_EP_GetRxCount(unsigned int num);
 void USB_FIFO_Init(void);
 void USB_SetRxFiFo(unsigned int size);
 void USB_SetTxFiFo(unsigned int fifo, unsigned int size);
+void USB_DisableGlobalInt(void);
 
 void USB_Default_ResetCallback(void);
 void USB_Default_ConnectCallback(void);

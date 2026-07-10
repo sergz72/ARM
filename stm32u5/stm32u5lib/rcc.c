@@ -70,7 +70,7 @@ int InitPLL(unsigned int hse_frequency, const PLLConfig *config, unsigned int pl
         pllq = pll_frequency / config->q_frequency;
       if (config->p_frequency)
         pllp = pll_frequency / config->p_frequency;
-      if (pllr != 3)
+      if (pll_no != 0 || pllr == 1 || (pllr & 1) == 0)
         break;
     }
     pll_frequency += refclk;
@@ -82,8 +82,7 @@ int InitPLL(unsigned int hse_frequency, const PLLConfig *config, unsigned int pl
   unsigned int pll_input_frequency_range = refclk < 8000000 ? 0 : 0x0C;
 
   /* Configure the main PLL */
-  unsigned int temp = RCC_PLL1CFGR_PLL1PEN |
-                  ((config->m - 1) << 8) |
+  unsigned int temp = ((config->m - 1) << 8) |
                   pll_input_frequency_range |
                   (RCC_PLL1CFGR_PLL1SRC_0 | RCC_PLL1CFGR_PLL1SRC_1); // HSE is the PLL source
   if (config->p_frequency)
@@ -272,7 +271,7 @@ int InitRCC(const RCCConfig *config)
       return 4;
   }
 
-  if (config->main_clock_source >= 2)
+  if (config->hse_frequency)
   {
     if (config->hsebypass)
       RCC->CR |= RCC_CR_HSEBYP | RCC_CR_HSEEXT;
@@ -314,7 +313,8 @@ int InitRCC(const RCCConfig *config)
   // Voltage range 2 for 55 MHz < fHCLK ≤ 110 MHz
   // Voltage range 3 for 25 MHz < fHCLK ≤ 55 MHz
   // Voltage range 4 for fHCLK ≤ 25 MHz
-  if (hclk_frequency > 25000000)
+  bool any_pll_active = is_pll_active(&config->pll[0]) | is_pll_active(&config->pll[1]) | is_pll_active(&config->pll[2]);
+  if (hclk_frequency > 25000000 || any_pll_active)
   {
     if (hclk_frequency <= 55000000)
     {

@@ -2,10 +2,10 @@
 #include <shell.h>
 #include <getstring.h>
 #include <stdio.h>
-#include <common_printf.h>
 #include <cc1101_commands.h>
 #include "scd41_commands.h"
 #include "date_commands.h"
+#include <usb.h>
 
 static bool led_state;
 static char command_line[200];
@@ -39,10 +39,9 @@ int main(void)
 {
   int rc;
   int led_counter = 0;
+  bool vbus_present = false;
 
   led_state = false;
-
-  USBStart();
 
   queue_init(&usb_q, SERIAL_QUEUE_SIZE, 1, (char*)usb_queue_buffer);
 
@@ -56,6 +55,21 @@ int main(void)
   while (1)
   {
     delayms(100);
+    if (adc_getvbus() >= VBUS_MIN)
+    {
+      if (!vbus_present)
+      {
+        vbus_present = true;
+        USB_Init();
+        USBStart();
+      }
+    }
+    else if (vbus_present)
+    {
+      vbus_present = false;
+      USB_DisableGlobalInt();
+      USB_Deinit();
+    }
     if (led_counter == 9)
     {
       led_counter = 0;
