@@ -6,6 +6,7 @@
 #include "scd41_commands.h"
 #include "date_commands.h"
 #include <usb.h>
+#include <adc.h>
 
 static bool led_state;
 static char command_line[200];
@@ -55,6 +56,8 @@ int main(void)
   while (1)
   {
     delayms(100);
+    ADC_Init(ADC4, ADC4_COMMON, 1, 1);
+    ADC_Enable(ADC4);
     if (adc_getvbus() >= VBUS_MIN)
     {
       if (!vbus_present)
@@ -70,6 +73,7 @@ int main(void)
       USB_DisableGlobalInt();
       USB_Deinit();
     }
+    ADC_Deinit(ADC4, ADC4_COMMON);
     if (led_counter == 9)
     {
       led_counter = 0;

@@ -245,6 +245,10 @@ static void ADCInit(void)
 {
   GPIO_InitTypeDef init;
 
+  PWR->SVMCR |= PWR_SVMCR_ASV;
+  while (!(PWR->SVMCR & PWR_SVMCR_ASV))
+    ;
+
   // Configure VBUS pin
   init.Pin = GPIO_Pin_7;
   init.Mode = GPIO_MODE_ANALOG;
@@ -254,8 +258,9 @@ static void ADCInit(void)
 
   RCC->CCIPR3 |= RCC_CCIPR3_ADCDACSEL_2 | RCC_CCIPR3_ADCDACSEL_0; //MSIK as ADC clock
   RCC->AHB3ENR |= RCC_AHB3ENR_ADC4EN;
-  ADC_Init(ADC4, ADC4_COMMON, 1, 1);
-  ADC_Enable(ADC4);
+  ADC_Init(ADC4, ADC4_COMMON, 0, 1);
+  ADC_Calibrate(ADC4);
+  ADC_Deinit(ADC4, ADC4_COMMON);
 }
 
 void SystemInit(void)
@@ -364,10 +369,10 @@ int scd4x_read(unsigned char *data, unsigned int len)
 
 unsigned int adc_getvbus(void)
 {
-  return ADC_GetValue(ADC4, 20, ADC_SampleTime_160_5Cycles);
+  return ADC_GetValue(ADC4, ADC_CHSELR_CHSEL20, ADC_SampleTime_79_5Cycles);
 }
 
 unsigned int adc_getvbat(void)
 {
-  return ADC_GetValue(ADC4, 14, ADC_SampleTime_160_5Cycles);
+  return ADC_GetValue(ADC4, ADC_CHSELR_CHSEL14, ADC_SampleTime_79_5Cycles);
 }
