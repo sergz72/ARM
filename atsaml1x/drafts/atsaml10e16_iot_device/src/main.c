@@ -5,7 +5,9 @@
 #include "scd41_commands.h"
 #include "ds1307_commands.h"
 #include "ds3231_commands.h"
+#include "pcf8563_commands.h"
 #include <common_printf.h>
+#include <usart.h>
 
 static bool led_timer_state;
 static char command_line[200];
@@ -32,6 +34,7 @@ int main(void)
   register_scd41_commands();
   register_ds1307_commands();
   register_ds3231_commands();
+  register_pcf8563_commands();
 
   getstring_init(command_line, sizeof(command_line), getch_, puts_);
 

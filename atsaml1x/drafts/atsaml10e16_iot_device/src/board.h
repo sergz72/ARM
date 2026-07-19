@@ -22,13 +22,21 @@
 #define USART_RXPO           SERCOM_USART_INT_CTRLA_RXPO(3)
 #define USART_TXPO           SERCOM_USART_INT_CTRLA_TXPO(1)
 
-#define I2C_SCL_PIN          17
-#define I2C_SDA_PIN          16
-#define I2C_REGS             SERCOM1_REGS
-#define I2C_BAUD             0x0F0F
-#define I2C_TIMEOUT          100000
+#define I2C_MASTER_SCL_PIN       17
+#define I2C_MASTER_SDA_PIN       16
+#define I2C_MASTER_REGS          SERCOM1_REGS
+#define I2C_MASTER_BAUD          0x1F1F
+#define I2C_MASTER_MB_Handler    SERCOM1_0_Handler
+#define I2C_MASTER_SB_Handler    SERCOM1_1_Handler
+#define I2C_MASTER_ERROR_Handler SERCOM1_OTHER_Handler
+#define I2C_MASTER_MB_IRQn       SERCOM1_0_IRQn
+#define I2C_MASTER_SB_IRQn       SERCOM1_1_IRQn
+#define I2C_MASTER_ERROR_IRQn    SERCOM1_OTHER_IRQn
 
-#define USART_INTERRUPT_PRIORITY 1
+#define USART_INTERRUPT_PRIORITY      1
+#define I2C_MASTER_INTERRUPT_PRIORITY 1
+#define SPI_MASTER_INTERRUPT_PRIORITY 1
+#define EIC_INTERRUPT_PRIORITY        0
 
 #define MAX_SHELL_COMMANDS 30
 #define MAX_SHELL_COMMAND_PARAMETERS 10
@@ -52,8 +60,6 @@
 #define CC1101_TXOFF_MODE CC1101_TXOFF_MODE_IDLE
 
 void SysInit(void);
-void usart_transmit(char c);
-int getch_(void);
 
 #include <delay_systick.h>
 
