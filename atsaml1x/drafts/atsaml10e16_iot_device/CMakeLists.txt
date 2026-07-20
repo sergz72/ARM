@@ -29,6 +29,7 @@ file(GLOB SOURCES
         "../atsaml1xlib/usart.c"
         "../atsaml1xlib/i2c.c"
         "../atsaml1xlib/spi.c"
+        "../atsaml1xlib/pwr.c"
         "../../../common_lib/delay_systick.c"
         "../../../common_lib/shell/shell.c"
         "../../../common_lib/getstring.c"

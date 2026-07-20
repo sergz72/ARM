@@ -8,6 +8,8 @@
 #include "pcf8563_commands.h"
 #include <common_printf.h>
 #include <usart.h>
+#include <pwr.h>
+#include <rtc_ds3231.h>
 
 static bool led_timer_state;
 static char command_line[200];
@@ -29,6 +31,13 @@ int main(void)
 
   SysInit();
 
+  if (ds3231_init(1))
+  {
+    LED_TIMER_ON;
+    while (1)
+      __WFI();
+  }
+
   shell_init(common_printf, nullptr);
   register_cc1101_commands();
   register_scd41_commands();
@@ -40,29 +49,36 @@ int main(void)
 
   while (1)
   {
-    delayms(250);
-    led_toggle();
-    if (!getstring_next())
+    enter_standby();
+    if (timer_interrupt)
     {
-      switch (command_line[0])
+      timer_interrupt = false;
+      led_toggle();
+    }
+    if (chars_received())
+    {
+      if (!getstring_next())
       {
-      case SHELL_UP_KEY:
-        puts_("\r\33[2K$ ");
-        getstring_buffer_init(shell_get_prev_from_history());
-        break;
-      case SHELL_DOWN_KEY:
-        puts_("\r\33[2K$ ");
-        getstring_buffer_init(shell_get_next_from_history());
-        break;
-      default:
-        rc = shell_execute(command_line);
-        if (rc == 0)
-          puts_("OK\r\n$ ");
-        else if (rc < 0)
-          puts_("Invalid command line\r\n$ ");
-        else
-          common_printf("shell_execute returned %d\n$ ", rc);
-        break;
+        switch (command_line[0])
+        {
+        case SHELL_UP_KEY:
+          puts_("\r\33[2K$ ");
+          getstring_buffer_init(shell_get_prev_from_history());
+          break;
+        case SHELL_DOWN_KEY:
+          puts_("\r\33[2K$ ");
+          getstring_buffer_init(shell_get_next_from_history());
+          break;
+        default:
+          rc = shell_execute(command_line);
+          if (rc == 0)
+            puts_("OK\r\n$ ");
+          else if (rc < 0)
+            puts_("Invalid command line\r\n$ ");
+          else
+            common_printf("shell_execute returned %d\n$ ", rc);
+          break;
+        }
       }
     }
   }

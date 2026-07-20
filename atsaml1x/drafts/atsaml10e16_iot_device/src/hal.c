@@ -8,6 +8,14 @@
 #include <i2c.h>
 #include <spi.h>
 
+volatile bool timer_interrupt;
+
+void __attribute__((used)) EIC_Handler(void)
+{
+  timer_interrupt = 1;
+  EIC_REGS->EIC_INTFLAG = 0xFF; // clear flags
+}
+
 /*
  * PA00(1) = LED
  */
@@ -31,12 +39,53 @@ static void clock_init(void)
   GCLK_REGS->GCLK_PCHCTRL[16] = GCLK_PCHCTRL_CHEN(1);
 }
 
+static void eic_rtc_init(void)
+{
+  // in with pullup
+  PORT_REGS->GROUP[0].PORT_OUTSET = 1 << EIC_RTC_PIN;
+  PORT_REGS->GROUP[0].PORT_PINCFG[EIC_RTC_PIN] = PORT_PINCFG_PMUXEN(1) | PORT_PINCFG_INEN(1) | PORT_PINCFG_PULLEN(1);
+  PORT_REGS->GROUP[0].PORT_PMUX[EIC_RTC_PIN/2] = PORT_PMUX_PMUXE_A; // EIC
+
+  /* Interrupt sense type and filter control for EXTINT channels 0 to 7 */
+  EIC_REGS->EIC_CONFIG = EIC_RTC_SENSE;
+
+  /* Event Control Output enable */
+  EIC_REGS->EIC_INTENSET = 1 << EIC_RTC_NUM;
+
+  /* Enable the EIC */
+  EIC_REGS->EIC_CTRLA = EIC_CTRLA_ENABLE(1);
+  while(EIC_REGS->EIC_SYNCBUSY & EIC_SYNCBUSY_ENABLE_Msk)
+  {
+    /* Wait for sync */
+  }
+
+  NVIC_SetPriority(EIC_RTC_IRQn, EIC_INTERRUPT_PRIORITY);
+  NVIC_EnableIRQ(EIC_RTC_IRQn);
+}
+
+static void cc1101_init(void)
+{
+  // in with pulldown
+  PORT_REGS->GROUP[0].PORT_PINCFG[cc1101_GD0_PIN] = PORT_PINCFG_PMUXEN(1) | PORT_PINCFG_INEN(1) | PORT_PINCFG_PULLEN(1);
+  // in with pullup
+  PORT_REGS->GROUP[0].PORT_OUTSET = 1 << cc1101_GD2_PIN;
+  PORT_REGS->GROUP[0].PORT_PINCFG[cc1101_GD2_PIN] = PORT_PINCFG_PMUXEN(1) | PORT_PINCFG_INEN(1) | PORT_PINCFG_PULLEN(1);
+
+  PORT_REGS->GROUP[0].PORT_PMUX[cc1101_GD0_PIN/2] = PORT_PMUX_PMUXE_A; // EIC
+}
+
 void SysInit(void)
 {
+  PM_REGS->PM_SLEEPCFG = PM_SLEEPCFG_SLEEPMODE_IDLE;
+  SUPC_REGS->SUPC_VREG = SUPC_VREG_ENABLE(1) | SUPC_VREG_STDBYPL0(1) | SUPC_VREG_SEL(1);// | SUPC_VREG_LPEFF(1);
+
   clock_init();
   ports_init();
   usart_init();
   i2c_master_init();
+  spi_master_init();
+  cc1101_init();
+  eic_rtc_init();
 }
 
 void _init(void)
@@ -64,7 +113,7 @@ int cc1101_RW(unsigned int device_num, unsigned char *txdata, unsigned char *rxd
   if (size > 2)
     txdata[0] |= CC1101_BURST;
 
-  //rc = SPI_TransmitReceive(SPI_INST, txdata, rxdata, size, SPI_TIMEOUT);
+  spi_master_transfer(txdata, rxdata, size);
 
   cc1101_CSN_SET(device_num);
 
@@ -86,7 +135,7 @@ int cc1101_strobe(unsigned int device_num, unsigned char data, unsigned char *st
     return 1; // timeout
   }
 
-  //rc = SPI_TransmitReceive(SPI_INST, &data, status, 1, SPI_TIMEOUT);
+  spi_master_transfer(&data, status, 1);
 
   cc1101_CSN_SET(device_num);
 

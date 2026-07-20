@@ -4,5 +4,6 @@
 void usart_init(void);
 void usart_transmit(char c);
 int getch_(void);
+bool chars_received(void);
 
 #endif

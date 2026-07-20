@@ -4,7 +4,7 @@
 #include <stdio.h>
 
 static char usart_buffer[USART_BUFFER_SIZE];
-static char *usart_buffer_write_p, *usart_buffer_read_p;
+volatile char *usart_buffer_write_p, *usart_buffer_read_p;
 
 void __attribute__((used)) USART_Handler(void)
 {
@@ -27,7 +27,7 @@ void usart_init(void)
 
   PORT_REGS->GROUP[0].PORT_PINCFG[USART_TX_PIN] = PORT_PINCFG_PMUXEN(1);
   PORT_REGS->GROUP[0].PORT_PINCFG[USART_RX_PIN] = PORT_PINCFG_PMUXEN(1) | PORT_PINCFG_INEN(1) | PORT_PINCFG_PULLEN(1);
-  PORT_REGS->GROUP[0].PORT_PMUX[USART_TX_PIN/2] = PORT_PMUX_PMUXE_C | PORT_PMUX_PMUXO_C;
+  PORT_REGS->GROUP[0].PORT_PMUX[USART_TX_PIN/2] = USART_PMUX;
 
   /* Selection of the Baud Value */
   USART_REGS->USART_INT.SERCOM_BAUD = SERCOM_USART_INT_BAUD_BAUD(USART_BAUD_4M_115200);
@@ -83,4 +83,9 @@ int getch_(void)
     return c;
   }
   return EOF;
+}
+
+bool chars_received(void)
+{
+  return usart_buffer_write_p != usart_buffer_read_p;
 }
