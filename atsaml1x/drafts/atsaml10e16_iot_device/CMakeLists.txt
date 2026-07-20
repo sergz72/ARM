@@ -24,9 +24,6 @@ file(GLOB SOURCES
         "src/main.c"
         "src/hal.c"
         "src/scd41_commands.c"
-        "src/ds1307_commands.c"
-        "src/ds3231_commands.c"
-        "src/pcf8563_commands.c"
         "../startup_saml10e16a.c"
         "../atsaml1xlib/systick.c"
         "../atsaml1xlib/usart.c"
@@ -49,6 +46,9 @@ file(GLOB SOURCES
         "../../../common_lib/rtc/rtc_ds1307.c"
         "../../../common_lib/rtc/rtc_ds3231.c"
         "../../../common_lib/rtc/rtc_pcf8563.c"
+        "../../../common_lib/rtc/ds1307_commands.c"
+        "../../../common_lib/rtc/ds3231_commands.c"
+        "../../../common_lib/rtc/pcf8563_commands.c"
 )
 
 include_directories(src ../atsaml1xlib ../cmsis ../../../common_lib ../../../common_lib/shell

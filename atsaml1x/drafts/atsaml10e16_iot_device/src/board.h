@@ -25,13 +25,14 @@
 #define I2C_MASTER_SCL_PIN       17
 #define I2C_MASTER_SDA_PIN       16
 #define I2C_MASTER_REGS          SERCOM1_REGS
-#define I2C_MASTER_BAUD          0x1F1F
+#define I2C_MASTER_BAUD          0x1F
 #define I2C_MASTER_MB_Handler    SERCOM1_0_Handler
 #define I2C_MASTER_SB_Handler    SERCOM1_1_Handler
 #define I2C_MASTER_ERROR_Handler SERCOM1_OTHER_Handler
 #define I2C_MASTER_MB_IRQn       SERCOM1_0_IRQn
 #define I2C_MASTER_SB_IRQn       SERCOM1_1_IRQn
 #define I2C_MASTER_ERROR_IRQn    SERCOM1_OTHER_IRQn
+#define I2C_MASTER_SCLSM         0
 
 #define USART_INTERRUPT_PRIORITY      1
 #define I2C_MASTER_INTERRUPT_PRIORITY 1

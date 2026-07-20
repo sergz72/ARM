@@ -18,6 +18,8 @@ volatile unsigned char *rxp;
 volatile unsigned int rx_length;
 unsigned int slave_address;
 
+
+#if I2C_MASTER_SCLSM == 0
 static void i2c_read_byte(void)
 {
   if (rx_length == 1)
@@ -34,6 +36,28 @@ static void i2c_read_byte(void)
   *rxp++ = I2C_MASTER_REGS->I2CM.SERCOM_DATA;
   rx_length--;
 }
+#else
+static void i2c_read_byte(void)
+{
+  *rxp++ = I2C_MASTER_REGS->I2CM.SERCOM_DATA;
+  rx_length--;
+  if (rx_length == 0)
+  {
+    i2c_master_state = I2C_MASTER_STATE_DONE;
+  }
+  else if (rx_length == 1)
+  {
+    I2C_MASTER_REGS->I2CM.SERCOM_CTRLB |= SERCOM_I2CM_CTRLB_ACKACT(1); // last byte = NACK
+    I2C_MASTER_REGS->I2CM.SERCOM_CTRLB |= SERCOM_I2CM_CTRLB_CMD(3); // Issue STOP
+//    I2C_MASTER_REGS->I2CM.SERCOM_CTRLB |= SERCOM_I2CM_CTRLB_CMD(2); // Issue read ack
+  }
+  else
+  {
+    I2C_MASTER_REGS->I2CM.SERCOM_CTRLB &= ~SERCOM_I2CM_CTRLB_ACKACT(1); // ACK
+    I2C_MASTER_REGS->I2CM.SERCOM_CTRLB |= SERCOM_I2CM_CTRLB_CMD(2); // Issue read ack
+  }
+}
+#endif
 
 #ifdef I2C_MASTER_MB_Handler
 void __attribute__((used)) I2C_MASTER_MB_Handler(void)
@@ -49,8 +73,6 @@ void __attribute__((used)) I2C_MASTER_MB_Handler(void)
         i2c_master_state = I2C_MASTER_STATE_ERROR;
         break;
       }
-      I2C_MASTER_REGS->I2CM.SERCOM_DATA = *txp++;
-      tx_length--;
       if (!tx_length)
       {
         if (!rx_length)
@@ -60,24 +82,25 @@ void __attribute__((used)) I2C_MASTER_MB_Handler(void)
         }
         else
           i2c_master_state = I2C_MASTER_STATE_REPEATED_START;
+        break;
       }
+      I2C_MASTER_REGS->I2CM.SERCOM_DATA = *txp++;
+      tx_length--;
       break;
     case I2C_MASTER_STATE_REPEATED_START:
       I2C_MASTER_REGS->I2CM.SERCOM_CTRLB |= SERCOM_I2CM_CTRLB_CMD(1);// prepare for repeated start
       I2C_MASTER_REGS->I2CM.SERCOM_ADDR = slave_address;
       i2c_master_state = I2C_MASTER_STATE_READ_DATA;
-      break;
-    /*case I2C_MASTER_STATE_READ_DATA:
-      // Check for NACK from slave
-      if (I2C_MASTER_REGS->I2CM.SERCOM_STATUS & SERCOM_I2CM_STATUS_RXNACK(1))
+#if I2C_MASTER_SCLSM == 1
+      if (rx_length == 1)
       {
-        // Handle error: Slave did not acknowledge address
+        I2C_MASTER_REGS->I2CM.SERCOM_CTRLB |= SERCOM_I2CM_CTRLB_ACKACT(1); // last byte = NACK
         I2C_MASTER_REGS->I2CM.SERCOM_CTRLB |= SERCOM_I2CM_CTRLB_CMD(3); // Issue STOP
-        i2c_master_state = I2C_MASTER_STATE_ERROR;
-        break;
       }
-      i2c_read_byte();
-      break;*/
+      else
+        I2C_MASTER_REGS->I2CM.SERCOM_CTRLB &= ~SERCOM_I2CM_CTRLB_ACKACT(1); // ACK
+#endif
+      break;
     default:
       I2C_MASTER_REGS->I2CM.SERCOM_CTRLB |= SERCOM_I2CM_CTRLB_CMD(3); // Issue STOP
       i2c_master_state = I2C_MASTER_STATE_ERROR;
@@ -130,7 +153,7 @@ void i2c_master_init(void)
 
   /* Set Operation Mode to I2C Slave */
   I2C_MASTER_REGS->I2CS.SERCOM_CTRLA = SERCOM_I2CM_CTRLA_MODE_I2C_MASTER | SERCOM_I2CM_CTRLA_SDAHOLD_75NS |
-    SERCOM_I2CM_CTRLA_SCLSM(0) | SERCOM_I2CM_CTRLA_SPEED_STANDARD_AND_FAST_MODE;
+    SERCOM_I2CM_CTRLA_SCLSM(I2C_MASTER_SCLSM) | SERCOM_I2CM_CTRLA_SPEED_STANDARD_AND_FAST_MODE;
   /* Wait for synchronization */
   while ((I2C_MASTER_REGS->I2CS.SERCOM_SYNCBUSY) != 0U)
   {
