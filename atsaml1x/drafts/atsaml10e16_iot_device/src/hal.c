@@ -84,7 +84,6 @@ void SysInit(void)
   //spi_master_init();
   //cc1101_init();
   eic_rtc_init();
-  trng_init();
   adc_init();
 }
 
