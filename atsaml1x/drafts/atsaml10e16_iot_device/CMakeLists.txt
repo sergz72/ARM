@@ -26,6 +26,7 @@ file(GLOB SOURCES
         "src/scd41_commands.c"
         "src/security_commands.c"
         "src/eeprom_commands.c"
+        "src/sht_commands.c"
         "../startup_saml10e16a.c"
         "../atsaml1xlib/systick.c"
         "../atsaml1xlib/usart.c"
@@ -55,10 +56,12 @@ file(GLOB SOURCES
         "../../../common_lib/rtc/ds3231_commands.c"
 #        "../../../common_lib/rtc/pcf8563_commands.c"
         "../../../common_lib/crypto/aes128.c"
+        "../../../common_lib/sensor/sht4x.c"
 )
 
 include_directories(src ../atsaml1xlib ../cmsis ../../../common_lib ../../../common_lib/shell
-        ../../../common_lib/rf/cc1101 ../../../common_lib/sensor ../../../common_lib/rtc ../../../common_lib/crypto)
+        ../../../common_lib/rf/cc1101 ../../../common_lib/sensor ../../../common_lib/rtc ../../../common_lib/crypto
+        ../../../common_lib/sensor)
 
 add_executable(${PROJECT_NAME}.elf ${SOURCES} ${LINKER_SCRIPT})
 

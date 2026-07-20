@@ -1,6 +1,7 @@
 #include "board.h"
 #include <cc1101.h>
 #include <scd4x.h>
+#include <sht4x.h>
 #include <rtc_ds1307.h>
 #include <rtc_ds3231.h>
 #include <rtc_pcf8563.h>
@@ -168,7 +169,7 @@ int i2c_ds3231_write(const unsigned char *data, int data_length)
 
 int i2c_ds3231_transfer(const unsigned char *wdata, int wdata_length, unsigned char *rdata, int rdata_length)
 {
-  return i2c_transfer(DS1307_I2C_ADDRESS, wdata, wdata_length, rdata, rdata_length);
+  return i2c_transfer(DS3231_I2C_ADDRESS, wdata, wdata_length, rdata, rdata_length);
 }
 
 int i2c_pcf8563_write(const unsigned char *data, int data_length)
@@ -179,4 +180,14 @@ int i2c_pcf8563_write(const unsigned char *data, int data_length)
 int i2c_pcf8563_transfer(const unsigned char *wdata, int wdata_length, unsigned char *rdata, int rdata_length)
 {
   return i2c_transfer(PCF8563_I2C_ADDRESS, wdata, wdata_length, rdata, rdata_length);
+}
+
+int sht40_read(unsigned char *data, unsigned int len)
+{
+  return i2c_read(SHT40_SENSOR_ADDR, data, len);
+}
+
+int sht40_register_write(const unsigned char *data, unsigned int len)
+{
+  return i2c_write(SHT40_SENSOR_ADDR, data, len);
 }

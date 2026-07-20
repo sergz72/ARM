@@ -79,6 +79,8 @@
 #define CC1101_RXOFF_MODE CC1101_RXOFF_MODE_IDLE
 #define CC1101_TXOFF_MODE CC1101_TXOFF_MODE_IDLE
 
+#define SHT40_SENSOR_ADDR 0x88
+
 void SysInit(void);
 
 #include <delay_systick.h>

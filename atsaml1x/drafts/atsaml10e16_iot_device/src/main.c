@@ -8,6 +8,7 @@
 //#include "pcf8563_commands.h"
 #include "security_commands.h"
 #include "eeprom_commands.h"
+#include "sht_commands.h"
 #include <common_printf.h>
 #include <usart.h>
 #include <pwr.h>
@@ -50,6 +51,7 @@ int main(void)
   //register_pcf8563_commands();
   register_security_commands();
   register_eeprom_commands();
+  register_sht_commands();
 
   getstring_init(command_line, sizeof(command_line), getch_, puts_);
 
