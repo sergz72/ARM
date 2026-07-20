@@ -7,10 +7,12 @@
 #include <usart.h>
 #include <i2c.h>
 #include <spi.h>
+#include <adc.h>
+#include <trng.h>
 
 volatile bool timer_interrupt;
 
-void __attribute__((used)) EIC_Handler(void)
+void __attribute__((used)) EIC_RTC_Handler(void)
 {
   timer_interrupt = 1;
   EIC_REGS->EIC_INTFLAG = 0xFF; // clear flags
@@ -65,13 +67,9 @@ static void eic_rtc_init(void)
 
 static void cc1101_init(void)
 {
-  // in with pulldown
-  PORT_REGS->GROUP[0].PORT_PINCFG[cc1101_GD0_PIN] = PORT_PINCFG_PMUXEN(1) | PORT_PINCFG_INEN(1) | PORT_PINCFG_PULLEN(1);
   // in with pullup
   PORT_REGS->GROUP[0].PORT_OUTSET = 1 << cc1101_GD2_PIN;
-  PORT_REGS->GROUP[0].PORT_PINCFG[cc1101_GD2_PIN] = PORT_PINCFG_PMUXEN(1) | PORT_PINCFG_INEN(1) | PORT_PINCFG_PULLEN(1);
-
-  PORT_REGS->GROUP[0].PORT_PMUX[cc1101_GD0_PIN/2] = PORT_PMUX_PMUXE_A; // EIC
+  PORT_REGS->GROUP[0].PORT_PINCFG[cc1101_GD2_PIN] = PORT_PINCFG_INEN(1) | PORT_PINCFG_PULLEN(1);
 }
 
 void SysInit(void)
@@ -83,9 +81,11 @@ void SysInit(void)
   ports_init();
   usart_init();
   i2c_master_init();
-  spi_master_init();
-  cc1101_init();
+  //spi_master_init();
+  //cc1101_init();
   eic_rtc_init();
+  trng_init();
+  adc_init();
 }
 
 void _init(void)

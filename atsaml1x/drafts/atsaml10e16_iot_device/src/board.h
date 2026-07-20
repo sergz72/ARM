@@ -53,6 +53,7 @@
 #define EIC_RTC_IRQn             EIC_OTHER_IRQn
 #define EIC_RTC_Handler          EIC_OTHER_Handler
 
+#define TRNG_INTERRUPT_PRIORITY       2
 #define USART_INTERRUPT_PRIORITY      1
 #define I2C_MASTER_INTERRUPT_PRIORITY 1
 #define SPI_MASTER_INTERRUPT_PRIORITY 1
@@ -67,9 +68,8 @@
 #define PRINTF_BUFFER_LENGTH 200
 #define USE_MYVSPRINTF
 
-#define cc1101_GD0_PIN    6 // extint[6]
-#define cc1101_GD2_PIN    7
-#define cc1101_GD0        (PORT_REGS->GROUP[0].PORT_IN & (1 << cc1101_GD0_PIN))
+#define cc1101_GD2_PIN    6
+#define cc1101_GD0        0
 #define cc1101_GD2        (PORT_REGS->GROUP[0].PORT_IN & (1 << cc1101_GD2_PIN))
 #define cc1101_CSN_CLR(d) PORT_REGS->GROUP[0].PORT_OUTCLR = 1 << SPI_MASTER_NSS_PIN
 #define cc1101_CSN_SET(d) PORT_REGS->GROUP[0].PORT_OUTSET = 1 << SPI_MASTER_NSS_PIN

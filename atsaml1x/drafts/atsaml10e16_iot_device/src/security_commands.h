@@ -1,0 +1,6 @@
+#ifndef ATSAML10E16_IOT_DEVICE_SECURITY_COMMANDS_H
+#define ATSAML10E16_IOT_DEVICE_SECURITY_COMMANDS_H
+
+void register_security_commands(void);
+
+#endif

@@ -24,12 +24,16 @@ file(GLOB SOURCES
         "src/main.c"
         "src/hal.c"
         "src/scd41_commands.c"
+        "src/security_commands.c"
+        "src/eeprom_commands.c"
         "../startup_saml10e16a.c"
         "../atsaml1xlib/systick.c"
         "../atsaml1xlib/usart.c"
         "../atsaml1xlib/i2c.c"
         "../atsaml1xlib/spi.c"
         "../atsaml1xlib/pwr.c"
+        "../atsaml1xlib/trng.c"
+        "../atsaml1xlib/adc.c"
         "../../../common_lib/delay_systick.c"
         "../../../common_lib/shell/shell.c"
         "../../../common_lib/getstring.c"
@@ -44,16 +48,17 @@ file(GLOB SOURCES
         "../../../common_lib/sensor/scd4x.c"
         "../../../common_lib/crc8.c"
         "../../../common_lib/rtc/rtc_func.c"
-        "../../../common_lib/rtc/rtc_ds1307.c"
+#        "../../../common_lib/rtc/rtc_ds1307.c"
         "../../../common_lib/rtc/rtc_ds3231.c"
-        "../../../common_lib/rtc/rtc_pcf8563.c"
-        "../../../common_lib/rtc/ds1307_commands.c"
+#        "../../../common_lib/rtc/rtc_pcf8563.c"
+#        "../../../common_lib/rtc/ds1307_commands.c"
         "../../../common_lib/rtc/ds3231_commands.c"
-        "../../../common_lib/rtc/pcf8563_commands.c"
+#        "../../../common_lib/rtc/pcf8563_commands.c"
+        "../../../common_lib/crypto/aes128.c"
 )
 
 include_directories(src ../atsaml1xlib ../cmsis ../../../common_lib ../../../common_lib/shell
-        ../../../common_lib/rf/cc1101 ../../../common_lib/sensor ../../../common_lib/rtc)
+        ../../../common_lib/rf/cc1101 ../../../common_lib/sensor ../../../common_lib/rtc ../../../common_lib/crypto)
 
 add_executable(${PROJECT_NAME}.elf ${SOURCES} ${LINKER_SCRIPT})
 
