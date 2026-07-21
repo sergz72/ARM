@@ -7,8 +7,9 @@
 
 #include <saml10e16a.h>
 
-#define LED_TIMER_ON PORT_REGS->GROUP[0].PORT_OUTCLR = PORT_PA00
-#define LED_TIMER_OFF PORT_REGS->GROUP[0].PORT_OUTSET = PORT_PA00
+#define LED_TIMER_PIN 6
+#define LED_TIMER_ON PORT_REGS->GROUP[0].PORT_OUTCLR = 1 << LED_TIMER_PIN
+#define LED_TIMER_OFF PORT_REGS->GROUP[0].PORT_OUTSET = 1 << LED_TIMER_PIN
 
 #define SYSTICK_MULTIPLIER 4
 
@@ -53,6 +54,10 @@
 #define EIC_RTC_IRQn             EIC_OTHER_IRQn
 #define EIC_RTC_Handler          EIC_OTHER_Handler
 
+#define ADC_REFERENCE            ADC_VREF_1V0
+#define ADC_PRESCALER            ADC_CTRLB_PRESCALER_DIV2
+#define ADC_CTRLC                0
+
 #define TRNG_INTERRUPT_PRIORITY       2
 #define USART_INTERRUPT_PRIORITY      1
 #define I2C_MASTER_INTERRUPT_PRIORITY 1
@@ -68,7 +73,7 @@
 #define PRINTF_BUFFER_LENGTH 200
 #define USE_MYVSPRINTF
 
-#define cc1101_GD2_PIN    6
+#define cc1101_GD2_PIN    0
 #define cc1101_GD0        0
 #define cc1101_GD2        (PORT_REGS->GROUP[0].PORT_IN & (1 << cc1101_GD2_PIN))
 #define cc1101_CSN_CLR(d) PORT_REGS->GROUP[0].PORT_OUTCLR = 1 << SPI_MASTER_NSS_PIN
@@ -81,7 +86,13 @@
 
 #define SHT40_SENSOR_ADDR 0x88
 
+#define EEPROM_BUFFER_SIZE 32
+#define EEPROM_ADDRESS     0x57
+
 void SysInit(void);
+unsigned int get_vcc(void);
+int eeprom_read(unsigned int memory_address, unsigned char *buffer, unsigned int length);
+int eeprom_write(unsigned int memory_address, const unsigned char *buffer, unsigned int length);
 
 #include <delay_systick.h>
 

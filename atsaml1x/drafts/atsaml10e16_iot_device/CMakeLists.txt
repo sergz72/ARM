@@ -27,6 +27,7 @@ file(GLOB SOURCES
         "src/security_commands.c"
         "src/eeprom_commands.c"
         "src/sht_commands.c"
+        "src/adc_commands.c"
         "../startup_saml10e16a.c"
         "../atsaml1xlib/systick.c"
         "../atsaml1xlib/usart.c"

@@ -14,6 +14,7 @@
 #include <pwr.h>
 #include <rtc_ds3231.h>
 
+#include "adc_commands.h"
 #include "security_commands.h"
 
 static bool led_timer_state;
@@ -52,6 +53,7 @@ int main(void)
   register_security_commands();
   register_eeprom_commands();
   register_sht_commands();
+  register_adc_commands();
 
   getstring_init(command_line, sizeof(command_line), getch_, puts_);
 

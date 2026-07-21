@@ -1,6 +1,8 @@
 #include "board.h"
 #include <i2c.h>
 
+#define TX_BUFFER_COUNT 2
+
 typedef enum
 {
   I2C_MASTER_STATE_IDLE,
@@ -11,13 +13,19 @@ typedef enum
   I2C_MASTER_STATE_ERROR
 } i2c_master_state_t;
 
+typedef union
+{
+  unsigned int uint;
+  unsigned char bytes[4];
+} uint_to_bytes;
+
 volatile i2c_master_state_t i2c_master_state = I2C_MASTER_STATE_IDLE;
-volatile const unsigned char *txp;
-volatile unsigned int tx_length;
+volatile const unsigned char *txp[TX_BUFFER_COUNT];
+volatile unsigned int tx_length[TX_BUFFER_COUNT];
+volatile unsigned int current_tx_buffer;
 volatile unsigned char *rxp;
 volatile unsigned int rx_length;
 unsigned int slave_address;
-
 
 #if I2C_MASTER_SCLSM == 0
 static void i2c_read_byte(void)
@@ -73,19 +81,28 @@ void __attribute__((used)) I2C_MASTER_MB_Handler(void)
         i2c_master_state = I2C_MASTER_STATE_ERROR;
         break;
       }
-      if (!tx_length)
+      if (!tx_length[current_tx_buffer])
       {
-        if (!rx_length)
+        bool continue_ = current_tx_buffer < TX_BUFFER_COUNT - 1;
+        if (continue_)
         {
-          I2C_MASTER_REGS->I2CM.SERCOM_CTRLB |= SERCOM_I2CM_CTRLB_CMD(3); // Issue STOP
-          i2c_master_state = I2C_MASTER_STATE_DONE;
+          current_tx_buffer++;
+          continue_ = tx_length[current_tx_buffer] != 0;
         }
-        else
-          i2c_master_state = I2C_MASTER_STATE_REPEATED_START;
-        break;
+        if (!continue_)
+        {
+          if (!rx_length)
+          {
+            I2C_MASTER_REGS->I2CM.SERCOM_CTRLB |= SERCOM_I2CM_CTRLB_CMD(3); // Issue STOP
+            i2c_master_state = I2C_MASTER_STATE_DONE;
+          }
+          else
+            i2c_master_state = I2C_MASTER_STATE_REPEATED_START;
+          break;
+        }
       }
-      I2C_MASTER_REGS->I2CM.SERCOM_DATA = *txp++;
-      tx_length--;
+      I2C_MASTER_REGS->I2CM.SERCOM_DATA = *txp[current_tx_buffer]++;
+      tx_length[current_tx_buffer]--;
       break;
     case I2C_MASTER_STATE_REPEATED_START:
       I2C_MASTER_REGS->I2CM.SERCOM_CTRLB |= SERCOM_I2CM_CTRLB_CMD(1);// prepare for repeated start
@@ -202,9 +219,29 @@ void i2c_master_init(void)
 
 int i2c_write(unsigned char address, const unsigned char* data, unsigned int l)
 {
-  txp = data;
-  tx_length = l;
+  txp[0] = data;
+  tx_length[0] = l;
+  tx_length[1] = 0;
   rx_length = 0;
+  current_tx_buffer = 0;
+  i2c_master_state = I2C_MASTER_STATE_WRITE_DATA;
+  // 1. Send START condition + 7-bit Address + Write bit (0)
+  I2C_MASTER_REGS->I2CM.SERCOM_ADDR = address;
+
+  while (i2c_master_state != I2C_MASTER_STATE_DONE && i2c_master_state != I2C_MASTER_STATE_ERROR)
+    __WFI();
+
+  return i2c_master_state == I2C_MASTER_STATE_ERROR;
+}
+
+int i2c_write2(unsigned char address, const unsigned char* data1, unsigned int l1, const unsigned char* data2, unsigned int l2)
+{
+  txp[0] = data1;
+  txp[1] = data2;
+  tx_length[0] = l1;
+  tx_length[1] = l2;
+  rx_length = 0;
+  current_tx_buffer = 0;
   i2c_master_state = I2C_MASTER_STATE_WRITE_DATA;
   // 1. Send START condition + 7-bit Address + Write bit (0)
   I2C_MASTER_REGS->I2CM.SERCOM_ADDR = address;
@@ -231,8 +268,10 @@ int i2c_read(unsigned char address, unsigned char* data, unsigned int l)
 
 int i2c_transfer(unsigned char address, const unsigned char *wdata, unsigned int wlen, unsigned char *rdata, unsigned int rlen)
 {
-  txp = wdata;
-  tx_length = wlen;
+  txp[0] = wdata;
+  tx_length[0] = wlen;
+  tx_length[1] = 0;
+  current_tx_buffer = 0;
   rxp = rdata;
   rx_length = rlen;
   slave_address = address | 1;
@@ -244,4 +283,73 @@ int i2c_transfer(unsigned char address, const unsigned char *wdata, unsigned int
     __WFI();
 
   return i2c_master_state == I2C_MASTER_STATE_ERROR;
+}
+
+static void build_address(unsigned char *bytes, unsigned int address_length)
+{
+  unsigned char temp;
+  switch (address_length)
+  {
+  case 2:
+    temp = bytes[0];
+    bytes[0] = bytes[1];
+    bytes[1] = temp;
+    break;
+  case 3:
+    temp = bytes[0];
+    bytes[0] = bytes[2];
+    bytes[2] = temp;
+    break;
+  case 4:
+    temp = bytes[0];
+    bytes[0] = bytes[3];
+    bytes[3] = temp;
+    temp = bytes[1];
+    bytes[1] = bytes[2];
+    bytes[2] = temp;
+    break;
+  default:
+    break;
+  }
+}
+
+int i2c_memory_write_page(unsigned char i2c_address, unsigned int memory_address,
+                          unsigned int memory_address_length, const unsigned char *data, unsigned int length)
+{
+  uint_to_bytes ub;
+
+  ub.uint = memory_address;
+  build_address(ub.bytes, memory_address_length);
+
+  return i2c_write2(i2c_address, ub.bytes, memory_address_length, data, length);
+}
+
+int i2c_memory_write_pages(unsigned char i2c_address, unsigned int memory_address,
+                      unsigned int memory_address_length, unsigned int page_size,
+                      const unsigned char *data, unsigned int length)
+{
+  while (length)
+  {
+    unsigned int l = length > page_size ? page_size : length;
+      int rc = i2c_memory_write_page(i2c_address, memory_address, memory_address_length, data, l);
+      if (rc)
+        return rc;
+    length -= l;
+    data += l;
+    memory_address += l;
+    if (length)
+      delayms(10);
+  }
+  return 0;
+}
+
+int i2c_memory_read(unsigned char i2c_address, unsigned int memory_address,
+                      unsigned int memory_address_length, unsigned char *data, unsigned int length)
+{
+  uint_to_bytes ub;
+
+  ub.uint = memory_address;
+  build_address(ub.bytes, memory_address_length);
+
+  return i2c_transfer(i2c_address, ub.bytes, memory_address_length, data, length);
 }

@@ -9,7 +9,6 @@
 #include <i2c.h>
 #include <spi.h>
 #include <adc.h>
-#include <trng.h>
 
 volatile bool timer_interrupt;
 
@@ -25,7 +24,7 @@ void __attribute__((used)) EIC_RTC_Handler(void)
 static void ports_init(void)
 {
   LED_TIMER_OFF;
-  PORT_REGS->GROUP[0].PORT_DIRSET = PORT_PA00;
+  PORT_REGS->GROUP[0].PORT_DIRSET = 1 << LED_TIMER_PIN;
 }
 
 static void clock_init(void)
@@ -82,8 +81,8 @@ void SysInit(void)
   ports_init();
   usart_init();
   i2c_master_init();
-  //spi_master_init();
-  //cc1101_init();
+  spi_master_init();
+  cc1101_init();
   eic_rtc_init();
   adc_init();
 }
@@ -190,4 +189,19 @@ int sht40_read(unsigned char *data, unsigned int len)
 int sht40_register_write(const unsigned char *data, unsigned int len)
 {
   return i2c_write(SHT40_SENSOR_ADDR, data, len);
+}
+
+unsigned int get_vcc(void)
+{
+  return adc_get(ADC_INPUTCTRL_MUXNEG_GND | ADC_INPUTCTRL_MUXPOS_SCALEDVDDANA) * 4 / 10;
+}
+
+int eeprom_read(unsigned int memory_address, unsigned char *buffer, unsigned int length)
+{
+  return i2c_memory_read(EEPROM_ADDRESS << 1, memory_address, 2, buffer, length);
+}
+
+int eeprom_write(unsigned int memory_address, const unsigned char *buffer, unsigned int length)
+{
+  return i2c_memory_write_page(EEPROM_ADDRESS << 1, memory_address, 2, buffer, length);
 }
