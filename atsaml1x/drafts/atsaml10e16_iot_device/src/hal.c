@@ -46,7 +46,7 @@ static void eic_rtc_init(void)
   // in with pullup
   PORT_REGS->GROUP[0].PORT_OUTSET = 1 << EIC_RTC_PIN;
   PORT_REGS->GROUP[0].PORT_PINCFG[EIC_RTC_PIN] = PORT_PINCFG_PMUXEN(1) | PORT_PINCFG_INEN(1) | PORT_PINCFG_PULLEN(1);
-  PORT_REGS->GROUP[0].PORT_PMUX[EIC_RTC_PIN/2] = PORT_PMUX_PMUXE_A; // EIC
+  //PORT_REGS->GROUP[0].PORT_PMUX[EIC_RTC_PIN/2] |= PORT_PMUX_PMUXE_A << (4 * (EIC_RTC_PIN & 1)); // EIC
 
   /* Interrupt sense type and filter control for EXTINT channels 0 to 7 */
   EIC_REGS->EIC_CONFIG = EIC_RTC_SENSE;

@@ -47,6 +47,7 @@
 #define SPI_MASTER_DIPO_PAD      SERCOM_SPIM_CTRLA_DIPO_PAD3
 #define SPI_MASTER_RXEN          1
 #define SPI_MASTER_MSSEN         0
+#define SPI_MASTER_PMUX          PORT_PMUX_PMUXE_D
 
 #define EIC_RTC_PIN              18 // extint[7]
 #define EIC_RTC_NUM              7
