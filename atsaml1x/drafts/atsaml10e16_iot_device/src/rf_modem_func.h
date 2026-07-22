@@ -2,6 +2,6 @@
 #define _RF_MODEM_FUNC_H
 
 int rf_modem_init(void);
-void send_env(void);
+int send_env(void);
 
 #endif

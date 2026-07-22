@@ -88,7 +88,10 @@
 #define EEPROM_BUFFER_SIZE 32
 #define EEPROM_ADDRESS     0x57
 
-#define SEND_INTERVAL      300 // every 5 minutes
+#define SEND_INTERVAL            300 // every 5 minutes
+#define SEND_REPEATS             3
+#define SEND_REPEAT_INTERVAL_MIN 2000 // ms
+#define SEND_REPEAT_INTERVAL_MAX 5000 // ms
 
 void SysInit(void);
 unsigned int get_vcc(void);
