@@ -23,11 +23,16 @@ project(atsaml10e16_iot_device C ASM)
 file(GLOB SOURCES
         "src/main.c"
         "src/hal.c"
-        "src/scd41_commands.c"
         "src/security_commands.c"
-        "src/eeprom_commands.c"
         "src/sht_commands.c"
         "src/adc_commands.c"
+        "src/time_func.c"
+        "src/rf_modem_func.c"
+        "../../../iot_device_common/eeprom_commands.c"
+        "../../../iot_device_common/crypto_func.c"
+        "../../../iot_device_common/config.c"
+        "../../../iot_device_common/scd41_commands.c"
+        "../../../iot_device_common/env_func.c"
         "../startup_saml10e16a.c"
         "../atsaml1xlib/systick.c"
         "../atsaml1xlib/usart.c"
@@ -50,19 +55,19 @@ file(GLOB SOURCES
         "../../../common_lib/sensor/scd4x.c"
         "../../../common_lib/crc8.c"
         "../../../common_lib/rtc/rtc_func.c"
-#        "../../../common_lib/rtc/rtc_ds1307.c"
+        "../../../common_lib/rtc/rtc_ds1307.c"
         "../../../common_lib/rtc/rtc_ds3231.c"
-#        "../../../common_lib/rtc/rtc_pcf8563.c"
-#        "../../../common_lib/rtc/ds1307_commands.c"
+        "../../../common_lib/rtc/rtc_pcf8563.c"
+        "../../../common_lib/rtc/ds1307_commands.c"
         "../../../common_lib/rtc/ds3231_commands.c"
-#        "../../../common_lib/rtc/pcf8563_commands.c"
+        "../../../common_lib/rtc/pcf8563_commands.c"
         "../../../common_lib/crypto/aes128.c"
         "../../../common_lib/sensor/sht4x.c"
 )
 
 include_directories(src ../atsaml1xlib ../cmsis ../../../common_lib ../../../common_lib/shell
         ../../../common_lib/rf/cc1101 ../../../common_lib/sensor ../../../common_lib/rtc ../../../common_lib/crypto
-        ../../../common_lib/sensor)
+        ../../../common_lib/sensor ../../../iot_device_common)
 
 add_executable(${PROJECT_NAME}.elf ${SOURCES} ${LINKER_SCRIPT})
 

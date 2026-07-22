@@ -3,53 +3,46 @@
 #include <getstring.h>
 #include <cc1101_commands.h>
 #include "scd41_commands.h"
-//#include "ds1307_commands.h"
+#include "ds1307_commands.h"
 #include "ds3231_commands.h"
-//#include "pcf8563_commands.h"
+#include "pcf8563_commands.h"
 #include "security_commands.h"
 #include "eeprom_commands.h"
 #include "sht_commands.h"
+#include "adc_commands.h"
 #include <common_printf.h>
 #include <usart.h>
 #include <pwr.h>
-#include <rtc_ds3231.h>
+#include "config.h"
+#include "env_func.h"
+#include "time_func.h"
+#include "rf_modem_func.h"
 
-#include "adc_commands.h"
-#include "security_commands.h"
-
-static bool led_timer_state;
 static char command_line[200];
+static unsigned int next_communication_time;
 
-static void led_toggle(void)
+void configuration_update_callback(void)
 {
-  led_timer_state = !led_timer_state;
-  if (led_timer_state)
-    LED_TIMER_ON;
+  if (configuration_loaded)
+    LED_BATTERY_OFF;
   else
-    LED_TIMER_OFF;
+    LED_BATTERY_ON;
 }
 
 int main(void)
 {
   int rc;
 
-  led_timer_state = false;
-
   SysInit();
 
-  if (ds3231_init(1))
-  {
-    LED_TIMER_ON;
-    while (1)
-      __WFI();
-  }
+  load_configuration();
 
   shell_init(common_printf, nullptr);
   register_cc1101_commands();
   register_scd41_commands();
-  //register_ds1307_commands();
+  register_ds1307_commands();
   register_ds3231_commands();
-  //register_pcf8563_commands();
+  register_pcf8563_commands();
   register_security_commands();
   register_eeprom_commands();
   register_sht_commands();
@@ -57,13 +50,23 @@ int main(void)
 
   getstring_init(command_line, sizeof(command_line), getch_, puts_);
 
+  next_communication_time = timestamp;
+
   while (1)
   {
     enter_standby();
     if (timer_interrupt)
     {
       timer_interrupt = false;
-      led_toggle();
+      if (configuration_loaded && timestamp >= next_communication_time)
+      {
+        next_communication_time = timestamp + SEND_INTERVAL;
+        if (!sensor_get())
+        {
+          encrypt_env();
+          send_env();
+        }
+      }
     }
     if (chars_received())
     {

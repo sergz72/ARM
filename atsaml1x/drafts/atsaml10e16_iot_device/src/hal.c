@@ -9,12 +9,14 @@
 #include <i2c.h>
 #include <spi.h>
 #include <adc.h>
+#include "time_func.h"
 
 volatile bool timer_interrupt;
 
 void __attribute__((used)) EIC_RTC_Handler(void)
 {
   timer_interrupt = 1;
+  timestamp++;
   EIC_REGS->EIC_INTFLAG = 0xFF; // clear flags
 }
 
@@ -23,8 +25,8 @@ void __attribute__((used)) EIC_RTC_Handler(void)
  */
 static void ports_init(void)
 {
-  LED_TIMER_OFF;
-  PORT_REGS->GROUP[0].PORT_DIRSET = 1 << LED_TIMER_PIN;
+  LED_BATTERY_OFF;
+  PORT_REGS->GROUP[0].PORT_DIRSET = 1 << LED_BATTERY_PIN;
 }
 
 static void clock_init(void)
