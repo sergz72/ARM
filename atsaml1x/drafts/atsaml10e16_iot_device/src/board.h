@@ -93,12 +93,19 @@
 #define SEND_REPEAT_INTERVAL_MIN 2000 // ms
 #define SEND_REPEAT_INTERVAL_MAX 5000 // ms
 
+#define PFUNC          common_printf
+#define GFUNC          nullptr
+#define CHARS_RECEIVED chars_received()
+
 void SysInit(void);
 unsigned int get_vcc(void);
 int eeprom_read(unsigned int memory_address, unsigned char *buffer, unsigned int length);
 int eeprom_write(unsigned int memory_address, const unsigned char *buffer, unsigned int length);
 
 #include <delay_systick.h>
+#include <pwr.h>
+#include <usart.h>
+#include <time_func.h>
 
 extern volatile bool timer_interrupt;
 
