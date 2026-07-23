@@ -7,7 +7,7 @@
 
 #define TIME_OFFSET 1784707500
 
-unsigned int timestamp;
+volatile unsigned int timestamp;
 
 int rtc_init(void)
 {

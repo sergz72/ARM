@@ -3,6 +3,6 @@
 
 int rtc_init(void);
 
-extern unsigned int timestamp;
+extern volatile unsigned int timestamp;
 
 #endif
