@@ -30,6 +30,8 @@ file(GLOB SOURCES
         "../../../iot_device_common/main_loop.c"
         "../../../iot_device_common/rf_modem_func.c"
         "../../../iot_device_common/eeprom_commands.c"
+        "../../../iot_device_common/config_commands.c"
+        "../../../iot_device_common/system_commands.c"
         "../../../iot_device_common/crypto_func.c"
         "../../../iot_device_common/config.c"
         "../../../iot_device_common/scd41_commands.c"

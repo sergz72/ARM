@@ -207,3 +207,8 @@ int eeprom_write(unsigned int memory_address, const unsigned char *buffer, unsig
 {
   return i2c_memory_write_page(EEPROM_ADDRESS << 1, memory_address, 2, buffer, length);
 }
+
+void system_restart(void)
+{
+  NVIC_SystemReset();
+}

@@ -101,6 +101,7 @@ void SysInit(void);
 unsigned int get_vcc(void);
 int eeprom_read(unsigned int memory_address, unsigned char *buffer, unsigned int length);
 int eeprom_write(unsigned int memory_address, const unsigned char *buffer, unsigned int length);
+void system_restart(void);
 
 #include <delay_systick.h>
 #include <pwr.h>
