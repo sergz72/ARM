@@ -97,6 +97,8 @@
 #define GFUNC          nullptr
 #define CHARS_RECEIVED chars_received()
 
+#define AES128_MAX_KEYS 1
+
 void SysInit(void);
 unsigned int get_vcc(void);
 int eeprom_read(unsigned int memory_address, unsigned char *buffer, unsigned int length);
